@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BoxLeague Pro</title>
   <style>
     :root {
@@ -367,6 +367,16 @@
     </div>
 
     <!-- Step B: Find or create club -->
+    <!-- Join by code -->
+    <div style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:16px;box-shadow:var(--shadow)">
+      <div style="font-size:15px;font-weight:700;margin-bottom:8px">Have a league code?</div>
+      <div style="display:flex;gap:8px">
+        <input class="fi" id="inp-league-code" placeholder="Enter 6-character code" maxlength="6" style="flex:1;text-transform:uppercase;letter-spacing:2px;font-weight:700;text-align:center">
+        <button class="btn btn-primary" onclick="joinByCode()" style="white-space:nowrap">Join</button>
+      </div>
+      <div id="join-code-error" style="display:none;color:#ef4444;font-size:13px;margin-top:6px"></div>
+    </div>
+
     <div class="section-title">Find your club</div>
     <div class="fg">
       <input class="fi" id="inp-club-search" placeholder="Search or type club name..." oninput="searchClubs()">
@@ -860,28 +870,34 @@ function deleteLeague(leagueId, event) {
   const lg = userLeagues[leagueId];
   const name = lg ? lg.name : leagueId;
   if (!confirm('DELETE league "' + name + '"?\n\nThis will permanently remove:\n- All teams and players\n- All availability data\n- All booked matches\n\nThis cannot be undone.')) return;
-  if (!confirm('Are you absolutely sure? Type OK to confirm.')) return;
+  if (!confirm('Are you absolutely sure? This cannot be undone.')) return;
   if (!FIREBASE_READY) { toast('Cannot delete in demo mode'); return; }
-  const updates = {};
-  updates['/leagues/' + leagueId] = null;
-  updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = null;
-  // Remove from clubLeagues
-  if (lg && lg.clubId) {
-    updates['/clubLeagues/' + lg.clubId + '/' + leagueId] = null;
-  }
-  // Remove league code
-  if (lg && lg.code) {
-    updates['/codes/' + lg.code] = null;
-  }
-  db.ref().update(updates).then(() => {
-    toast('League deleted');
-    // Also remove from other users' userLeagues
-    db.ref('/leagues/' + leagueId + '/members').once('value', snap => {
-      // Members already deleted, just clean up
+  // Read members BEFORE deleting so we can clean up their userLeagues
+  db.ref('/leagues/' + leagueId + '/members').once('value', membersSnap => {
+    const members = membersSnap.val() || {};
+    const updates = {};
+    updates['/leagues/' + leagueId] = null;
+    updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = null;
+    // Remove from clubLeagues
+    if (lg && lg.clubId) {
+      updates['/clubLeagues/' + lg.clubId + '/' + leagueId] = null;
+    }
+    // Remove league code
+    if (lg && lg.code) {
+      updates['/codes/' + lg.code] = null;
+    }
+    // Remove from all members' userLeagues
+    Object.values(members).forEach(m => {
+      if (m.uid && m.uid !== currentUser.uid) {
+        updates['/userLeagues/' + m.uid + '/' + leagueId] = null;
+      }
     });
-  }).catch(err => {
-    console.error('Delete failed:', err);
-    toast('Delete failed: ' + err.message);
+    db.ref().update(updates).then(() => {
+      toast('League deleted');
+    }).catch(err => {
+      console.error('Delete failed:', err);
+      toast('Delete failed: ' + err.message);
+    });
   });
 }
 
@@ -1025,7 +1041,10 @@ function toggleAuthMode() {
 function showAuthError(msg) {
   const el = document.getElementById('auth-error');
   el.textContent = msg;
-  el.style.display = 'block';
+  el.style.display = msg ? 'block' : 'none';
+  el.style.background = 'rgba(239,68,68,0.2)';
+  el.style.borderColor = 'rgba(239,68,68,0.4)';
+  el.style.color = '#fecaca';
 }
 
 function googleSignIn() {
@@ -1178,13 +1197,14 @@ function notifyBooking(matchKey, date, slot) {
   // Get team names and player emails from the match
   const parts = matchKey.split('_');
   const teamA = L.groups.find(g => g.id === parts[0]);
-  const teamB = L.groups.find(g => g.id === parts[1]) || L.groups.find(g => g.id === parts[1]);
+  const teamB = L.groups.find(g => g.id === parts[1]);
   if (!teamA || !teamB) return;
-  // Collect player emails from members
+  // Collect player emails — find members whose playerName is in either team's players list
   const playerEmails = [];
+  const matchPlayers = [...(teamA.players || []), ...(teamB.players || [])];
   if (L.members) {
     Object.values(L.members).forEach(m => {
-      if (m.email && (m.team === teamA.name || m.team === teamB.name || m.partnerName)) {
+      if (m.email && m.playerName && matchPlayers.includes(m.playerName)) {
         playerEmails.push(m.email);
       }
     });
@@ -1474,6 +1494,27 @@ function createLeagueInClub() {
   });
 }
 
+function joinByCode() {
+  const code = val('inp-league-code').toUpperCase();
+  const errEl = document.getElementById('join-code-error');
+  errEl.style.display = 'none';
+  if (!code || code.length < 4) {
+    errEl.textContent = 'Please enter a valid league code.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!FIREBASE_READY) { toast('Not available in demo mode'); return; }
+  db.ref('/codes/' + code).once('value', snap => {
+    const leagueId = snap.val();
+    if (!leagueId) {
+      errEl.textContent = 'League not found. Check the code and try again.';
+      errEl.style.display = 'block';
+      return;
+    }
+    joinAndEnterLeague(leagueId);
+  });
+}
+
 function joinAndEnterLeague(leagueId) {
   // Check if already a member
   if (userLeagues[leagueId]) {
@@ -1580,8 +1621,11 @@ function wizSaveData() {
 
     // Look for a team that already has myName or partnerName
     Object.entries(groups).forEach(([id, g]) => {
-      if (g.players && (g.players.includes(myName) || g.players.includes(partnerName))) {
-        existingTeamId = id;
+      if (g.players) {
+        const playersLower = g.players.map(p => p.toLowerCase());
+        if (playersLower.includes(myName.toLowerCase()) || playersLower.includes(partnerName.toLowerCase())) {
+          existingTeamId = id;
+        }
       }
     });
 
@@ -1800,10 +1844,11 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   });
   listeners.push({ ref: ref.child('booked'), event: 'value', fn: l4 });
 
+  let membersInitial = true;
   const l5 = ref.child('members').on('value', snap => {
     L.members = snap.val() || {};
     renderMembers();
-    showTab('availability');
+    if (membersInitial) { showTab('availability'); membersInitial = false; }
   });
   listeners.push({ ref: ref.child('members'), event: 'value', fn: l5 });
 }
@@ -1876,7 +1921,7 @@ function saveSettings() {
 function fbSetBooked(matchKey, slotData) {
   if (slotData) L.booked[matchKey] = slotData; else delete L.booked[matchKey];
   const ref = leagueRef('booked');
-  if (ref) ref.set(L.booked); else localSave();
+  if (ref) ref.child(matchKey).set(slotData); else localSave();
 }
 
 /* ══════════════════════════════════════
