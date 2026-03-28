@@ -1,0 +1,2307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>BoxLeague Pro</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #60a5fa;
+      --primary-dark: #1e3a8a;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #1a1a1a;
+      --muted: #6b7280;
+      --border: #e2e8f0;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+      --radius: 14px;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --green: #22c55e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── Screens ── */
+    .screen { display: none !important; min-height: 100vh; }
+    .screen.active { display: block !important; }
+
+    /* ══════════════════════════════════════
+       AUTH SCREEN
+       ══════════════════════════════════════ */
+    .auth-screen { background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%); flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 24px; }
+    .auth-screen.active { display: flex !important; }
+    .auth-logo { font-size: 56px; margin-bottom: 16px; }
+    .auth-title { font-size: 32px; font-weight: 800; color: #fff; letter-spacing: -0.5px; margin-bottom: 6px; }
+    .auth-subtitle { font-size: 18px; color: rgba(255,255,255,0.85); font-weight: 500; margin-bottom: 36px; }
+    .auth-features { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 36px; max-width: 400px; }
+    .auth-chip { background: rgba(255,255,255,0.15); color: #fff; padding: 8px 16px; border-radius: 24px; font-size: 14px; font-weight: 600; backdrop-filter: blur(4px); }
+    .btn-google { display: inline-flex; align-items: center; gap: 12px; background: #fff; color: #1a1a1a; padding: 14px 32px; border-radius: 12px; font-size: 17px; font-weight: 700; border: none; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.15); transition: transform 0.15s, box-shadow 0.15s; }
+    .btn-google:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
+    .btn-google:active { transform: scale(0.98); }
+    .btn-google svg { width: 22px; height: 22px; }
+    .auth-divider { display: flex; align-items: center; gap: 14px; margin: 24px 0; width: 100%; max-width: 340px; }
+    .auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.25); }
+    .auth-divider span { font-size: 13px; color: rgba(255,255,255,0.6); font-weight: 600; }
+    .auth-form { width: 100%; max-width: 340px; }
+    .auth-form .fi { background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.25); color: #fff; margin-bottom: 10px; }
+    .auth-form .fi::placeholder { color: rgba(255,255,255,0.5); }
+    .auth-form .fi:focus { border-color: rgba(255,255,255,0.6); box-shadow: 0 0 0 3px rgba(255,255,255,0.1); background: rgba(255,255,255,0.18); }
+    .btn-email { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: rgba(255,255,255,0.15); color: #fff; padding: 14px 24px; border-radius: 12px; font-size: 16px; font-weight: 700; border: 1.5px solid rgba(255,255,255,0.3); cursor: pointer; transition: all 0.15s; }
+    .btn-email:hover { background: rgba(255,255,255,0.25); }
+    .btn-email:active { transform: scale(0.98); }
+    .auth-toggle { margin-top: 12px; font-size: 14px; color: rgba(255,255,255,0.7); }
+    .auth-toggle a { color: #fff; text-decoration: underline; cursor: pointer; font-weight: 600; }
+    .auth-error { background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.4); color: #fecaca; padding: 10px 14px; border-radius: 10px; font-size: 14px; margin-bottom: 12px; display: none; text-align: left; }
+    .auth-footer { margin-top: 32px; font-size: 13px; color: rgba(255,255,255,0.5); }
+    .auth-footer a { color: rgba(255,255,255,0.7); text-decoration: none; }
+
+    /* ══════════════════════════════════════
+       BROWSE SCREEN (club → league)
+       ══════════════════════════════════════ */
+    .browse-screen { padding-bottom: 40px; }
+    .browse-header { background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%); color: #fff; padding: 24px 20px 20px; }
+    .browse-greeting { font-size: 16px; opacity: 0.85; font-weight: 500; }
+    .browse-name { font-size: 26px; font-weight: 800; letter-spacing: -0.3px; margin-top: 2px; }
+    .browse-body { padding: 20px; max-width: 600px; margin: 0 auto; }
+    .option-card { background: var(--card); border-radius: var(--radius); padding: 20px; margin-bottom: 12px; box-shadow: var(--shadow); cursor: pointer; border: 2px solid transparent; transition: border-color 0.15s, transform 0.1s; }
+    .option-card:hover { border-color: var(--primary-light); }
+    .option-card:active { transform: scale(0.99); }
+    .option-card-icon { font-size: 32px; margin-bottom: 8px; }
+    .option-card-name { font-size: 18px; font-weight: 700; }
+    .option-card-desc { font-size: 14px; color: var(--muted); margin-top: 4px; }
+    .league-card { background: var(--card); border-radius: var(--radius); padding: 18px; margin-bottom: 12px; box-shadow: var(--shadow); cursor: pointer; border: 2px solid transparent; transition: border-color 0.15s, transform 0.1s; }
+    .league-card:hover { border-color: var(--primary-light); }
+    .league-card:active { transform: scale(0.99); }
+    .league-card-name { font-size: 19px; font-weight: 700; }
+    .league-card-meta { font-size: 14px; color: var(--muted); margin-top: 4px; }
+    .league-card-sport { display: inline-block; background: #eff6ff; color: var(--primary-dark); padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; margin-top: 8px; }
+    .club-list-item { background: var(--card); border-radius: 10px; padding: 14px 16px; margin-bottom: 8px; box-shadow: var(--shadow); cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 2px solid transparent; transition: border-color 0.15s; }
+    .club-list-item:hover { border-color: var(--primary-light); }
+    .club-list-item-name { font-size: 16px; font-weight: 700; }
+    .club-list-item-count { font-size: 13px; color: var(--muted); }
+
+    /* ══════════════════════════════════════
+       WIZARD SCREEN
+       ══════════════════════════════════════ */
+    .wizard-screen { padding-bottom: 40px; }
+    .wizard-header { background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%); color: #fff; padding: 20px 20px 16px; }
+    .wizard-progress { display: flex; gap: 6px; margin-top: 14px; }
+    .wizard-dot { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.25); transition: background 0.3s; }
+    .wizard-dot.done { background: #34d399; }
+    .wizard-dot.active { background: #fff; }
+    .wizard-body { padding: 24px 20px; max-width: 500px; margin: 0 auto; }
+    .wizard-step { display: none; }
+    .wizard-step.active { display: block; }
+    .wizard-step-icon { font-size: 48px; text-align: center; margin-bottom: 16px; }
+    .wizard-step-title { font-size: 24px; font-weight: 800; text-align: center; margin-bottom: 8px; }
+    .wizard-step-desc { font-size: 16px; color: var(--muted); text-align: center; margin-bottom: 24px; line-height: 1.5; }
+    .wizard-nav { display: flex; gap: 10px; margin-top: 20px; }
+    .wizard-nav .btn { flex: 1; }
+
+    /* ══════════════════════════════════════
+       MAIN APP SCREEN
+       ══════════════════════════════════════ */
+    .app-header { background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%); color: #fff; padding: 16px 20px 12px; }
+    .app-header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .app-back { background: none; border: none; color: rgba(255,255,255,0.8); font-size: 14px; font-weight: 600; cursor: pointer; padding: 4px 0; }
+    .app-back:hover { color: #fff; }
+    .app-league-name { font-size: 24px; font-weight: 800; letter-spacing: -0.3px; }
+    .app-league-code { font-size: 13px; opacity: 0.7; margin-top: 2px; }
+    .app-league-code span { background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 6px; font-weight: 700; cursor: pointer; letter-spacing: 1px; }
+
+    /* ── Progress bar ── */
+    .progress-bar-wrap { background: rgba(255,255,255,0.1); padding: 10px 20px 12px; }
+    .progress-label { font-size: 13px; color: rgba(255,255,255,0.85); font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; }
+    .progress-track { height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; background: #34d399; border-radius: 4px; transition: width 0.4s ease; }
+
+    /* ── Deadline banner ── */
+    .deadline-banner { background: #fef3c7; border-bottom: 2px solid var(--amber); padding: 10px 16px; text-align: center; font-size: 14px; font-weight: 600; color: #92400e; display: none; }
+    .deadline-banner.urgent { background: #fef2f2; border-color: var(--red); color: #991b1b; }
+
+    /* ── Nav ── */
+    .nav { background: #fff; border-bottom: 1px solid var(--border); display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .nav::-webkit-scrollbar { display: none; }
+    .nav-tab { flex: 1; padding: 14px 14px; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; transition: all 0.18s; text-align: center; }
+    .nav-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .nav-badge { background: var(--red); color: #fff; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; margin-left: 4px; vertical-align: top; }
+
+    /* ── Content ── */
+    .content { padding: 18px; max-width: 680px; margin: 0 auto; padding-bottom: 40px; }
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* ── Cards ── */
+    .card { background: var(--card); border-radius: var(--radius); padding: 18px; margin-bottom: 14px; box-shadow: var(--shadow); }
+    .card-title { font-size: 18px; font-weight: 700; }
+    .section-title { font-size: 20px; font-weight: 800; margin-bottom: 16px; }
+
+    /* ── Buttons ── */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 20px; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+    .btn-success { background: #059669; color: #fff; }
+    .btn-success:hover { background: #047857; }
+    .btn-danger { background: #fee2e2; color: var(--red); }
+    .btn-whatsapp { background: #25d366; color: #fff; }
+    .btn-whatsapp:hover { background: #1ebe57; }
+    .btn-sm { padding: 8px 14px; font-size: 13px; border-radius: 8px; }
+    .btn-full { width: 100%; margin-top: 10px; }
+    .btn-outline-white { background: rgba(255,255,255,0.15); color: #fff; border: 1.5px solid rgba(255,255,255,0.4); }
+    .btn-outline-white:hover { background: rgba(255,255,255,0.25); }
+
+    /* ── Forms ── */
+    .fg { margin-bottom: 14px; }
+    .fl { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .fi { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 16px; background: #fff; color: var(--text); -webkit-appearance: none; appearance: none; }
+    .fi:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+    select.fi { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 12px center; background-repeat: no-repeat; background-size: 16px; padding-right: 36px; }
+
+    /* ── Educational tooltip ── */
+    .edu-tip { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #93c5fd; border-radius: var(--radius); padding: 16px 18px; margin-bottom: 16px; position: relative; }
+    .edu-tip-close { position: absolute; top: 10px; right: 12px; background: none; border: none; font-size: 20px; color: #64748b; cursor: pointer; padding: 4px; line-height: 1; }
+    .edu-tip-close:hover { color: var(--text); }
+    .edu-tip-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding-right: 28px; }
+    .edu-tip-icon { font-size: 24px; flex-shrink: 0; }
+    .edu-tip-title { font-size: 17px; font-weight: 800; color: #1e40af; }
+    .edu-tip-body { font-size: 15px; color: #1e3a8a; line-height: 1.6; }
+    .edu-tip-body strong { color: #1e40af; }
+
+    /* ── Badges ── */
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
+    .badge-booked { background: #dcfce7; color: #166534; }
+    .badge-organiser { background: #fef3c7; color: #92400e; }
+
+    /* ── Availability Grid ── */
+    .avail-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .avail-tbl { border-collapse: collapse; font-size: 13px; min-width: 100%; }
+    .avail-tbl th { padding: 6px 4px; text-align: center; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--border); min-width: 44px; }
+    .avail-tbl td { padding: 4px; border-bottom: 1px solid var(--border); }
+    .slot-lbl { font-size: 13px; font-weight: 600; color: var(--muted); text-align: left !important; padding: 5px 8px !important; white-space: nowrap; }
+    .cell { width: 40px; height: 40px; border-radius: 8px; cursor: pointer; background: #f0f0f0; display: flex; align-items: center; justify-content: center; margin: auto; transition: background 0.12s; border: 2px solid transparent; }
+    .cell.on { background: var(--primary); border-color: var(--primary-dark); }
+    .cell.on::after { content: '\2713'; color: #fff; font-size: 16px; font-weight: 700; }
+    .cell:not(.on):active { background: #bfdbfe; }
+    .cell.past { background: #e5e7eb; cursor: not-allowed; opacity: 0.4; }
+    .cell.past::after { content: '\2013'; color: #9ca3af; font-size: 14px; font-weight: 700; }
+    .cell.past:active { transform: none; }
+    .avail-tbl th.past-day { opacity: 0.4; text-decoration: line-through; }
+
+    /* ── Week nav ── */
+    .wk-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .wk-title { font-size: 15px; font-weight: 700; }
+
+    /* ── All-player availability calendar ── */
+    .avail-cal-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .avail-cal { border-collapse: collapse; font-size: 12px; min-width: 100%; }
+    .avail-cal th { padding: 5px 3px; text-align: center; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--border); min-width: 52px; }
+    .avail-cal th.slot-col { text-align: left; min-width: 72px; }
+    .avail-cal td { padding: 4px 3px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .avail-cal td.slot-col { font-size: 12px; font-weight: 600; color: var(--muted); padding: 6px 8px; white-space: nowrap; }
+    .avail-cell { display: flex; flex-wrap: wrap; gap: 2px; justify-content: center; min-height: 28px; padding: 2px; }
+    .avail-cal .today-col { background: #eff6ff; }
+
+    /* ── Suggestions ── */
+    .sug-slots { display: flex; flex-wrap: wrap; gap: 6px; }
+    .sug-slot { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 6px 11px; font-size: 13px; font-weight: 600; color: var(--primary-dark); cursor: pointer; transition: all 0.15s; }
+    .sug-slot:hover { background: #dbeafe; }
+    .sug-slot.booked { background: #dcfce7; border-color: #86efac; color: #166534; cursor: default; }
+
+    /* ── Info / warn / success boxes ── */
+    .info-box { background: #eef2ff; border-left: 3px solid #6366f1; padding: 12px 14px; border-radius: 0 8px 8px 0; font-size: 14px; color: #4338ca; margin-bottom: 14px; line-height: 1.5; }
+    .warn-box { background: #fff7ed; border-left: 3px solid var(--amber); padding: 12px 14px; border-radius: 0 8px 8px 0; font-size: 14px; color: #c2410c; margin-bottom: 14px; line-height: 1.5; }
+    .success-box { background: #f0fdf4; border-left: 3px solid var(--green); padding: 12px 14px; border-radius: 0 8px 8px 0; font-size: 14px; color: #15803d; margin-bottom: 14px; line-height: 1.5; }
+
+    /* ── Player chips & avatars ── */
+    .avatar { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; font-size: 10px; font-weight: 800; color: #fff; flex-shrink: 0; }
+    .player-chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 20px; font-size: 14px; font-weight: 600; color: var(--primary-dark); }
+
+    /* ── Team cards ── */
+    .team-card { background: var(--card); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 10px; box-shadow: var(--shadow); }
+    .team-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .team-name { font-size: 16px; font-weight: 700; }
+    .team-count { font-size: 13px; color: var(--muted); font-weight: 600; }
+    .team-players { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    /* ── Match cards ── */
+    .match-card { background: var(--card); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 10px; box-shadow: var(--shadow); }
+    .match-card.has-slots { border-left: 3px solid var(--green); }
+    .match-card.no-slots { border-left: 3px solid #e5e7eb; opacity: 0.7; }
+    .match-card.is-booked { border-left: 3px solid #059669; background: #f0fdf4; opacity: 1; }
+    .match-players { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .match-slot-count { font-size: 13px; font-weight: 700; color: #059669; background: #ecfdf5; padding: 4px 10px; border-radius: 20px; }
+
+    /* ── My matches card ── */
+    .my-match { background: var(--card); border-radius: 10px; padding: 14px 16px; margin-bottom: 8px; box-shadow: var(--shadow); border-left: 3px solid var(--primary); }
+    .my-match.ready { border-left-color: var(--green); }
+    .my-match.blocked { border-left-color: var(--amber); }
+
+    /* ── Share link cards ── */
+    .share-card { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; }
+
+    /* ── Toast ── */
+    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--primary-dark); color: #fff; padding: 12px 22px; border-radius: 24px; font-size: 14px; font-weight: 600; z-index: 999; opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: nowrap; }
+    .toast.show { opacity: 1; }
+
+    /* ── Footer ── */
+    .aifa-footer { background: #0f172a; color: #64748b; text-align: center; padding: 28px 20px 32px; border-top: 1px solid #1e293b; }
+    .aifa-footer-brand { font-size: 15px; font-weight: 700; color: #94a3b8; margin-bottom: 6px; }
+    .aifa-footer-sub { font-size: 13px; color: #475569; line-height: 1.8; }
+    .aifa-footer a { color: #60a5fa; text-decoration: none; font-weight: 600; }
+    .aifa-footer a:hover { text-decoration: underline; }
+    .aifa-footer-contact { font-size: 13px; color: #64748b; margin-top: 10px; line-height: 1.8; }
+    .aifa-footer-contact a { color: #60a5fa; font-weight: 500; }
+    .aifa-footer-version { font-size: 11px; color: #334155; margin-top: 12px; }
+    .aifa-footer-links { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px; }
+    .aifa-footer-links a { display: inline-flex; align-items: center; gap: 5px; background: #1e293b; color: #94a3b8; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; text-decoration: none; transition: background 0.15s; }
+    .aifa-footer-links a:hover { background: #334155; color: #fff; text-decoration: none; }
+
+    /* ── User menu ── */
+    .user-pill { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.15); padding: 5px 12px 5px 6px; border-radius: 20px; cursor: pointer; border: none; color: #fff; font-size: 13px; font-weight: 600; }
+    .user-pill img { width: 24px; height: 24px; border-radius: 50%; }
+    .user-pill:hover { background: rgba(255,255,255,0.25); }
+
+    /* ── Utilities ── */
+    .mt8 { margin-top: 8px; }
+    .mt12 { margin-top: 12px; }
+    .mt16 { margin-top: 16px; }
+    .txt-muted { color: var(--muted); font-size: 14px; }
+    .divider { height: 1px; background: var(--border); margin: 16px 0; }
+    .text-center { text-align: center; }
+
+    /* ── Loading spinner ── */
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 2.5px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (min-width: 600px) { .content { padding: 24px; } }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════
+     SCREEN 0: LOADING (shown while checking auth state)
+     ══════════════════════════════════════════════════════ -->
+<div id="screen-loading" class="screen auth-screen active">
+  <div class="auth-logo">&#127934;</div>
+  <div class="auth-title">BoxLeague Pro</div>
+  <div style="margin-top:20px"><div class="spinner"></div></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SCREEN 1: AUTH
+     ══════════════════════════════════════════════════════ -->
+<div id="screen-auth" class="screen auth-screen">
+  <div class="auth-logo">&#127934;</div>
+  <div class="auth-title">BoxLeague Pro</div>
+  <div class="auth-subtitle">Find times when everyone can play</div>
+  <div class="auth-features">
+    <span class="auth-chip">&#127934; Tennis</span>
+    <span class="auth-chip">&#127955; Padel</span>
+    <span class="auth-chip">&#127992; Badminton</span>
+    <span class="auth-chip">&#129351; Squash</span>
+  </div>
+  <button class="btn-google" id="btn-google-signin" onclick="googleSignIn()">
+    <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+    Sign in with Google
+  </button>
+
+  <div class="auth-divider"><span>or use email</span></div>
+
+  <div class="auth-form">
+    <div class="auth-error" id="auth-error"></div>
+    <input class="fi" id="auth-name" type="text" placeholder="Your name" style="display:none">
+    <input class="fi" id="auth-email" type="email" placeholder="Email address">
+    <input class="fi" id="auth-password" type="password" placeholder="Password (min 6 characters)">
+    <button class="btn-email" id="btn-email-signin" onclick="emailSignIn()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 4L12 13 2 4"/></svg>
+      <span id="btn-email-text">Sign in with Email</span>
+    </button>
+    <div class="auth-toggle" id="auth-toggle">
+      Don't have an account? <a onclick="toggleAuthMode()">Create one</a>
+    </div>
+  </div>
+
+  <div class="auth-footer">
+    Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.0</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SCREEN 2: BROWSE (Club → League)
+     ══════════════════════════════════════════════════════ -->
+<div id="screen-browse" class="screen browse-screen">
+  <div class="browse-header">
+    <div style="display:flex;justify-content:space-between;align-items:start">
+      <div>
+        <div class="browse-greeting">Welcome,</div>
+        <div class="browse-name" id="browse-user-name"></div>
+      </div>
+      <button class="user-pill" onclick="signOut()" title="Sign out">
+        <img id="browse-user-photo" src="" alt="">
+        <span>Sign out</span>
+      </button>
+    </div>
+  </div>
+  <div class="browse-body">
+    <!-- Step A: Returning user leagues -->
+    <div id="browse-my-leagues" style="display:none">
+      <div class="section-title" style="margin-top:8px">Your Leagues</div>
+      <div id="browse-my-leagues-list"></div>
+      <div class="divider" style="margin:20px 0"></div>
+    </div>
+
+    <!-- Step B: Find or create club -->
+    <div class="section-title">Find your club</div>
+    <div class="fg">
+      <input class="fi" id="inp-club-search" placeholder="Search or type club name..." oninput="searchClubs()">
+    </div>
+    <div id="club-results"></div>
+    <div id="club-create-option" style="display:none">
+      <div class="option-card" onclick="createClubFromSearch()">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:28px">+</span>
+          <div>
+            <div class="option-card-name" id="club-create-name">Create new club</div>
+            <div class="option-card-desc">First one here? Set up your club.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step C: Select or create league (shown after club selected) -->
+    <div id="browse-leagues" style="display:none">
+      <div class="divider" style="margin:20px 0"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="section-title" style="margin-bottom:0">Leagues at <span id="browse-club-name"></span></div>
+        <button class="btn btn-secondary btn-sm" onclick="clearClubSelection()">&larr; Change club</button>
+      </div>
+      <div id="league-results"></div>
+      <div class="option-card" onclick="showCreateLeagueForm()">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:28px">+</span>
+          <div>
+            <div class="option-card-name">Create a new league</div>
+            <div class="option-card-desc">Start a new box league at this club</div>
+          </div>
+        </div>
+      </div>
+      <div id="create-league-form" style="display:none" class="card mt12">
+        <div class="card-title" style="margin-bottom:12px">New League</div>
+        <div class="fg">
+          <label class="fl">League Name</label>
+          <input class="fi" id="inp-create-league-name" placeholder="e.g. Men's Doubles Box 3">
+        </div>
+        <div class="fg">
+          <label class="fl">Sport</label>
+          <select class="fi" id="inp-create-league-sport">
+            <option value="tennis">Tennis</option>
+            <option value="padel">Padel</option>
+            <option value="badminton">Badminton</option>
+            <option value="squash">Squash</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="createLeagueInClub()">Create League</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SCREEN 3: WIZARD (onboarding steps)
+     ══════════════════════════════════════════════════════ -->
+<div id="screen-wizard" class="screen wizard-screen">
+  <div class="wizard-header">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <button class="app-back" onclick="goToBrowse()">&larr; Back</button>
+      <div style="font-size:15px;font-weight:700" id="wizard-league-name"></div>
+      <div style="width:60px"></div>
+    </div>
+    <div class="wizard-progress">
+      <div class="wizard-dot active" id="wiz-dot-0"></div>
+      <div class="wizard-dot" id="wiz-dot-1"></div>
+      <div class="wizard-dot" id="wiz-dot-2"></div>
+      <div class="wizard-dot" id="wiz-dot-3"></div>
+    </div>
+  </div>
+  <div class="wizard-body">
+
+    <!-- Step 1: Your name -->
+    <div class="wizard-step active" id="wiz-step-0">
+      <div class="wizard-step-icon">&#128075;</div>
+      <div class="wizard-step-title">What's your name?</div>
+      <div class="wizard-step-desc">This is how other players will see you in the league.</div>
+      <div class="fg">
+        <input class="fi" id="wiz-name" placeholder="e.g. Grant" style="font-size:20px;text-align:center;font-weight:700">
+      </div>
+      <div class="wizard-nav">
+        <button class="btn btn-primary btn-full" onclick="wizNext(0)" style="font-size:17px;padding:14px">Next &rarr;</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Your partner -->
+    <div class="wizard-step" id="wiz-step-1">
+      <div class="wizard-step-icon">&#129309;</div>
+      <div class="wizard-step-title">Who's your doubles partner?</div>
+      <div class="wizard-step-desc">Enter their first name. If they've already joined, we'll match you up automatically.</div>
+      <div class="fg">
+        <input class="fi" id="wiz-partner" placeholder="e.g. James" style="font-size:20px;text-align:center;font-weight:700">
+      </div>
+      <div id="wiz-partner-match" style="display:none" class="success-box mt12"></div>
+      <div class="wizard-nav">
+        <button class="btn btn-secondary" onclick="wizPrev(1)">&#9664; Back</button>
+        <button class="btn btn-primary" onclick="wizNext(1)" style="flex:2;font-size:17px">Next &rarr;</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Availability -->
+    <div class="wizard-step" id="wiz-step-2">
+      <div class="wizard-step-icon">&#128197;</div>
+      <div class="wizard-step-title">When are you free?</div>
+      <div class="wizard-step-desc">Tap the boxes to mark when you can play. You can always update this later.</div>
+      <div class="card" style="padding:14px 10px">
+        <div class="wk-nav">
+          <button class="btn btn-secondary btn-sm" onclick="wizChangeWeek(-1)">&#9664; Prev</button>
+          <span class="wk-title" id="wiz-wk-label"></span>
+          <button class="btn btn-secondary btn-sm" onclick="wizChangeWeek(1)">Next &#9654;</button>
+        </div>
+        <div class="avail-wrap"><div id="wiz-avail-grid"></div></div>
+      </div>
+      <div class="wizard-nav" style="margin-top:16px">
+        <button class="btn btn-secondary" onclick="wizPrev(2)">&#9664; Back</button>
+        <button class="btn btn-primary" onclick="wizNext(2)" style="flex:2;font-size:17px">Finish &#10003;</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Done -->
+    <div class="wizard-step" id="wiz-step-3">
+      <div class="wizard-step-icon">&#127881;</div>
+      <div class="wizard-step-title">You're all set!</div>
+      <div class="wizard-step-desc">Share this link with everyone else in your league so they can join too.</div>
+      <div class="card" style="text-align:center;padding:20px">
+        <div style="font-size:14px;color:var(--muted);margin-bottom:8px;font-weight:600">Share this link:</div>
+        <div id="wiz-share-link" style="font-size:14px;word-break:break-all;background:var(--bg);padding:12px;border-radius:8px;font-weight:600;margin-bottom:12px"></div>
+        <div style="display:flex;gap:8px;justify-content:center">
+          <button class="btn btn-primary btn-sm" onclick="copyWizLink()">Copy Link</button>
+          <button class="btn btn-whatsapp btn-sm" onclick="shareWizWhatsApp()">WhatsApp</button>
+        </div>
+      </div>
+      <div class="wizard-nav" style="margin-top:20px">
+        <button class="btn btn-success btn-full" onclick="wizFinish()" style="font-size:17px;padding:14px">Go to my league &rarr;</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SCREEN 3: MAIN APP (inside a league)
+     ══════════════════════════════════════════════════════ -->
+<div id="screen-app" class="screen">
+  <div class="app-header">
+    <div class="app-header-top">
+      <button class="app-back" onclick="goToBrowse()">&larr; My Leagues</button>
+      <button class="user-pill" onclick="signOut()">
+        <img id="app-user-photo" src="" alt="">
+        <span id="app-user-first"></span>
+      </button>
+    </div>
+    <div class="app-league-name" id="app-league-name"></div>
+    <div class="app-league-code">League code: <span id="app-league-code" onclick="copyLeagueCode()" title="Tap to copy"></span></div>
+    <div class="progress-bar-wrap" id="progress-wrap" style="display:none">
+      <div class="progress-label">
+        <span id="progress-text">0 of 0 players submitted</span>
+        <span id="progress-pct">0%</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div id="deadline-banner" class="deadline-banner"></div>
+
+  <!-- ── Navigation ── -->
+  <div class="nav" id="app-nav"></div>
+
+  <div class="content">
+
+    <!-- ═══ SETUP TAB (organiser only) ═══ -->
+    <div id="tab-setup" class="section">
+      <div class="edu-tip" id="tip-setup">
+        <button class="edu-tip-close" onclick="closeTip('setup')">&times;</button>
+        <div class="edu-tip-header">
+          <div class="edu-tip-icon">&#9881;&#65039;</div>
+          <div class="edu-tip-title">Setting Up Your League</div>
+        </div>
+        <div class="edu-tip-body">
+          Add your <strong>teams</strong> (doubles pairs). Then share the <strong>league code</strong> so players can join and fill in their availability.
+          <br><br>
+          <strong>Tip:</strong> Use the quick template below to add all teams in seconds.
+        </div>
+      </div>
+
+      <!-- League Settings -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px">League Settings</div>
+        <div class="fg">
+          <label class="fl">League Name</label>
+          <input class="fi" id="inp-league-name" placeholder="e.g. Men's Doubles Box 3" oninput="saveSettings()">
+        </div>
+        <div class="fg">
+          <label class="fl">Availability Deadline</label>
+          <input class="fi" type="datetime-local" id="inp-deadline" onchange="saveSettings()">
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section-title">Teams</div>
+      <div id="groups-list"></div>
+
+      <div id="add-group-form" style="display:none">
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px">New Team</div>
+          <div class="fg">
+            <label class="fl">Team Name</label>
+            <input class="fi" id="inp-gname" placeholder="e.g. Grant & James">
+          </div>
+          <div class="fg">
+            <label class="fl">Player Names <span style="font-weight:400;text-transform:none">(comma-separated)</span></label>
+            <input class="fi" id="inp-gplayers" placeholder="e.g. Grant, James">
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary" onclick="addGroup()">Add Team</button>
+            <button class="btn btn-secondary" onclick="hideGroupForm()">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-full" id="btn-add-group" onclick="showGroupForm()" style="margin-bottom:16px">+ Add Team</button>
+
+      <div class="divider"></div>
+
+      <div class="card-title" style="margin-bottom:10px">Quick Add All Teams</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+        <button class="btn btn-secondary btn-sm" onclick="loadTemplate('doubles')">Add Doubles Pairs</button>
+      </div>
+
+      <div id="template-form" style="display:none">
+        <div class="card">
+          <div class="card-title" style="margin-bottom:8px" id="template-title">Quick Add</div>
+          <div class="info-box" id="template-info"></div>
+          <div class="fg">
+            <label class="fl">Paste names <span style="font-weight:400;text-transform:none">(one team per line)</span></label>
+            <textarea class="fi" id="inp-template" rows="6" style="font-size:15px;line-height:1.6"></textarea>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary" onclick="applyTemplate()">Add All</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('template-form').style.display='none'">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Members list -->
+      <div class="divider" style="margin:20px 0"></div>
+      <div class="card-title" style="margin-bottom:10px">League Members</div>
+      <div class="info-box">These people have joined your league. Link them to a player name so they can fill in availability.</div>
+      <div id="members-list"></div>
+
+      <!-- Danger zone -->
+      <div class="divider" style="margin:20px 0"></div>
+      <button class="btn btn-danger btn-sm" onclick="resetLeagueData()">Reset All Availability &amp; Bookings</button>
+    </div>
+
+    <!-- ═══ MY AVAILABILITY TAB ═══ -->
+    <div id="tab-availability" class="section">
+      <div class="edu-tip" id="tip-availability">
+        <button class="edu-tip-close" onclick="closeTip('availability')">&times;</button>
+        <div class="edu-tip-header">
+          <div class="edu-tip-icon">&#128197;</div>
+          <div class="edu-tip-title">Mark Your Availability</div>
+        </div>
+        <div class="edu-tip-body">
+          Tap the boxes below to mark when you're <strong>free to play</strong>. Morning, afternoon, or evening &mdash; the app automatically finds times when everyone in your match can play.
+          <br><br>
+          <strong>That's it!</strong> Fill this in and the Match Finder does the rest.
+        </div>
+      </div>
+
+      <div id="avail-not-linked" class="card" style="display:none;text-align:center;padding:28px">
+        <div style="font-size:36px;margin-bottom:10px">&#9888;&#65039;</div>
+        <div style="font-size:17px;font-weight:700;margin-bottom:6px">You're not linked to a player yet</div>
+        <div style="font-size:15px;color:var(--muted)">Ask your league organiser to link your account to your player name in the Setup tab.</div>
+      </div>
+
+      <div id="avail-body" style="display:none">
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" onclick="copyLastWeek()">&#128260; Copy last week</button>
+          <button class="btn btn-secondary btn-sm" onclick="clearMyWeek()">&#128465; Clear this week</button>
+        </div>
+        <div class="wk-nav">
+          <button class="btn btn-secondary btn-sm" onclick="changeWeek(-1)">&#9664; Prev</button>
+          <span class="wk-title" id="wk-label"></span>
+          <button class="btn btn-secondary btn-sm" onclick="changeWeek(1)">Next &#9654;</button>
+        </div>
+        <div class="card" style="padding:14px 10px">
+          <div class="avail-wrap"><div id="avail-grid"></div></div>
+        </div>
+
+        <div id="my-matches-card" class="mt12" style="display:none">
+          <div class="card-title" style="margin-bottom:10px">Your matches to arrange</div>
+          <div id="my-matches-body"></div>
+        </div>
+
+        <div class="card mt12" id="my-summary" style="display:none">
+          <div class="card-title" style="margin-bottom:8px">Your upcoming availability</div>
+          <div id="my-summary-body" class="txt-muted"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ EVERYONE TAB ═══ -->
+    <div id="tab-everyone" class="section">
+      <div class="edu-tip" id="tip-everyone">
+        <button class="edu-tip-close" onclick="closeTip('everyone')">&times;</button>
+        <div class="edu-tip-header">
+          <div class="edu-tip-icon">&#128101;</div>
+          <div class="edu-tip-title">Everyone's Availability</div>
+        </div>
+        <div class="edu-tip-body">
+          See at a glance who's free and when. If someone hasn't filled in yet, use the <strong>WhatsApp chase</strong> button to send them a reminder.
+        </div>
+      </div>
+
+      <div class="card-title" style="margin-bottom:10px">Next 2 Weeks</div>
+      <div class="card" style="padding:12px 8px">
+        <div id="avail-legend" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;padding:0 4px"></div>
+        <div class="avail-cal-wrap"><div id="avail-cal-grid"></div></div>
+      </div>
+
+      <div class="card mt12" id="missing-card" style="display:none">
+        <div class="card-title" style="margin-bottom:8px;color:var(--amber)">&#9888;&#65039; Still waiting on:</div>
+        <div id="missing-players" style="margin-bottom:12px"></div>
+        <button class="btn btn-whatsapp btn-sm" onclick="chaseWhatsApp()">&#128172; Copy WhatsApp chase message</button>
+      </div>
+
+      <div class="card mt12" id="all-in-card" style="display:none">
+        <div style="text-align:center;padding:8px 0">
+          <div style="font-size:28px;margin-bottom:6px">&#127881;</div>
+          <div class="card-title" style="color:#059669">Everyone has submitted!</div>
+          <div class="txt-muted mt8">Head to the Match Finder tab to see available times.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ MATCH FINDER TAB ═══ -->
+    <div id="tab-matches" class="section">
+      <div class="edu-tip" id="tip-matches">
+        <button class="edu-tip-close" onclick="closeTip('matches')">&times;</button>
+        <div class="edu-tip-header">
+          <div class="edu-tip-icon">&#127934;</div>
+          <div class="edu-tip-title">Match Finder</div>
+        </div>
+        <div class="edu-tip-body">
+          The app automatically finds times when <strong>all players</strong> in a match are free. Tap a time slot to <strong>book it</strong>. Share the summary via WhatsApp with one tap.
+        </div>
+      </div>
+
+      <div id="match-summary" style="margin-bottom:14px"></div>
+      <div id="match-results"></div>
+
+      <div id="share-results" style="display:none;margin-top:16px">
+        <div class="divider"></div>
+        <button class="btn btn-whatsapp btn-full" onclick="shareResults()">&#128172; Copy match summary for WhatsApp</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="aifa-footer">
+    <div class="aifa-footer-brand">Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a></div>
+    <div class="aifa-footer-sub">Helping clubs &amp; players organise matches with AI</div>
+    <div class="aifa-footer-links">
+      <a href="https://aifusionautomations.com" target="_blank">&#127760; Website</a>
+      <a href="javascript:void(0)" onclick="try{document.querySelector('[data-widget-id] button, .lc_text-widget-open, .chat-widget-open-btn').click()}catch(e){toast('Look for the chat bubble in the corner!')}" title="Open support chat">&#129302; Support Chatbot</a>
+      <a href="javascript:void(0)" onclick="openFeedback()">&#128172; Feedback &amp; Support</a>
+    </div>
+    <div class="aifa-footer-contact">
+      <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
+    </div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.0</div>
+  </div>
+</div>
+
+<!-- ── Feedback Form Modal ── -->
+<div id="feedback-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeFeedback()">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:560px;max-height:90vh;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3);position:relative">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e2e8f0">
+      <div style="font-size:17px;font-weight:700">Feedback &amp; Support</div>
+      <button onclick="closeFeedback()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
+    </div>
+    <iframe
+      src="https://link.aifusionautomations.com/widget/form/CJsmRFcGQmwdDTy7pvsZ"
+      style="width:100%;height:70vh;border:none"
+      id="inline-CJsmRFcGQmwdDTy7pvsZ"
+      data-layout="{'id':'INLINE'}"
+      data-trigger-type="alwaysShow"
+      data-trigger-value=""
+      data-activation-type="alwaysActivated"
+      data-activation-value=""
+      data-deactivation-type="neverDeactivate"
+      data-deactivation-value=""
+      data-form-name="Boxleague Form"
+      data-height="undefined"
+      data-layout-iframe-id="inline-CJsmRFcGQmwdDTy7pvsZ"
+      data-form-id="CJsmRFcGQmwdDTy7pvsZ"
+      title="Boxleague Form">
+    </iframe>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div id="toast" class="toast"></div>
+
+<!-- ══════════════════════════════════════════════════════
+     FIREBASE SDK
+     ══════════════════════════════════════════════════════ -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+ *  FIREBASE CONFIG — REPLACE THESE WITH YOUR PROJECT VALUES
+ *
+ *  SETUP (one-time, ~5 minutes):
+ *  1. Go to https://console.firebase.google.com/
+ *  2. Create project -> name it "boxleague-pro" -> Continue
+ *  3. Authentication -> Get started -> Google (enable it)
+ *  4. Realtime Database -> Create database -> test mode
+ *  5. Click the Web icon "</>" -> Register app -> copy config below
+ *  6. Done!
+ * ═══════════════════════════════════════════════════════════════ */
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyA61YEch4YSShL3TyXd_R2ofTlIxs2qDuE",
+  authDomain:        "boxleague-pro.firebaseapp.com",
+  databaseURL:       "https://boxleague-pro-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "boxleague-pro",
+  storageBucket:     "boxleague-pro.firebasestorage.app",
+  messagingSenderId: "755561965293",
+  appId:             "1:755561965293:web:ece2707254d53f7fc58ee4",
+  measurementId:     "G-41R6M69CBW"
+};
+
+const FIREBASE_READY = !FIREBASE_CONFIG.apiKey.includes('REPLACE');
+let app, auth, db;
+
+if (FIREBASE_READY) {
+  app = firebase.initializeApp(FIREBASE_CONFIG);
+  auth = firebase.auth();
+  db = firebase.database();
+} else {
+  // Local-only mode for testing
+  console.warn('Firebase not configured — running in local demo mode');
+}
+
+/* ══════════════════════════════════════
+   GLOBAL STATE
+   ══════════════════════════════════════ */
+let currentUser = null;       // Firebase user object
+let userLeagues = {};         // { leagueId: { info, role } }
+let activeLeagueId = null;    // Currently viewing
+let L = { groups: [], availability: {}, settings: {}, booked: {}, members: {} }; // Active league data
+let currentTab = 'availability';
+let weekOff = 0;
+let listeners = [];           // Active Firebase listeners (to detach on league switch)
+
+/* ══════════════════════════════════════
+   UTILITY
+   ══════════════════════════════════════ */
+function esc(s) { if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function val(id) { return document.getElementById(id).value.trim(); }
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2400);
+}
+function ds(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function avk(player, date, slot) { return `${player}|${typeof date === 'string' ? date : ds(date)}|${slot}`; }
+function isTd(d) { const t=new Date(); return d.getFullYear()===t.getFullYear()&&d.getMonth()===t.getMonth()&&d.getDate()===t.getDate(); }
+function fmtShort(d) { return d.toLocaleDateString('en-GB', {day:'numeric',month:'short'}); }
+function fmtFull(s) { const d = new Date(s + 'T00:00:00'); return d.toLocaleDateString('en-GB', {weekday:'short',day:'numeric',month:'short'}); }
+function cap(s) { return s ? s[0].toUpperCase()+s.slice(1) : s; }
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => toast('Copied!')).catch(() => {
+    const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('Copied!');
+  });
+}
+function genCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // No 0/O/1/I confusion
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+function sanitizeEmail(email) { return email.replace(/\./g, ','); } // Firebase key-safe
+
+/* ── Player colours ── */
+const GROUP_COLORS = ['#1d4ed8','#0891b2','#dc2626','#d97706','#7c3aed','#059669','#be185d','#0d9488','#9333ea','#ea580c'];
+function getPlayerColor(name) {
+  const idx = L.groups.findIndex(g => g.players.includes(name));
+  return GROUP_COLORS[idx >= 0 ? idx % GROUP_COLORS.length : 0];
+}
+function getInitials(name) {
+  const parts = name.trim().split(/\s+/);
+  return parts.map(w => w[0].toUpperCase()).join('').slice(0, 2);
+}
+function avatarHtml(name) {
+  return `<span class="avatar" style="background:${getPlayerColor(name)}" title="${esc(name)}">${esc(getInitials(name))}</span>`;
+}
+function getAllPlayers() { return L.groups.flatMap(g => g.players); }
+
+/* ── Educational tips ── */
+function closeTip(id) {
+  const el = document.getElementById('tip-' + id);
+  if (el) el.style.display = 'none';
+  localStorage.setItem('blp_tip_' + id, 'closed');
+}
+function initTips() {
+  ['setup','availability','everyone','matches'].forEach(id => {
+    const el = document.getElementById('tip-' + id);
+    if (el && localStorage.getItem('blp_tip_' + id) === 'closed') el.style.display = 'none';
+  });
+}
+
+/* ── Screen management ── */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('screen-' + id);
+  if (el) el.classList.add('active');
+}
+
+/* ── Modal management ── */
+function showModal(id) { document.getElementById(id).classList.add('show'); }
+function hideModal(id) { document.getElementById(id).classList.remove('show'); }
+
+/* ══════════════════════════════════════
+   AUTH
+   ══════════════════════════════════════ */
+let authMode = 'signin'; // 'signin' or 'signup'
+
+function toggleAuthMode() {
+  authMode = authMode === 'signin' ? 'signup' : 'signin';
+  const nameField = document.getElementById('auth-name');
+  const btnText = document.getElementById('btn-email-text');
+  const toggle = document.getElementById('auth-toggle');
+  const errEl = document.getElementById('auth-error');
+  errEl.style.display = 'none';
+
+  if (authMode === 'signup') {
+    nameField.style.display = 'block';
+    btnText.textContent = 'Create Account';
+    toggle.innerHTML = 'Already have an account? <a onclick="toggleAuthMode()">Sign in</a>';
+  } else {
+    nameField.style.display = 'none';
+    btnText.textContent = 'Sign in with Email';
+    toggle.innerHTML = 'Don\'t have an account? <a onclick="toggleAuthMode()">Create one</a>';
+  }
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function googleSignIn() {
+  if (!FIREBASE_READY) {
+    currentUser = { uid: 'demo', displayName: 'Demo User', email: 'demo@example.com', photoURL: null };
+    onAuthSuccess();
+    return;
+  }
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithRedirect(provider);
+}
+
+function emailSignIn() {
+  const email = val('auth-email');
+  const password = val('auth-password');
+  const name = val('auth-name');
+  const errEl = document.getElementById('auth-error');
+  errEl.style.display = 'none';
+
+  if (!email) { showAuthError('Please enter your email address.'); return; }
+  if (!password) { showAuthError('Please enter a password.'); return; }
+  if (password.length < 6) { showAuthError('Password must be at least 6 characters.'); return; }
+
+  if (!FIREBASE_READY) {
+    currentUser = { uid: 'demo', displayName: name || 'Demo User', email: email, photoURL: null };
+    onAuthSuccess();
+    return;
+  }
+
+  if (authMode === 'signup') {
+    if (!name) { showAuthError('Please enter your name.'); return; }
+    auth.createUserWithEmailAndPassword(email, password)
+      .then(cred => {
+        return cred.user.updateProfile({ displayName: name });
+      })
+      .then(() => {
+        // Profile updated, onAuthStateChanged will handle the rest
+      })
+      .catch(err => {
+        console.error('Signup error:', err);
+        const messages = {
+          'auth/email-already-in-use': 'This email is already registered. Try signing in instead.',
+          'auth/invalid-email': 'Please enter a valid email address.',
+          'auth/weak-password': 'Password must be at least 6 characters.'
+        };
+        showAuthError(messages[err.code] || 'Sign-up failed. Please try again.');
+      });
+  } else {
+    auth.signInWithEmailAndPassword(email, password)
+      .catch(err => {
+        console.error('Signin error:', err);
+        const messages = {
+          'auth/user-not-found': 'No account found with this email. Create one below.',
+          'auth/wrong-password': 'Incorrect password. Please try again.',
+          'auth/invalid-email': 'Please enter a valid email address.',
+          'auth/invalid-credential': 'Incorrect email or password. Please try again.',
+          'auth/too-many-requests': 'Too many attempts. Please wait a moment and try again.'
+        };
+        showAuthError(messages[err.code] || 'Sign-in failed. Please try again.');
+      });
+  }
+}
+
+function signOut() {
+  if (FIREBASE_READY) {
+    auth.signOut();
+  } else {
+    currentUser = null;
+    showScreen('auth');
+  }
+}
+
+function getDefaultAvatar() {
+  return 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23fff" width="24" height="24"><circle cx="12" cy="8" r="4" fill="%23fff"/><path d="M12 14c-6 0-8 3-8 5v1h16v-1c0-2-2-5-8-5z" fill="%23fff"/></svg>');
+}
+
+function onAuthSuccess() {
+  showScreen('browse');
+  const displayName = currentUser.displayName || currentUser.email.split('@')[0];
+  const firstName = displayName.split(' ')[0];
+  document.getElementById('browse-user-name').textContent = firstName;
+  const photoUrl = currentUser.photoURL || getDefaultAvatar();
+  document.getElementById('browse-user-photo').src = photoUrl;
+  loadUserLeagues();
+
+  // Check URL params for shared league link
+  const params = new URLSearchParams(window.location.search);
+  const sharedLeagueId = params.get('league');
+  if (sharedLeagueId) {
+    // Clear the URL param so it doesn't re-trigger on refresh
+    window.history.replaceState({}, '', window.location.pathname);
+    // Wait for userLeagues to load, then join/enter
+    setTimeout(() => { joinAndEnterLeague(sharedLeagueId); }, 500);
+  }
+}
+
+// Auth state listener
+if (FIREBASE_READY) {
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => {
+    console.error('Persistence error:', err);
+  });
+
+  auth.getRedirectResult().then(result => {
+    console.log('Redirect result:', result && result.user ? result.user.email : 'no redirect user');
+  }).catch(err => {
+    console.error('Redirect result error:', err.code, err.message);
+    showScreen('auth');
+    showAuthError('Sign-in failed: ' + (err.message || 'Unknown error'));
+  });
+
+  let authChecked = false;
+  auth.onAuthStateChanged(user => {
+    console.log('Auth state changed:', user ? user.email : 'signed out');
+    authChecked = true;
+    try {
+      if (user) {
+        currentUser = user;
+        onAuthSuccess();
+      } else {
+        currentUser = null;
+        showScreen('auth');
+      }
+    } catch(e) {
+      console.error('onAuthSuccess error:', e);
+      showScreen('auth');
+    }
+  });
+  setTimeout(() => { if (!authChecked) { console.warn('Auth check timed out'); showScreen('auth'); } }, 5000);
+}
+
+/* ══════════════════════════════════════
+   BROWSE — CLUBS & LEAGUES
+   ══════════════════════════════════════ */
+let allClubs = {};        // { clubId: { name, sport } }
+let selectedClubId = null;
+let selectedClubName = '';
+let wizWeekOff = 0;
+let wizAvailability = {};  // Temporary availability during wizard
+
+function loadUserLeagues() {
+  if (!FIREBASE_READY) {
+    try { const s = localStorage.getItem('blp_leagues'); if (s) userLeagues = JSON.parse(s); } catch(e) {}
+    renderMyLeagues();
+    return;
+  }
+  db.ref('/userLeagues/' + currentUser.uid).on('value', snap => {
+    userLeagues = snap.val() || {};
+    renderMyLeagues();
+  });
+  // Load all clubs for search
+  db.ref('/clubs').on('value', snap => {
+    allClubs = snap.val() || {};
+  });
+}
+
+function renderMyLeagues() {
+  const el = document.getElementById('browse-my-leagues-list');
+  const wrap = document.getElementById('browse-my-leagues');
+  const ids = Object.keys(userLeagues);
+  if (ids.length === 0) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  const sportEmoji = { tennis:'&#127934;', padel:'&#127955;', badminton:'&#127992;', squash:'&#129351;', other:'&#127941;' };
+  el.innerHTML = ids.map(id => {
+    const lg = userLeagues[id];
+    return `<div class="league-card" onclick="enterLeague('${esc(id)}')">
+      <div class="league-card-name">${esc(lg.name || 'Unnamed League')}</div>
+      <div class="league-card-meta">${esc(lg.clubName || '')}${lg.clubName ? ' &middot; ' : ''}${esc(lg.sport || '')}</div>
+    </div>`;
+  }).join('');
+}
+
+function searchClubs() {
+  const q = val('inp-club-search').toLowerCase();
+  const results = document.getElementById('club-results');
+  const createOpt = document.getElementById('club-create-option');
+
+  if (!q) { results.innerHTML = ''; createOpt.style.display = 'none'; return; }
+
+  // Search existing clubs
+  const matches = Object.entries(allClubs).filter(([id, c]) => c.name.toLowerCase().includes(q));
+
+  if (matches.length > 0) {
+    results.innerHTML = matches.map(([id, c]) =>
+      `<div class="club-list-item" onclick="selectClub('${esc(id)}','${esc(c.name)}')">
+        <span class="club-list-item-name">${esc(c.name)}</span>
+        <span class="club-list-item-count">&rarr;</span>
+      </div>`
+    ).join('');
+  } else {
+    results.innerHTML = '';
+  }
+
+  // Always show create option
+  document.getElementById('club-create-name').textContent = `Create "${val('inp-club-search')}"`;
+  createOpt.style.display = 'block';
+}
+
+function createClubFromSearch() {
+  const name = val('inp-club-search');
+  if (!name) { toast('Enter a club name'); return; }
+
+  if (!FIREBASE_READY) {
+    const id = 'C' + Date.now();
+    allClubs[id] = { name };
+    selectClub(id, name);
+    return;
+  }
+
+  const ref = db.ref('/clubs').push();
+  ref.set({ name, createdBy: currentUser.uid, createdAt: Date.now() }).then(() => {
+    selectClub(ref.key, name);
+    toast('Club created!');
+  });
+}
+
+function selectClub(clubId, clubName) {
+  selectedClubId = clubId;
+  selectedClubName = clubName;
+  document.getElementById('browse-club-name').textContent = clubName;
+  document.getElementById('browse-leagues').style.display = 'block';
+  document.getElementById('inp-club-search').value = clubName;
+  document.getElementById('club-results').innerHTML = '';
+  document.getElementById('club-create-option').style.display = 'none';
+
+  // Load leagues for this club
+  if (!FIREBASE_READY) {
+    renderClubLeagues({});
+    return;
+  }
+  db.ref('/clubLeagues/' + clubId).once('value', snap => {
+    renderClubLeagues(snap.val() || {});
+  });
+}
+
+function renderClubLeagues(leagues) {
+  const el = document.getElementById('league-results');
+  const ids = Object.keys(leagues);
+  if (ids.length === 0) {
+    el.innerHTML = '<div class="txt-muted" style="padding:8px 0;margin-bottom:8px">No leagues yet at this club. Create the first one!</div>';
+    return;
+  }
+  el.innerHTML = ids.map(id => {
+    const lg = leagues[id];
+    return `<div class="league-card" onclick="joinAndEnterLeague('${esc(id)}')">
+      <div class="league-card-name">${esc(lg.name)}</div>
+      <div class="league-card-meta">${esc(lg.sport || 'Tennis')}</div>
+    </div>`;
+  }).join('');
+}
+
+function clearClubSelection() {
+  selectedClubId = null;
+  selectedClubName = '';
+  document.getElementById('browse-leagues').style.display = 'none';
+  document.getElementById('inp-club-search').value = '';
+  document.getElementById('club-results').innerHTML = '';
+  document.getElementById('club-create-option').style.display = 'none';
+}
+
+function showCreateLeagueForm() {
+  document.getElementById('create-league-form').style.display = 'block';
+  document.getElementById('inp-create-league-name').focus();
+}
+
+function createLeagueInClub() {
+  const name = val('inp-create-league-name');
+  const sport = val('inp-create-league-sport');
+  if (!name) { toast('Enter a league name'); return; }
+
+  const code = genCode();
+
+  if (!FIREBASE_READY) {
+    const id = 'L' + Date.now();
+    userLeagues[id] = { name, sport, code, role: 'organiser', clubId: selectedClubId, clubName: selectedClubName };
+    localStorage.setItem('blp_leagues', JSON.stringify(userLeagues));
+    const leagueData = { info: { name, sport, code, clubId: selectedClubId, clubName: selectedClubName, organiserUid: 'demo', createdAt: Date.now() }, groups: {}, availability: {}, settings: { leagueName: name }, booked: {}, members: {} };
+    localStorage.setItem('blp_league_' + id, JSON.stringify(leagueData));
+    startWizard(id, name);
+    return;
+  }
+
+  const leagueRef = db.ref('/leagues').push();
+  const leagueId = leagueRef.key;
+  const updates = {};
+  updates['/leagues/' + leagueId] = {
+    info: { name, sport, code, clubId: selectedClubId, clubName: selectedClubName, organiserUid: currentUser.uid, createdAt: Date.now() },
+    groups: {}, availability: {}, settings: { leagueName: name }, booked: {}, members: {}
+  };
+  updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = { name, sport, code, role: 'organiser', clubId: selectedClubId, clubName: selectedClubName };
+  updates['/clubLeagues/' + selectedClubId + '/' + leagueId] = { name, sport };
+  updates['/codes/' + code] = leagueId;
+
+  db.ref().update(updates).then(() => {
+    startWizard(leagueId, name);
+  }).catch(err => {
+    console.error('Create league error:', err);
+    toast('Error creating league');
+  });
+}
+
+function joinAndEnterLeague(leagueId) {
+  // Check if already a member
+  if (userLeagues[leagueId]) {
+    // Already in this league — check if they completed wizard (have a playerName)
+    enterLeague(leagueId);
+    return;
+  }
+
+  // Join the league and start wizard
+  if (!FIREBASE_READY) { return; }
+
+  db.ref('/leagues/' + leagueId + '/info').once('value', infoSnap => {
+    const info = infoSnap.val();
+    if (!info) { toast('League not found'); return; }
+
+    const updates = {};
+    updates['/leagues/' + leagueId + '/members/' + sanitizeEmail(currentUser.email)] = {
+      uid: currentUser.uid, name: currentUser.displayName, email: currentUser.email,
+      role: 'player', playerName: '', partnerName: '', joinedAt: Date.now()
+    };
+    updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = {
+      name: info.name, sport: info.sport, code: info.code, role: 'player', clubId: info.clubId, clubName: info.clubName
+    };
+
+    db.ref().update(updates).then(() => {
+      startWizard(leagueId, info.name);
+    });
+  });
+}
+
+/* ══════════════════════════════════════
+   WIZARD
+   ══════════════════════════════════════ */
+let wizStep = 0;
+let wizLeagueId = null;
+
+function startWizard(leagueId, leagueName) {
+  wizLeagueId = leagueId;
+  wizStep = 0;
+  wizWeekOff = 0;
+  wizAvailability = {};
+  document.getElementById('wizard-league-name').textContent = leagueName;
+  // Pre-fill name from Google account
+  const displayName = currentUser.displayName || '';
+  document.getElementById('wiz-name').value = displayName.split(' ')[0];
+  document.getElementById('wiz-partner').value = '';
+  showScreen('wizard');
+  renderWizStep();
+  renderWizAvailGrid();
+}
+
+function renderWizStep() {
+  for (let i = 0; i < 4; i++) {
+    const step = document.getElementById('wiz-step-' + i);
+    const dot = document.getElementById('wiz-dot-' + i);
+    if (step) step.classList.toggle('active', i === wizStep);
+    if (dot) {
+      dot.classList.toggle('active', i === wizStep);
+      dot.classList.toggle('done', i < wizStep);
+    }
+  }
+}
+
+function wizNext(step) {
+  if (step === 0) {
+    const name = val('wiz-name');
+    if (!name) { toast('Please enter your name'); return; }
+  }
+  if (step === 1) {
+    const partner = val('wiz-partner');
+    if (!partner) { toast('Please enter your partner\'s name'); return; }
+  }
+  if (step === 2) {
+    // Save everything to Firebase
+    wizSaveData();
+  }
+  wizStep = step + 1;
+  renderWizStep();
+  if (wizStep === 3) renderWizDone();
+}
+
+function wizPrev(step) {
+  wizStep = step - 1;
+  renderWizStep();
+}
+
+function wizSaveData() {
+  const myName = val('wiz-name');
+  const partnerName = val('wiz-partner');
+  const teamName = myName + ' & ' + partnerName;
+
+  if (!FIREBASE_READY || !wizLeagueId) {
+    // Demo mode
+    return;
+  }
+
+  const leagueRef = db.ref('/leagues/' + wizLeagueId);
+  const emailKey = sanitizeEmail(currentUser.email);
+
+  // Check if a team with either player already exists
+  leagueRef.child('groups').once('value', snap => {
+    const groups = snap.val() || {};
+    let existingTeamId = null;
+
+    // Look for a team that already has myName or partnerName
+    Object.entries(groups).forEach(([id, g]) => {
+      if (g.players && (g.players.includes(myName) || g.players.includes(partnerName))) {
+        existingTeamId = id;
+      }
+    });
+
+    const updates = {};
+
+    // Create or update team
+    if (!existingTeamId) {
+      const teamId = 'T' + Date.now();
+      updates['/leagues/' + wizLeagueId + '/groups/' + teamId] = {
+        id: teamId, name: teamName, players: [myName, partnerName]
+      };
+    }
+
+    // Link member to player name
+    updates['/leagues/' + wizLeagueId + '/members/' + emailKey + '/playerName'] = myName;
+    updates['/leagues/' + wizLeagueId + '/members/' + emailKey + '/partnerName'] = partnerName;
+
+    // Save availability
+    Object.entries(wizAvailability).forEach(([key, val]) => {
+      if (val) updates['/leagues/' + wizLeagueId + '/availability/' + key] = true;
+    });
+
+    db.ref().update(updates).then(() => {
+      console.log('Wizard data saved');
+    }).catch(err => {
+      console.error('Wizard save error:', err);
+      toast('Error saving — please try again');
+    });
+  });
+}
+
+function renderWizDone() {
+  const link = window.location.origin + window.location.pathname + '?league=' + wizLeagueId;
+  document.getElementById('wiz-share-link').textContent = link;
+}
+
+function copyWizLink() {
+  const link = document.getElementById('wiz-share-link').textContent;
+  copyText(link);
+}
+
+function shareWizWhatsApp() {
+  const link = document.getElementById('wiz-share-link').textContent;
+  const leagueName = document.getElementById('wizard-league-name').textContent;
+  const msg = `Join our box league "${leagueName}" on BoxLeague Pro!\n\nSign up and fill in your availability here:\n${link}\n\nTakes 1 minute \u{1F3BE}`;
+  copyText(msg);
+  toast('WhatsApp message copied!');
+}
+
+function wizFinish() {
+  enterLeague(wizLeagueId);
+}
+
+/* ── Wizard availability grid ── */
+function wizWeekDates() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dow = today.getDay();
+  const mon = new Date(today);
+  mon.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1) + wizWeekOff * 7);
+  return Array.from({length:7}, (_, i) => { const d = new Date(mon); d.setDate(mon.getDate()+i); return d; });
+}
+
+function renderWizAvailGrid() {
+  const dates = wizWeekDates();
+  const slots = ['morning','afternoon','evening'];
+  const slotIcons = { morning:'\u{1F305}', afternoon:'\u2600\uFE0F', evening:'\u{1F319}' };
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const playerName = val('wiz-name') || 'You';
+
+  document.getElementById('wiz-wk-label').textContent = `${fmtShort(dates[0])} \u2013 ${fmtShort(dates[6])}`;
+
+  const now = new Date(); now.setHours(0,0,0,0);
+  let h = `<table class="avail-tbl"><thead><tr><th style="text-align:left;min-width:90px">Slot</th>`;
+  dates.forEach((d,i) => {
+    const td = isTd(d);
+    const isPast = d < now;
+    h += `<th class="${isPast?'past-day':''}" style="${td?'color:var(--primary);':''}${d.getDay()===0||d.getDay()===6?'background:#fafafa;':''}">
+      ${days[i]}<br><span style="font-size:11px;font-weight:400">${d.getDate()}</span></th>`;
+  });
+  h += '</tr></thead><tbody>';
+  slots.forEach(slot => {
+    h += `<tr><td class="slot-lbl">${slotIcons[slot]} ${cap(slot)}</td>`;
+    dates.forEach(d => {
+      const isPast = d < now;
+      const key = avk(playerName, d, slot);
+      const on = wizAvailability[key] ? 'on' : '';
+      if (isPast) {
+        h += `<td><div class="cell past"></div></td>`;
+      } else {
+        h += `<td><div class="cell ${on}" data-date="${ds(d)}" data-slot="${slot}" onclick="wizToggleCell(this)"></div></td>`;
+      }
+    });
+    h += '</tr>';
+  });
+  h += '</tbody></table>';
+  document.getElementById('wiz-avail-grid').innerHTML = h;
+}
+
+function wizToggleCell(el) {
+  const playerName = val('wiz-name') || 'You';
+  const key = avk(playerName, el.dataset.date, el.dataset.slot);
+  const newVal = !wizAvailability[key];
+  if (newVal) wizAvailability[key] = true; else delete wizAvailability[key];
+  el.classList.toggle('on', newVal);
+}
+
+function wizChangeWeek(dir) { wizWeekOff += dir; renderWizAvailGrid(); }
+
+function goToBrowse() {
+  showScreen('browse');
+}
+
+/* ══════════════════════════════════════
+   ENTER / LEAVE A LEAGUE
+   ══════════════════════════════════════ */
+function enterLeague(leagueId) {
+  activeLeagueId = leagueId;
+  const leagueInfo = userLeagues[leagueId];
+  if (!leagueInfo) { toast('League not found'); goToBrowse(); return; }
+  const isOrganiser = leagueInfo && leagueInfo.role === 'organiser';
+
+  // Check if user completed wizard (has playerName in members)
+  if (FIREBASE_READY) {
+    const emailKey = sanitizeEmail(currentUser.email);
+    db.ref('/leagues/' + leagueId + '/members/' + emailKey + '/playerName').once('value', snap => {
+      const playerName = snap.val();
+      if (!playerName) {
+        // Hasn't completed wizard — send them through it
+        startWizard(leagueId, leagueInfo.name || 'League');
+        return;
+      }
+      // Has completed wizard — enter the app
+      enterLeagueMain(leagueId, leagueInfo, isOrganiser);
+    });
+    return;
+  }
+  enterLeagueMain(leagueId, leagueInfo, isOrganiser);
+}
+
+function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
+  activeLeagueId = leagueId;
+
+  // Set header
+  document.getElementById('app-league-name').textContent = leagueInfo.name || 'League';
+  document.getElementById('app-league-code').textContent = leagueInfo.code || leagueId;
+  const photoUrl = currentUser.photoURL || '';
+  document.getElementById('app-user-photo').src = photoUrl;
+  document.getElementById('app-user-first').textContent = (currentUser.displayName || 'You').split(' ')[0];
+
+  // Build nav tabs
+  const tabs = isOrganiser
+    ? [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['setup','Setup']]
+    : [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder']];
+
+  document.getElementById('app-nav').innerHTML = tabs.map(([id, label], i) =>
+    `<div class="nav-tab${i===0?' active':''}" onclick="showTab('${id}')">${label}</div>`
+  ).join('');
+
+  currentTab = 'availability';
+  showScreen('app');
+  initTips();
+
+  // Load league data
+  if (!FIREBASE_READY) {
+    try {
+      const stored = localStorage.getItem('blp_league_' + leagueId);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        L.groups = parsed.groups ? Object.values(parsed.groups) : [];
+        L.availability = parsed.availability || {};
+        L.settings = parsed.settings || {};
+        L.booked = parsed.booked || {};
+        L.members = parsed.members || {};
+      }
+    } catch(e) {}
+    if (!L.settings) L.settings = {};
+    if (!L.booked) L.booked = {};
+    document.getElementById('inp-league-name').value = L.settings.leagueName || '';
+    document.getElementById('inp-deadline').value = L.settings.deadline || '';
+    renderAll();
+    showTab('availability');
+    return;
+  }
+
+  // Firebase listeners
+  detachListeners();
+  const ref = db.ref('/leagues/' + leagueId);
+
+  const l1 = ref.child('groups').on('value', snap => {
+    L.groups = snap.val() ? Object.values(snap.val()) : [];
+    renderGroups(); renderProgress();
+  });
+  listeners.push({ ref: ref.child('groups'), event: 'value', fn: l1 });
+
+  const l2 = ref.child('availability').on('value', snap => {
+    L.availability = snap.val() || {};
+    if (currentTab === 'availability') { renderAvailGrid(); renderMySummary(); renderMyMatches(); }
+    if (currentTab === 'everyone') { renderAllAvail(); renderMissing(); }
+    if (currentTab === 'matches') renderMatchFinder();
+    renderProgress();
+  });
+  listeners.push({ ref: ref.child('availability'), event: 'value', fn: l2 });
+
+  const l3 = ref.child('settings').on('value', snap => {
+    L.settings = snap.val() || {};
+    document.getElementById('inp-league-name').value = L.settings.leagueName || '';
+    document.getElementById('inp-deadline').value = L.settings.deadline || '';
+    renderHeader(); renderDeadline();
+  });
+  listeners.push({ ref: ref.child('settings'), event: 'value', fn: l3 });
+
+  const l4 = ref.child('booked').on('value', snap => {
+    L.booked = snap.val() || {};
+    if (currentTab === 'matches') renderMatchFinder();
+    if (currentTab === 'availability') renderMyMatches();
+  });
+  listeners.push({ ref: ref.child('booked'), event: 'value', fn: l4 });
+
+  const l5 = ref.child('members').on('value', snap => {
+    L.members = snap.val() || {};
+    renderMembers();
+    showTab('availability');
+  });
+  listeners.push({ ref: ref.child('members'), event: 'value', fn: l5 });
+}
+
+function detachListeners() {
+  listeners.forEach(l => l.ref.off(l.event, l.fn));
+  listeners = [];
+}
+
+function goToHub() {
+  detachListeners();
+  activeLeagueId = null;
+  L = { groups: [], availability: {}, settings: {}, booked: {}, members: {} };
+  showScreen('browse');
+}
+
+function copyLeagueCode() {
+  const code = document.getElementById('app-league-code').textContent;
+  copyText(code);
+}
+
+/* ══════════════════════════════════════
+   FIREBASE PERSISTENCE HELPERS
+   ══════════════════════════════════════ */
+function leagueRef(path) {
+  if (!FIREBASE_READY || !activeLeagueId) return null;
+  return db.ref('/leagues/' + activeLeagueId + (path ? '/' + path : ''));
+}
+
+function localSave() {
+  if (!FIREBASE_READY && activeLeagueId) {
+    const data = { groups: {}, availability: L.availability, settings: L.settings, booked: L.booked, members: L.members };
+    L.groups.forEach(g => { data.groups[g.id] = g; });
+    localStorage.setItem('blp_league_' + activeLeagueId, JSON.stringify(data));
+  }
+}
+
+function fbSetGroups() {
+  const obj = {}; L.groups.forEach(g => { obj[g.id] = g; });
+  const ref = leagueRef('groups');
+  if (ref) ref.set(obj); else localSave();
+}
+
+function fbSetAvail(key, val) {
+  const ref = leagueRef('availability');
+  if (ref) { if (val) ref.child(key).set(true); else ref.child(key).remove(); }
+  else { if(val) L.availability[key]=true; else delete L.availability[key]; localSave(); }
+}
+
+function fbSetAvailBatch(updates) {
+  const ref = leagueRef('availability');
+  if (ref) ref.update(updates);
+  else { Object.entries(updates).forEach(([k,v]) => { if(v) L.availability[k]=true; else delete L.availability[k]; }); localSave(); }
+}
+
+function saveSettings() {
+  L.settings.leagueName = val('inp-league-name');
+  L.settings.deadline = document.getElementById('inp-deadline').value;
+  const ref = leagueRef('settings');
+  if (ref) ref.set(L.settings); else localSave();
+  renderHeader(); renderDeadline();
+
+  // Also update league name in userLeagues and hub
+  if (FIREBASE_READY && activeLeagueId && L.settings.leagueName) {
+    db.ref('/userLeagues/' + currentUser.uid + '/' + activeLeagueId + '/name').set(L.settings.leagueName);
+    db.ref('/leagues/' + activeLeagueId + '/info/name').set(L.settings.leagueName);
+  }
+}
+
+function fbSetBooked(matchKey, slotData) {
+  if (slotData) L.booked[matchKey] = slotData; else delete L.booked[matchKey];
+  const ref = leagueRef('booked');
+  if (ref) ref.set(L.booked); else localSave();
+}
+
+/* ══════════════════════════════════════
+   TABS
+   ══════════════════════════════════════ */
+function showTab(t) {
+  currentTab = t;
+  const tabNames = [];
+  document.querySelectorAll('#app-nav .nav-tab').forEach(el => {
+    const tabId = el.textContent.trim().toLowerCase().replace(/\s+/g, '');
+    tabNames.push(el);
+  });
+
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  const section = document.getElementById('tab-' + t);
+  if (section) section.classList.add('active');
+
+  document.querySelectorAll('#app-nav .nav-tab').forEach(el => {
+    const text = el.textContent.trim();
+    const map = { 'My Availability':'availability', 'Everyone':'everyone', 'Match Finder':'matches', 'Setup':'setup' };
+    el.classList.toggle('active', map[text] === t);
+  });
+
+  if (t === 'availability') { checkPlayerLink(); }
+  if (t === 'everyone') { renderAllAvail(); renderMissing(); }
+  if (t === 'matches') { renderMatchFinder(); }
+  if (t === 'setup') { renderGroups(); renderMembers(); }
+}
+
+/* ══════════════════════════════════════
+   PLAYER LINKING
+   ══════════════════════════════════════ */
+function getMyPlayerName() {
+  if (!currentUser) return '';
+  const emailKey = sanitizeEmail(currentUser.email);
+  const member = L.members[emailKey];
+  return member && member.playerName ? member.playerName : '';
+}
+
+function checkPlayerLink() {
+  const playerName = getMyPlayerName();
+  const notLinked = document.getElementById('avail-not-linked');
+  const body = document.getElementById('avail-body');
+
+  if (!playerName) {
+    // Check if user is organiser — they might not have a player name yet but that's OK for setup
+    const leagueInfo = userLeagues[activeLeagueId];
+    if (leagueInfo && leagueInfo.role === 'organiser') {
+      // Organiser can still view, just show a note
+      notLinked.style.display = 'block';
+      notLinked.innerHTML = `<div style="font-size:36px;margin-bottom:10px">&#128279;</div>
+        <div style="font-size:17px;font-weight:700;margin-bottom:6px">Link yourself to a player</div>
+        <div style="font-size:15px;color:var(--muted)">Go to the <strong>Setup</strong> tab and add groups with player names. Then link your account to your name in the Members section.</div>`;
+      body.style.display = 'none';
+    } else {
+      notLinked.style.display = 'block';
+      body.style.display = 'none';
+    }
+    return;
+  }
+
+  notLinked.style.display = 'none';
+  body.style.display = 'block';
+  renderAvailGrid(); renderMySummary(); renderMyMatches();
+}
+
+/* ══════════════════════════════════════
+   RENDER ALL
+   ══════════════════════════════════════ */
+function renderAll() {
+  renderGroups(); renderHeader(); renderDeadline(); renderProgress(); renderMembers();
+  checkPlayerLink();
+}
+
+/* ══════════════════════════════════════
+   HEADER & PROGRESS
+   ══════════════════════════════════════ */
+function renderHeader() {
+  const el = document.getElementById('app-league-name');
+  if (L.settings.leagueName) el.textContent = L.settings.leagueName;
+}
+
+function renderProgress() {
+  const wrap = document.getElementById('progress-wrap');
+  const players = getAllPlayers();
+  if (players.length === 0) { wrap.style.display = 'none'; return; }
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const slots = ['morning','afternoon','evening'];
+  let submitted = 0;
+  players.forEach(p => {
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(today); d.setDate(today.getDate()+i);
+      for (const slot of slots) {
+        if (L.availability[avk(p, d, slot)]) { submitted++; return; }
+      }
+    }
+  });
+
+  const pct = Math.round((submitted / players.length) * 100);
+  wrap.style.display = 'block';
+  document.getElementById('progress-text').textContent = `${submitted} of ${players.length} players submitted`;
+  document.getElementById('progress-pct').textContent = `${pct}%`;
+  document.getElementById('progress-fill').style.width = `${pct}%`;
+}
+
+function renderDeadline() {
+  const banner = document.getElementById('deadline-banner');
+  if (!L.settings.deadline) { banner.style.display = 'none'; return; }
+  const dl = new Date(L.settings.deadline);
+  const now = new Date();
+  if (dl < now) { banner.style.display = 'none'; return; }
+  const diff = dl - now;
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(hours / 24);
+  const remHours = hours % 24;
+  let timeStr = days > 0 ? `${days}d ${remHours}h` : `${hours}h`;
+  banner.textContent = `Availability deadline: ${dl.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})} at ${dl.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})} \u2014 ${timeStr} left`;
+  banner.classList.toggle('urgent', hours < 24);
+  banner.style.display = 'block';
+}
+
+/* ══════════════════════════════════════
+   SETUP TAB — GROUPS
+   ══════════════════════════════════════ */
+function renderGroups() {
+  const el = document.getElementById('groups-list');
+  if (!el) return;
+  if (L.groups.length === 0) {
+    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted)"><div style="font-size:46px;margin-bottom:10px">&#128101;</div><h3 style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px">No teams yet</h3><p style="font-size:15px">Add your doubles pairs to get started</p></div>`;
+    return;
+  }
+  el.innerHTML = L.groups.map((g, gi) => {
+    const color = GROUP_COLORS[gi % GROUP_COLORS.length];
+    return `<div class="team-card">
+      <div class="team-hdr">
+        <div class="team-name" style="color:${color}">${esc(g.name)}</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="team-count">${g.players.length} player${g.players.length!==1?'s':''}</span>
+          <button class="btn btn-danger btn-sm" onclick="removeGroup('${esc(g.id)}')" style="padding:5px 10px;font-size:12px">Remove</button>
+        </div>
+      </div>
+      <div class="team-players">
+        ${g.players.map(p => `<span class="player-chip">${avatarHtml(p)} ${esc(p)}</span>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showGroupForm() { document.getElementById('add-group-form').style.display = 'block'; document.getElementById('inp-gname').focus(); }
+function hideGroupForm() { document.getElementById('add-group-form').style.display = 'none'; document.getElementById('inp-gname').value = ''; document.getElementById('inp-gplayers').value = ''; }
+
+function addGroup() {
+  const name = val('inp-gname');
+  const playersRaw = val('inp-gplayers');
+  if (!name) { toast('Enter a team name'); return; }
+  if (!playersRaw) { toast('Enter at least one player name'); return; }
+  const players = playersRaw.split(',').map(p => p.trim()).filter(p => p);
+  if (players.length === 0) { toast('Enter at least one player name'); return; }
+  const existing = getAllPlayers();
+  for (const p of players) {
+    if (existing.includes(p)) { toast(`${p} is already in another team`); return; }
+  }
+  L.groups.push({ id: 'G' + Date.now(), name, players });
+  fbSetGroups(); hideGroupForm(); renderGroups(); renderMembers(); renderProgress(); toast('Team added!');
+}
+
+function removeGroup(id) {
+  if (!confirm('Remove this team?')) return;
+  L.groups = L.groups.filter(g => g.id !== id);
+  fbSetGroups(); renderGroups(); renderMembers(); renderProgress(); toast('Team removed');
+}
+
+/* ── Templates ── */
+let activeTemplate = null;
+function loadTemplate(type) {
+  activeTemplate = type;
+  const form = document.getElementById('template-form');
+  const title = document.getElementById('template-title');
+  const info = document.getElementById('template-info');
+  const ta = document.getElementById('inp-template');
+  form.style.display = 'block';
+  title.textContent = 'Quick Add \u2014 All Teams';
+  info.innerHTML = 'One team per line. Two players per team, comma-separated.<br><strong>Example:</strong><br>Grant, James<br>Mark, Dave<br>Sean, Pete';
+  ta.placeholder = 'Grant, James\nMark, Dave\nSean, Pete';
+  ta.value = ''; ta.focus();
+}
+
+function applyTemplate() {
+  const raw = document.getElementById('inp-template').value.trim();
+  if (!raw) { toast('Enter some names first'); return; }
+  const lines = raw.split('\n').map(l => l.trim()).filter(l => l);
+  const existing = getAllPlayers();
+  let added = 0;
+  for (const line of lines) {
+    if (activeTemplate === 'doubles') {
+      const parts = line.split(',').map(p => p.trim()).filter(p => p);
+      if (parts.length < 2) continue;
+      const dup = parts.some(p => existing.includes(p) || getAllPlayers().includes(p));
+      if (dup) continue;
+      L.groups.push({ id: 'G' + Date.now() + added, name: parts.slice(0,2).join(' & '), players: parts.slice(0,2) });
+      added++;
+    } else {
+      if (existing.includes(line) || getAllPlayers().includes(line)) continue;
+      L.groups.push({ id: 'G' + Date.now() + added, name: line, players: [line] });
+      added++;
+    }
+  }
+  if (added === 0) { toast('No new teams added (duplicates?)'); return; }
+  fbSetGroups(); renderGroups(); renderMembers(); renderProgress();
+  document.getElementById('template-form').style.display = 'none';
+  toast(`${added} team${added!==1?'s':''} added!`);
+}
+
+/* ══════════════════════════════════════
+   SETUP TAB — MEMBERS
+   ══════════════════════════════════════ */
+function renderMembers() {
+  const el = document.getElementById('members-list');
+  if (!el) return;
+  const memberKeys = Object.keys(L.members);
+  if (memberKeys.length === 0) {
+    el.innerHTML = '<div class="txt-muted" style="padding:8px 0">No members have joined yet. Share the league code!</div>';
+    return;
+  }
+  const allPlayers = getAllPlayers();
+  el.innerHTML = memberKeys.map(key => {
+    const m = L.members[key];
+    const linked = m.playerName && allPlayers.includes(m.playerName);
+    return `<div class="card" style="padding:12px 14px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:15px;font-weight:700">${esc(m.name || m.email)}</div>
+          <div style="font-size:13px;color:var(--muted)">${esc(m.email)} &middot; ${esc(m.role)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          ${linked
+            ? `<span class="badge badge-booked">Linked: ${esc(m.playerName)}</span>`
+            : `<select class="fi" style="width:auto;padding:6px 10px;font-size:13px" onchange="linkMember('${esc(key)}',this.value)">
+                <option value="">Link to player...</option>
+                ${allPlayers.map(p => `<option value="${esc(p)}" ${m.playerName===p?'selected':''}>${esc(p)}</option>`).join('')}
+               </select>`
+          }
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function linkMember(memberKey, playerName) {
+  if (!playerName) return;
+  const ref = leagueRef('members/' + memberKey + '/playerName');
+  if (ref) ref.set(playerName);
+  else { L.members[memberKey].playerName = playerName; localSave(); renderMembers(); }
+  toast(`Linked to ${playerName}`);
+  if (currentTab === 'availability') checkPlayerLink();
+}
+
+function resetLeagueData() {
+  if (!confirm('Reset all availability and bookings? Groups and members will be kept.')) return;
+  L.availability = {};
+  L.booked = {};
+  const ref = leagueRef();
+  if (ref) { ref.child('availability').set({}); ref.child('booked').set({}); }
+  else localSave();
+  renderAll();
+  toast('Availability and bookings reset');
+}
+
+/* ══════════════════════════════════════
+   MY AVAILABILITY TAB
+   ══════════════════════════════════════ */
+function weekDates() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dow = today.getDay();
+  const mon = new Date(today);
+  mon.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1) + weekOff * 7);
+  return Array.from({length:7}, (_, i) => { const d = new Date(mon); d.setDate(mon.getDate()+i); return d; });
+}
+
+function renderAvailGrid() {
+  const player = getMyPlayerName();
+  if (!player) return;
+  const dates = weekDates();
+  const slots = ['morning','afternoon','evening'];
+  const slotIcons = { morning:'\u{1F305}', afternoon:'\u2600\uFE0F', evening:'\u{1F319}' };
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+  document.getElementById('wk-label').textContent = `${fmtShort(dates[0])} \u2013 ${fmtShort(dates[6])}`;
+
+  const now = new Date(); now.setHours(0,0,0,0);
+  let h = `<table class="avail-tbl"><thead><tr><th style="text-align:left;min-width:90px">Slot</th>`;
+  dates.forEach((d,i) => {
+    const td = isTd(d);
+    const isPast = d < now;
+    h += `<th class="${isPast?'past-day':''}" style="${td?'color:var(--primary);':''}${d.getDay()===0||d.getDay()===6?'background:#fafafa;':''}">
+      ${days[i]}<br><span style="font-size:11px;font-weight:400">${d.getDate()}</span></th>`;
+  });
+  h += '</tr></thead><tbody>';
+  slots.forEach(slot => {
+    h += `<tr><td class="slot-lbl">${slotIcons[slot]} ${cap(slot)}</td>`;
+    dates.forEach(d => {
+      const isPast = d < now;
+      const on = L.availability[avk(player, d, slot)] ? 'on' : '';
+      if (isPast) {
+        h += `<td><div class="cell past"></div></td>`;
+      } else {
+        h += `<td><div class="cell ${on}" data-date="${ds(d)}" data-slot="${slot}" onclick="toggleCell(this)"></div></td>`;
+      }
+    });
+    h += '</tr>';
+  });
+  h += '</tbody></table>';
+  document.getElementById('avail-grid').innerHTML = h;
+}
+
+function toggleCell(el) {
+  const player = getMyPlayerName();
+  if (!player) return;
+  const d = new Date(el.dataset.date + 'T00:00:00');
+  const key = avk(player, d, el.dataset.slot);
+  const newVal = !L.availability[key];
+  if (newVal) L.availability[key] = true; else delete L.availability[key];
+  el.classList.toggle('on', newVal);
+  fbSetAvail(key, newVal);
+  renderMySummary(); renderMyMatches(); renderProgress();
+}
+
+function changeWeek(dir) { weekOff += dir; renderAvailGrid(); }
+
+function copyLastWeek() {
+  const player = getMyPlayerName();
+  if (!player) return;
+  const dates = weekDates();
+  const slots = ['morning','afternoon','evening'];
+  const updates = {};
+  let copied = 0;
+  dates.forEach(d => {
+    const prevWeek = new Date(d); prevWeek.setDate(prevWeek.getDate() - 7);
+    slots.forEach(slot => {
+      const prevKey = avk(player, prevWeek, slot);
+      const thisKey = avk(player, d, slot);
+      if (L.availability[prevKey] && !L.availability[thisKey]) {
+        updates[thisKey] = true;
+        L.availability[thisKey] = true;
+        copied++;
+      }
+    });
+  });
+  if (copied === 0) { toast('No availability to copy from last week'); return; }
+  fbSetAvailBatch(updates);
+  renderAvailGrid(); renderMySummary(); renderMyMatches(); renderProgress();
+  toast(`Copied ${copied} slot${copied!==1?'s':''} from last week`);
+}
+
+function clearMyWeek() {
+  const player = getMyPlayerName();
+  if (!player) return;
+  if (!confirm('Clear all your availability for this week?')) return;
+  const dates = weekDates();
+  const slots = ['morning','afternoon','evening'];
+  const updates = {};
+  dates.forEach(d => {
+    slots.forEach(slot => {
+      const key = avk(player, d, slot);
+      if (L.availability[key]) { updates[key] = null; delete L.availability[key]; }
+    });
+  });
+  const ref = leagueRef('availability');
+  if (ref) ref.update(updates); else localSave();
+  renderAvailGrid(); renderMySummary(); renderMyMatches(); renderProgress();
+  toast('Week cleared');
+}
+
+/* ── My matches ── */
+function renderMyMatches() {
+  const player = getMyPlayerName();
+  const card = document.getElementById('my-matches-card');
+  const body = document.getElementById('my-matches-body');
+  if (!player || L.groups.length < 2) { card.style.display = 'none'; return; }
+  const myGroup = L.groups.find(g => g.players.includes(player));
+  if (!myGroup) { card.style.display = 'none'; return; }
+  const opponents = L.groups.filter(g => g.id !== myGroup.id);
+  if (opponents.length === 0) { card.style.display = 'none'; return; }
+
+  card.style.display = 'block';
+  body.innerHTML = opponents.map(opp => {
+    const matchKey = [myGroup.id, opp.id].sort().join('_');
+    const booked = L.booked[matchKey];
+    if (booked) {
+      return `<div class="my-match ready">
+        <div style="font-size:15px;font-weight:700">vs ${esc(opp.name)}</div>
+        <div style="font-size:14px;color:#059669;font-weight:600;margin-top:4px">&#9989; Booked: ${fmtFull(booked.date)} &middot; ${cap(booked.slot)}</div>
+      </div>`;
+    }
+    const slots = findSlots(myGroup, opp);
+    const cls = slots.length > 0 ? 'ready' : 'blocked';
+    return `<div class="my-match ${cls}">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:15px;font-weight:700">vs ${esc(opp.name)}</span>
+        ${slots.length > 0
+          ? `<span style="font-size:12px;font-weight:700;color:#059669">&#128994; ${slots.length} time${slots.length!==1?'s':''}</span>`
+          : `<span style="font-size:12px;color:var(--amber);font-weight:600">&#128993; No overlap yet</span>`}
+      </div>
+      ${slots.length > 0 ? `<div class="sug-slots" style="margin-top:6px">${slots.slice(0,3).map(s => `<span class="sug-slot">${fmtFull(s.date)} &middot; ${cap(s.slot)}</span>`).join('')}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderMySummary() {
+  const player = getMyPlayerName();
+  const card = document.getElementById('my-summary');
+  const body = document.getElementById('my-summary-body');
+  if (!player) { card.style.display = 'none'; return; }
+  const today = new Date(); today.setHours(0,0,0,0);
+  const slots = ['morning','afternoon','evening'];
+  const slotLabels = { morning:'Morning', afternoon:'Afternoon', evening:'Evening' };
+  let items = [];
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(today); d.setDate(today.getDate()+i);
+    for (const slot of slots) {
+      if (L.availability[avk(player, d, slot)]) items.push(`${fmtFull(ds(d))} \u2014 ${slotLabels[slot]}`);
+    }
+  }
+  if (items.length === 0) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  body.innerHTML = `<div style="font-size:13px;color:var(--muted);margin-bottom:4px">${items.length} slot${items.length!==1?'s':''} in the next 2 weeks:</div>` +
+    items.slice(0,8).map(i => `<div style="font-size:14px;padding:3px 0">&#9989; ${i}</div>`).join('') +
+    (items.length > 8 ? `<div class="txt-muted mt8">+ ${items.length - 8} more</div>` : '');
+}
+
+/* ══════════════════════════════════════
+   EVERYONE TAB
+   ══════════════════════════════════════ */
+function renderAllAvail() {
+  const players = getAllPlayers();
+  const legend = document.getElementById('avail-legend');
+  const grid = document.getElementById('avail-cal-grid');
+  if (!legend || !grid) return;
+
+  legend.innerHTML = players.map(p => `
+    <div style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:600">
+      ${avatarHtml(p)} ${esc(p)}
+    </div>`).join('');
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dates = Array.from({length:14}, (_, i) => { const d = new Date(today); d.setDate(today.getDate()+i); return d; });
+  const slots = ['morning','afternoon','evening'];
+  const slotIcons = { morning:'\u{1F305} Morn', afternoon:'\u2600\uFE0F Aft', evening:'\u{1F319} Eve' };
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  let h = `<table class="avail-cal"><thead><tr><th class="slot-col">Slot</th>`;
+  dates.forEach(d => {
+    const isToday = ds(d) === ds(today);
+    h += `<th style="${isToday ? 'color:var(--primary);' : ''}">
+      ${dayNames[d.getDay()]}<br><span style="font-size:10px;font-weight:400">${d.getDate()}/${d.getMonth()+1}</span>
+    </th>`;
+  });
+  h += '</tr></thead><tbody>';
+  slots.forEach(slot => {
+    h += `<tr><td class="slot-col">${slotIcons[slot]}</td>`;
+    dates.forEach(d => {
+      const isToday = ds(d) === ds(today);
+      const available = players.filter(p => L.availability[avk(p, d, slot)]);
+      h += `<td${isToday ? ' class="today-col"' : ''}><div class="avail-cell">`;
+      available.forEach(p => { h += avatarHtml(p); });
+      h += '</div></td>';
+    });
+    h += '</tr>';
+  });
+  h += '</tbody></table>';
+  grid.innerHTML = h;
+}
+
+function getMissingPlayers() {
+  const players = getAllPlayers();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const slots = ['morning','afternoon','evening'];
+  return players.filter(p => {
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(today); d.setDate(today.getDate()+i);
+      for (const slot of slots) {
+        if (L.availability[avk(p, d, slot)]) return false;
+      }
+    }
+    return true;
+  });
+}
+
+function renderMissing() {
+  const missingCard = document.getElementById('missing-card');
+  const allInCard = document.getElementById('all-in-card');
+  const body = document.getElementById('missing-players');
+  const players = getAllPlayers();
+  const missing = getMissingPlayers();
+
+  if (players.length === 0) { missingCard.style.display = 'none'; allInCard.style.display = 'none'; return; }
+  if (missing.length === 0) { missingCard.style.display = 'none'; allInCard.style.display = 'block'; return; }
+  allInCard.style.display = 'none';
+  missingCard.style.display = 'block';
+  body.innerHTML = missing.map(p => `<span class="player-chip" style="margin:3px 0">${avatarHtml(p)} ${esc(p)}</span>`).join(' ');
+}
+
+function chaseWhatsApp() {
+  const missing = getMissingPlayers();
+  if (missing.length === 0) { toast('Everyone has submitted!'); return; }
+  const league = L.settings.leagueName || 'our league';
+  const deadlineStr = L.settings.deadline ? ` by ${new Date(L.settings.deadline).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}` : '';
+  const names = missing.join(', ');
+  const code = userLeagues[activeLeagueId] ? userLeagues[activeLeagueId].code : '';
+  const msg = `Hi all! Still waiting on availability for ${league} from: ${names}\n\nPlease sign in and fill yours in${deadlineStr}.\nLeague code: ${code}\n\nTakes 30 seconds \u2014 just tap when you're free \ud83c\udfbe`;
+  copyText(msg);
+}
+
+/* ══════════════════════════════════════
+   MATCH FINDER TAB
+   ══════════════════════════════════════ */
+function findSlots(groupA, groupB) {
+  const players = [...groupA.players, ...groupB.players];
+  const result = [];
+  const today = new Date(); today.setHours(0,0,0,0);
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(today); d.setDate(today.getDate()+i);
+    for (const slot of ['morning','afternoon','evening']) {
+      if (players.every(p => L.availability[avk(p, d, slot)])) {
+        result.push({ date: ds(d), slot });
+      }
+    }
+  }
+  return result;
+}
+
+function renderMatchFinder() {
+  const el = document.getElementById('match-results');
+  const shareEl = document.getElementById('share-results');
+  const summaryEl = document.getElementById('match-summary');
+
+  if (L.groups.length < 2) {
+    el.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--muted)"><div style="font-size:46px;margin-bottom:10px">&#127934;</div><h3 style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px">Need at least 2 teams</h3><p style="font-size:15px">Add teams in the Setup tab first</p></div>`;
+    shareEl.style.display = 'none';
+    summaryEl.innerHTML = '';
+    return;
+  }
+
+  const matchups = [];
+  for (let i = 0; i < L.groups.length; i++) {
+    for (let j = i+1; j < L.groups.length; j++) {
+      const gA = L.groups[i], gB = L.groups[j];
+      const matchKey = [gA.id, gB.id].sort().join('_');
+      const booked = L.booked[matchKey];
+      const slots = booked ? [] : findSlots(gA, gB);
+      matchups.push({ gA, gB, slots, matchKey, booked });
+    }
+  }
+
+  const bookedMatches = matchups.filter(m => m.booked);
+  const withSlots = matchups.filter(m => !m.booked && m.slots.length > 0);
+  const without = matchups.filter(m => !m.booked && m.slots.length === 0);
+
+  summaryEl.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap">
+    ${bookedMatches.length > 0 ? `<span class="badge badge-booked">${bookedMatches.length} booked</span>` : ''}
+    ${withSlots.length > 0 ? `<span class="badge" style="background:#ecfdf5;color:#059669">${withSlots.length} ready to book</span>` : ''}
+    ${without.length > 0 ? `<span class="badge" style="background:#fef3c7;color:#92400e">${without.length} need availability</span>` : ''}
+  </div>`;
+
+  let html = '';
+
+  if (bookedMatches.length > 0) {
+    html += bookedMatches.map(m => `<div class="match-card is-booked">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div class="match-players">${esc(m.gA.name)} <span style="color:#9ca3af;font-weight:400">vs</span> ${esc(m.gB.name)}</div>
+        <span class="badge badge-booked">Booked</span>
+      </div>
+      <div style="font-size:14px;font-weight:600;color:#059669">\u{1F4C5} ${fmtFull(m.booked.date)} &middot; ${cap(m.booked.slot)}</div>
+      <button class="btn btn-secondary btn-sm mt8" onclick="unbookMatch('${esc(m.matchKey)}')" style="font-size:12px">Cancel booking</button>
+    </div>`).join('');
+    html += '<div class="divider" style="margin:16px 0"></div>';
+  }
+
+  if (withSlots.length > 0) {
+    html += withSlots.map(m => {
+      const allP = [...m.gA.players, ...m.gB.players];
+      const topSlots = m.slots.slice(0, 5);
+      return `<div class="match-card has-slots">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div class="match-players">${esc(m.gA.name)} <span style="color:#9ca3af;font-weight:400">vs</span> ${esc(m.gB.name)}</div>
+          <span class="match-slot-count">${m.slots.length} slot${m.slots.length!==1?'s':''}</span>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:8px">${allP.map(p => esc(p)).join(', ')}</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:4px;font-weight:600">Tap a slot to book it:</div>
+        <div class="sug-slots">
+          ${topSlots.map(s => `<span class="sug-slot" onclick="bookMatch('${esc(m.matchKey)}','${s.date}','${s.slot}')">\u{1F4C5} ${fmtFull(s.date)} &middot; ${cap(s.slot)}</span>`).join('')}
+          ${m.slots.length > 5 ? `<span class="sug-slot" style="background:#f3f4f6;color:var(--muted);border-color:#e5e7eb;cursor:default">+${m.slots.length - 5} more</span>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  if (without.length > 0) {
+    if (withSlots.length > 0 || bookedMatches.length > 0) html += '<div class="divider" style="margin:16px 0"></div>';
+    html += `<div class="txt-muted" style="margin-bottom:10px;font-weight:600">${without.length} match${without.length!==1?'es':''} \u2014 no overlapping availability yet:</div>`;
+    html += without.map(m => {
+      const allP = [...m.gA.players, ...m.gB.players];
+      return `<div class="match-card no-slots">
+        <div class="match-players">${esc(m.gA.name)} <span style="color:#9ca3af;font-weight:400">vs</span> ${esc(m.gB.name)}</div>
+        <div style="font-size:13px;color:var(--muted)">${allP.map(p => esc(p)).join(', ')}</div>
+      </div>`;
+    }).join('');
+  }
+
+  el.innerHTML = html;
+  shareEl.style.display = (bookedMatches.length > 0 || withSlots.length > 0) ? 'block' : 'none';
+}
+
+function bookMatch(matchKey, date, slot) {
+  fbSetBooked(matchKey, { date, slot });
+  renderMatchFinder(); renderMyMatches();
+  toast('Match booked!');
+}
+
+function unbookMatch(matchKey) {
+  if (!confirm('Cancel this booking?')) return;
+  fbSetBooked(matchKey, null);
+  renderMatchFinder(); renderMyMatches();
+  toast('Booking cancelled');
+}
+
+function shareResults() {
+  const league = L.settings.leagueName || 'Match Finder';
+  let msg = `\u{1F3BE} ${league} \u2014 Match Schedule\n\n`;
+  L.groups.forEach((gA, i) => {
+    for (let j = i+1; j < L.groups.length; j++) {
+      const gB = L.groups[j];
+      const matchKey = [gA.id, gB.id].sort().join('_');
+      const booked = L.booked[matchKey];
+      if (booked) msg += `\u2705 ${gA.name} vs ${gB.name} \u2014 ${fmtFull(booked.date)}, ${cap(booked.slot)}\n`;
+    }
+  });
+  let readyCount = 0;
+  L.groups.forEach((gA, i) => {
+    for (let j = i+1; j < L.groups.length; j++) {
+      const gB = L.groups[j];
+      const matchKey = [gA.id, gB.id].sort().join('_');
+      if (L.booked[matchKey]) continue;
+      const slots = findSlots(gA, gB);
+      if (slots.length > 0) {
+        if (readyCount === 0) msg += '\nReady to book:\n';
+        msg += `\u{1F7E2} ${gA.name} vs ${gB.name} \u2014 ${slots.length} times available\n`;
+        readyCount++;
+      }
+    }
+  });
+  const missing = getMissingPlayers();
+  if (missing.length > 0) msg += `\nStill waiting on: ${missing.join(', ')}\n`;
+  const code = userLeagues[activeLeagueId] ? userLeagues[activeLeagueId].code : '';
+  msg += `\nLeague code: ${code}`;
+  copyText(msg);
+}
+
+/* ══════════════════════════════════════
+   FEEDBACK FORM MODAL
+   ══════════════════════════════════════ */
+function openFeedback() {
+  document.getElementById('feedback-modal').style.display = 'flex';
+}
+function closeFeedback() {
+  document.getElementById('feedback-modal').style.display = 'none';
+}
+
+/* ══════════════════════════════════════
+   INIT
+   ══════════════════════════════════════ */
+setInterval(renderDeadline, 60000);
+</script>
+
+<!-- GHL Form Embed -->
+<script src="https://link.aifusionautomations.com/js/form_embed.js"></script>
+
+<!-- BoxLeague Pro Support Chatbot -->
+<script
+  src="https://widgets.leadconnectorhq.com/loader.js"
+  data-resources-url="https://widgets.leadconnectorhq.com/chat-widget/loader.js"
+  data-widget-id="69c2d44d510b6031cc38ed0e">
+</script>
+
+</body>
+</html>
