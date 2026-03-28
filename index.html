@@ -527,7 +527,7 @@
   <div class="app-header">
     <div class="app-header-top">
       <button class="app-back" onclick="goToBrowse()">&larr; My Leagues</button>
-      <button class="user-pill" onclick="signOut()">
+      <button class="user-pill" onclick="openProfile()">
         <img id="app-user-photo" src="" alt="" onerror="this.style.display='none'">
         <span id="app-user-first"></span>
       </button>
@@ -781,6 +781,26 @@
       data-form-id="CJsmRFcGQmwdDTy7pvsZ"
       title="Boxleague Form">
     </iframe>
+  </div>
+</div>
+
+<!-- ── Profile Modal ── -->
+<div id="profile-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeProfile()">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:420px;padding:0;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e2e8f0">
+      <div style="font-size:17px;font-weight:700">My Profile</div>
+      <button onclick="closeProfile()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
+    </div>
+    <div style="padding:20px">
+      <div style="font-size:13px;font-weight:600;color:#6b7280;margin-bottom:4px">Player Name</div>
+      <input class="fi" id="profile-name" placeholder="Your name" style="margin-bottom:12px">
+      <div style="font-size:13px;font-weight:600;color:#6b7280;margin-bottom:4px">Partner Name</div>
+      <input class="fi" id="profile-partner" placeholder="Your partner's name" style="margin-bottom:12px">
+      <div style="font-size:12px;color:#9ca3af;margin-bottom:16px">Changes will update your team in this league.</div>
+      <div id="profile-error" style="display:none;color:#ef4444;font-size:13px;margin-bottom:12px"></div>
+      <button class="btn btn-primary" onclick="saveProfile()" style="width:100%;margin-bottom:8px">Save Changes</button>
+      <button class="btn btn-secondary" onclick="signOut();closeProfile()" style="width:100%">Sign Out</button>
+    </div>
   </div>
 </div>
 
@@ -1156,6 +1176,91 @@ function signOut() {
   } else {
     currentUser = null;
     showScreen('auth');
+  }
+}
+
+function openProfile() {
+  if (!activeLeagueId || !currentUser) return;
+  const emailKey = sanitizeEmail(currentUser.email);
+  const member = L.members[emailKey];
+  document.getElementById('profile-name').value = member ? member.playerName || '' : '';
+  document.getElementById('profile-partner').value = member ? member.partnerName || '' : '';
+  document.getElementById('profile-error').style.display = 'none';
+  document.getElementById('profile-modal').style.display = 'flex';
+}
+
+function closeProfile() {
+  document.getElementById('profile-modal').style.display = 'none';
+}
+
+function saveProfile() {
+  const newName = val('profile-name');
+  const newPartner = val('profile-partner');
+  const errEl = document.getElementById('profile-error');
+  errEl.style.display = 'none';
+  if (!newName) { errEl.textContent = 'Please enter your name.'; errEl.style.display = 'block'; return; }
+  if (!newPartner) { errEl.textContent = 'Please enter your partner\'s name.'; errEl.style.display = 'block'; return; }
+  if (!FIREBASE_READY || !activeLeagueId) { toast('Cannot save'); return; }
+
+  const emailKey = sanitizeEmail(currentUser.email);
+  const member = L.members[emailKey];
+  const oldName = member ? member.playerName : '';
+  const oldPartner = member ? member.partnerName : '';
+
+  const updates = {};
+  updates['/leagues/' + activeLeagueId + '/members/' + emailKey + '/playerName'] = newName;
+  updates['/leagues/' + activeLeagueId + '/members/' + emailKey + '/partnerName'] = newPartner;
+
+  // Update team name in groups if names changed
+  if (oldName !== newName || oldPartner !== newPartner) {
+    const leagueRef = db.ref('/leagues/' + activeLeagueId);
+    leagueRef.child('groups').once('value', snap => {
+      const groups = snap.val() || {};
+      Object.entries(groups).forEach(([id, g]) => {
+        if (g.players) {
+          const playersLower = g.players.map(p => p.toLowerCase());
+          if (playersLower.includes(oldName.toLowerCase()) || playersLower.includes(oldPartner.toLowerCase())) {
+            // Update this team
+            const newPlayers = [newName, newPartner];
+            const newTeamName = newName + ' & ' + newPartner;
+            updates['/leagues/' + activeLeagueId + '/groups/' + id + '/name'] = newTeamName;
+            updates['/leagues/' + activeLeagueId + '/groups/' + id + '/players'] = newPlayers;
+          }
+        }
+      });
+
+      // Update availability keys if player name changed
+      if (oldName !== newName) {
+        leagueRef.child('availability').once('value', availSnap => {
+          const avail = availSnap.val() || {};
+          Object.entries(avail).forEach(([key, v]) => {
+            if (key.startsWith(oldName + '|')) {
+              const newKey = newName + key.substring(oldName.length);
+              updates['/leagues/' + activeLeagueId + '/availability/' + key] = null;
+              updates['/leagues/' + activeLeagueId + '/availability/' + newKey] = v;
+            }
+          });
+          db.ref().update(updates).then(() => {
+            toast('Profile updated!');
+            closeProfile();
+          }).catch(err => {
+            errEl.textContent = 'Save failed: ' + err.message;
+            errEl.style.display = 'block';
+          });
+        });
+      } else {
+        db.ref().update(updates).then(() => {
+          toast('Profile updated!');
+          closeProfile();
+        }).catch(err => {
+          errEl.textContent = 'Save failed: ' + err.message;
+          errEl.style.display = 'block';
+        });
+      }
+    });
+  } else {
+    closeProfile();
+    toast('No changes to save');
   }
 }
 
