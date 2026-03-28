@@ -342,7 +342,7 @@
         <div class="browse-name" id="browse-user-name"></div>
       </div>
       <button class="user-pill" onclick="signOut()" title="Sign out">
-        <img id="browse-user-photo" src="" alt="">
+        <img id="browse-user-photo" src="" alt="" onerror="this.style.display='none'">
         <span>Sign out</span>
       </button>
     </div>
@@ -507,7 +507,7 @@
     <div class="app-header-top">
       <button class="app-back" onclick="goToBrowse()">&larr; My Leagues</button>
       <button class="user-pill" onclick="signOut()">
-        <img id="app-user-photo" src="" alt="">
+        <img id="app-user-photo" src="" alt="" onerror="this.style.display='none'">
         <span id="app-user-first"></span>
       </button>
     </div>
@@ -1498,7 +1498,7 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   // Set header
   document.getElementById('app-league-name').textContent = leagueInfo.name || 'League';
   document.getElementById('app-league-code').textContent = leagueInfo.code || leagueId;
-  const photoUrl = currentUser.photoURL || '';
+  const photoUrl = currentUser.photoURL || getDefaultAvatar();
   document.getElementById('app-user-photo').src = photoUrl;
   document.getElementById('app-user-first').textContent = (currentUser.displayName || 'You').split(' ')[0];
 
