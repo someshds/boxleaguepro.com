@@ -924,7 +924,17 @@ function googleSignIn() {
     return;
   }
   const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithRedirect(provider);
+  auth.signInWithPopup(provider).then(result => {
+    console.log('Google sign-in success:', result.user.email);
+  }).catch(err => {
+    console.error('Google sign-in error:', err.code, err.message);
+    if (err.code === 'auth/popup-blocked') {
+      // Fallback to redirect if popup is blocked
+      auth.signInWithRedirect(provider);
+    } else {
+      showAuthError('Sign-in failed: ' + (err.message || 'Unknown error'));
+    }
+  });
 }
 
 function emailSignIn() {
