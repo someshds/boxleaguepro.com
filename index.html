@@ -424,6 +424,7 @@
             <option value="padel">Padel</option>
             <option value="badminton">Badminton</option>
             <option value="squash">Squash</option>
+            <option value="singles">Singles (any sport)</option>
             <option value="other">Other</option>
           </select>
         </div>
@@ -794,8 +795,10 @@
     <div style="padding:20px">
       <div style="font-size:13px;font-weight:600;color:#6b7280;margin-bottom:4px">Player Name</div>
       <input class="fi" id="profile-name" placeholder="Your name" style="margin-bottom:12px">
-      <div style="font-size:13px;font-weight:600;color:#6b7280;margin-bottom:4px">Partner Name</div>
-      <input class="fi" id="profile-partner" placeholder="Your partner's name" style="margin-bottom:12px">
+      <div id="profile-partner-wrap">
+        <div style="font-size:13px;font-weight:600;color:#6b7280;margin-bottom:4px">Partner Name</div>
+        <input class="fi" id="profile-partner" placeholder="Your partner's name" style="margin-bottom:12px">
+      </div>
       <div style="font-size:12px;color:#9ca3af;margin-bottom:16px">Changes will update your team in this league.</div>
       <div id="profile-error" style="display:none;color:#ef4444;font-size:13px;margin-bottom:12px"></div>
       <button class="btn btn-primary" onclick="saveProfile()" style="width:100%;margin-bottom:8px">Save Changes</button>
@@ -1186,6 +1189,10 @@ function openProfile() {
   document.getElementById('profile-name').value = member ? member.playerName || '' : '';
   document.getElementById('profile-partner').value = member ? member.partnerName || '' : '';
   document.getElementById('profile-error').style.display = 'none';
+  // Hide partner field for singles leagues
+  const lg = userLeagues[activeLeagueId];
+  const isSingles = lg && lg.sport && (lg.sport.toLowerCase() === 'squash' || lg.sport.toLowerCase() === 'singles');
+  document.getElementById('profile-partner-wrap').style.display = isSingles ? 'none' : 'block';
   document.getElementById('profile-modal').style.display = 'flex';
 }
 
@@ -1199,7 +1206,9 @@ function saveProfile() {
   const errEl = document.getElementById('profile-error');
   errEl.style.display = 'none';
   if (!newName) { errEl.textContent = 'Please enter your name.'; errEl.style.display = 'block'; return; }
-  if (!newPartner) { errEl.textContent = 'Please enter your partner\'s name.'; errEl.style.display = 'block'; return; }
+  const lg = userLeagues[activeLeagueId];
+  const isSingles = lg && lg.sport && (lg.sport.toLowerCase() === 'squash' || lg.sport.toLowerCase() === 'singles');
+  if (!isSingles && !newPartner) { errEl.textContent = 'Please enter your partner\'s name.'; errEl.style.display = 'block'; return; }
   if (!FIREBASE_READY || !activeLeagueId) { toast('Cannot save'); return; }
 
   const emailKey = sanitizeEmail(currentUser.email);
@@ -1655,12 +1664,28 @@ function joinAndEnterLeague(leagueId) {
    ══════════════════════════════════════ */
 let wizStep = 0;
 let wizLeagueId = null;
+let wizIsSingles = false;
 
 function startWizard(leagueId, leagueName) {
   wizLeagueId = leagueId;
   wizStep = 0;
   wizWeekOff = 0;
   wizAvailability = {};
+  // Detect singles mode from league sport or info
+  const lg = userLeagues[leagueId];
+  wizIsSingles = false;
+  if (lg && lg.sport) {
+    wizIsSingles = lg.sport.toLowerCase() === 'squash' || lg.sport.toLowerCase() === 'singles';
+  }
+  // Also check from Firebase if not in userLeagues yet
+  if (!lg && FIREBASE_READY) {
+    db.ref('/leagues/' + leagueId + '/info/sport').once('value', snap => {
+      const sport = snap.val();
+      if (sport && (sport.toLowerCase() === 'squash' || sport.toLowerCase() === 'singles')) {
+        wizIsSingles = true;
+      }
+    });
+  }
   document.getElementById('wizard-league-name').textContent = leagueName;
   // Pre-fill name from Google account
   const displayName = currentUser.displayName || '';
@@ -1687,6 +1712,12 @@ function wizNext(step) {
   if (step === 0) {
     const name = val('wiz-name');
     if (!name) { toast('Please enter your name'); return; }
+    // Skip partner step in singles mode
+    if (wizIsSingles) {
+      wizStep = 2;
+      renderWizStep();
+      return;
+    }
   }
   if (step === 1) {
     const partner = val('wiz-partner');
@@ -1702,14 +1733,19 @@ function wizNext(step) {
 }
 
 function wizPrev(step) {
-  wizStep = step - 1;
+  // Skip partner step in singles mode
+  if (wizIsSingles && step === 2) {
+    wizStep = 0;
+  } else {
+    wizStep = step - 1;
+  }
   renderWizStep();
 }
 
 function wizSaveData() {
   const myName = val('wiz-name');
-  const partnerName = val('wiz-partner');
-  const teamName = myName + ' & ' + partnerName;
+  const partnerName = wizIsSingles ? '' : val('wiz-partner');
+  const teamName = wizIsSingles ? myName : (myName + ' & ' + partnerName);
 
   if (!FIREBASE_READY || !wizLeagueId) {
     // Demo mode
@@ -1728,7 +1764,7 @@ function wizSaveData() {
     Object.entries(groups).forEach(([id, g]) => {
       if (g.players) {
         const playersLower = g.players.map(p => p.toLowerCase());
-        if (playersLower.includes(myName.toLowerCase()) || playersLower.includes(partnerName.toLowerCase())) {
+        if (playersLower.includes(myName.toLowerCase()) || (!wizIsSingles && partnerName && playersLower.includes(partnerName.toLowerCase()))) {
           existingTeamId = id;
         }
       }
@@ -1739,8 +1775,9 @@ function wizSaveData() {
     // Create or update team
     if (!existingTeamId) {
       const teamId = 'T' + Date.now();
+      const players = wizIsSingles ? [myName] : [myName, partnerName];
       updates['/leagues/' + wizLeagueId + '/groups/' + teamId] = {
-        id: teamId, name: teamName, players: [myName, partnerName]
+        id: teamId, name: teamName, players: players
       };
     }
 
