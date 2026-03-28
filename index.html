@@ -836,9 +836,29 @@ function fmtShort(d) { return d.toLocaleDateString('en-GB', {day:'numeric',month
 function fmtFull(s) { const d = new Date(s + 'T00:00:00'); return d.toLocaleDateString('en-GB', {weekday:'short',day:'numeric',month:'short'}); }
 function cap(s) { return s ? s[0].toUpperCase()+s.slice(1) : s; }
 function copyText(text) {
-  navigator.clipboard.writeText(text).then(() => toast('Copied!')).catch(() => {
-    const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('Copied!');
-  });
+  // Try modern clipboard API first (requires HTTPS)
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(() => toast('Copied!')).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try {
+    document.execCommand('copy');
+    toast('Copied!');
+  } catch(e) {
+    // Last resort — show text to manually copy
+    prompt('Copy this link:', text);
+  }
+  document.body.removeChild(ta);
 }
 function genCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // No 0/O/1/I confusion
