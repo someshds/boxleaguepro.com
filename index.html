@@ -359,6 +359,12 @@
       <div class="divider" style="margin:20px 0"></div>
     </div>
 
+    <!-- Admin tools -->
+    <div id="admin-tools" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:12px;padding:14px 16px;margin-bottom:16px">
+      <div style="font-size:14px;font-weight:700;color:#92400e;margin-bottom:8px">&#128272; Admin Tools</div>
+      <button onclick="adminDeleteAllLeagues()" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">Delete All My Leagues</button>
+    </div>
+
     <!-- Step B: Find or create club -->
     <div class="section-title">Find your club</div>
     <div class="fg">
@@ -837,6 +843,7 @@ if (FIREBASE_READY) {
 let currentUser = null;       // Firebase user object
 let userLeagues = {};         // { leagueId: { info, role } }
 let activeLeagueId = null;    // Currently viewing
+const ADMIN_EMAILS = ['grantdeswardt@gmail.com', 'grant@aifusionautomations.com'];
 let L = { groups: [], availability: {}, settings: {}, booked: {}, members: {} }; // Active league data
 let currentTab = 'availability';
 let weekOff = 0;
@@ -845,6 +852,58 @@ let listeners = [];           // Active Firebase listeners (to detach on league 
 /* ══════════════════════════════════════
    UTILITY
    ══════════════════════════════════════ */
+function isAdmin() { return currentUser && ADMIN_EMAILS.includes(currentUser.email); }
+
+function deleteLeague(leagueId, event) {
+  event.stopPropagation();
+  const lg = userLeagues[leagueId];
+  const name = lg ? lg.name : leagueId;
+  if (!confirm('DELETE league "' + name + '"?\n\nThis will permanently remove:\n- All teams and players\n- All availability data\n- All booked matches\n\nThis cannot be undone.')) return;
+  if (!confirm('Are you absolutely sure? Type OK to confirm.')) return;
+  if (!FIREBASE_READY) { toast('Cannot delete in demo mode'); return; }
+  const updates = {};
+  updates['/leagues/' + leagueId] = null;
+  updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = null;
+  // Remove from clubLeagues
+  if (lg && lg.clubId) {
+    updates['/clubLeagues/' + lg.clubId + '/' + leagueId] = null;
+  }
+  // Remove league code
+  if (lg && lg.code) {
+    updates['/codes/' + lg.code] = null;
+  }
+  db.ref().update(updates).then(() => {
+    toast('League deleted');
+    // Also remove from other users' userLeagues
+    db.ref('/leagues/' + leagueId + '/members').once('value', snap => {
+      // Members already deleted, just clean up
+    });
+  }).catch(err => {
+    console.error('Delete failed:', err);
+    toast('Delete failed: ' + err.message);
+  });
+}
+
+function adminDeleteAllLeagues() {
+  if (!isAdmin()) return;
+  if (!confirm('DELETE ALL your leagues? This cannot be undone.')) return;
+  if (!confirm('FINAL WARNING: All leagues will be permanently deleted. Continue?')) return;
+  const ids = Object.keys(userLeagues);
+  const updates = {};
+  ids.forEach(id => {
+    const lg = userLeagues[id];
+    updates['/leagues/' + id] = null;
+    updates['/userLeagues/' + currentUser.uid + '/' + id] = null;
+    if (lg && lg.clubId) updates['/clubLeagues/' + lg.clubId + '/' + id] = null;
+    if (lg && lg.code) updates['/codes/' + lg.code] = null;
+  });
+  db.ref().update(updates).then(() => {
+    toast('All leagues deleted');
+  }).catch(err => {
+    toast('Delete failed: ' + err.message);
+  });
+}
+
 function esc(s) { if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function val(id) { return document.getElementById(id).value.trim(); }
 function toast(msg) {
@@ -1245,13 +1304,21 @@ function renderMyLeagues() {
   if (ids.length === 0) { wrap.style.display = 'none'; return; }
   wrap.style.display = 'block';
   const sportEmoji = { tennis:'&#127934;', padel:'&#127955;', badminton:'&#127992;', squash:'&#129351;', other:'&#127941;' };
+  const admin = isAdmin();
   el.innerHTML = ids.map(id => {
     const lg = userLeagues[id];
-    return `<div class="league-card" onclick="enterLeague('${esc(id)}')">
-      <div class="league-card-name">${esc(lg.name || 'Unnamed League')}</div>
-      <div class="league-card-meta">${esc(lg.clubName || '')}${lg.clubName ? ' &middot; ' : ''}${esc(lg.sport || '')}</div>
+    const deleteBtn = admin ? `<button onclick="deleteLeague('${esc(id)}', event)" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap" title="Delete league">&#128465; Delete</button>` : '';
+    return `<div class="league-card" onclick="enterLeague('${esc(id)}')" style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div class="league-card-name">${esc(lg.name || 'Unnamed League')}</div>
+        <div class="league-card-meta">${esc(lg.clubName || '')}${lg.clubName ? ' &middot; ' : ''}${esc(lg.sport || '')}</div>
+      </div>
+      ${deleteBtn}
     </div>`;
   }).join('');
+  // Admin tools
+  const adminEl = document.getElementById('admin-tools');
+  if (adminEl) adminEl.style.display = admin ? 'block' : 'none';
 }
 
 function searchClubs() {
