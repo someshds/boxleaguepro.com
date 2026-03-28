@@ -898,6 +898,11 @@ function initTips() {
 
 /* ── Screen management ── */
 function showScreen(id) {
+  // Auth guard — only allow auth/loading screens without a user
+  if (id !== 'auth' && id !== 'loading' && !currentUser) {
+    console.warn('Auth guard: no user, redirecting to auth');
+    id = 'auth';
+  }
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById('screen-' + id);
   if (el) el.classList.add('active');
