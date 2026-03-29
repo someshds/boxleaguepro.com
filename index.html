@@ -424,26 +424,31 @@
       <button onclick="adminDeleteAllLeagues()" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">Delete All My Leagues</button>
     </div>
 
-    <!-- Step B: Find or create club -->
-    <div class="section-title" id="tour-target-join">Find your club</div>
-    <div class="fg">
-      <input class="fi" id="inp-club-search" placeholder="Search or type club name..." oninput="searchClubs()">
-    </div>
-    <div id="club-results"></div>
-    <div id="club-create-option" style="display:none">
-      <div class="option-card" onclick="createClubFromSearch()">
-        <div style="display:flex;align-items:center;gap:12px">
-          <span style="font-size:28px">+</span>
-          <div>
-            <div class="option-card-name" id="club-create-name">Create new club</div>
-            <div class="option-card-desc">First one here? Set up your club.</div>
+    <!-- Step B: Find or create club (collapsible for returning users) -->
+    <div id="browse-join-section">
+      <div id="browse-join-toggle" style="display:none;margin-bottom:16px">
+        <button class="btn btn-secondary btn-full" onclick="toggleJoinSection()" id="browse-join-toggle-btn" style="font-size:15px">Join or create another league</button>
+      </div>
+      <div id="browse-join-content">
+        <div class="section-title" id="tour-target-join">Find your club</div>
+        <div class="fg">
+          <input class="fi" id="inp-club-search" placeholder="Search or type club name..." oninput="searchClubs()">
+        </div>
+        <div id="club-results"></div>
+        <div id="club-create-option" style="display:none">
+          <div class="option-card" onclick="createClubFromSearch()">
+            <div style="display:flex;align-items:center;gap:12px">
+              <span style="font-size:28px">+</span>
+              <div>
+                <div class="option-card-name" id="club-create-name">Create new club</div>
+                <div class="option-card-desc">First one here? Set up your club.</div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Step C: Select or create league (shown after club selected) -->
-    <div id="browse-leagues" style="display:none">
+        <!-- Step C: Select or create league (shown after club selected) -->
+        <div id="browse-leagues" style="display:none">
       <div class="divider" style="margin:20px 0"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div class="section-title" style="margin-bottom:0">Leagues at <span id="browse-club-name"></span></div>
@@ -479,6 +484,8 @@
         <button class="btn btn-primary btn-full" onclick="createLeagueInClub()">Create League</button>
       </div>
     </div>
+      </div><!-- /browse-join-content -->
+    </div><!-- /browse-join-section -->
   </div>
 </div>
 
@@ -1550,11 +1557,33 @@ function loadUserLeagues() {
   });
 }
 
+function toggleJoinSection() {
+  const content = document.getElementById('browse-join-content');
+  const isHidden = content.style.display === 'none';
+  content.style.display = isHidden ? 'block' : 'none';
+  document.getElementById('browse-join-toggle-btn').textContent = isHidden ? 'Hide' : 'Join or create another league';
+}
+
 function renderMyLeagues() {
   const el = document.getElementById('browse-my-leagues-list');
   const wrap = document.getElementById('browse-my-leagues');
   const ids = Object.keys(userLeagues);
-  if (ids.length === 0) { wrap.style.display = 'none'; return; }
+  const hasLeagues = ids.length > 0;
+
+  // For returning users: collapse the join/create section behind a button
+  const joinToggle = document.getElementById('browse-join-toggle');
+  const joinContent = document.getElementById('browse-join-content');
+  if (joinToggle && joinContent) {
+    if (hasLeagues) {
+      joinToggle.style.display = 'block';
+      joinContent.style.display = 'none';
+    } else {
+      joinToggle.style.display = 'none';
+      joinContent.style.display = 'block';
+    }
+  }
+
+  if (!hasLeagues) { wrap.style.display = 'none'; return; }
   wrap.style.display = 'block';
   const sportEmoji = { tennis:'&#127934;', padel:'&#127955;', badminton:'&#127992;', squash:'&#129351;', other:'&#127941;' };
   const admin = isAdmin();
