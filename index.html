@@ -623,7 +623,11 @@
         </div>
         <div class="fg">
           <label class="fl">Availability Deadline</label>
-          <input class="fi" type="datetime-local" id="inp-deadline" onchange="saveSettings()">
+          <div style="display:flex;gap:8px;align-items:center">
+            <input class="fi" type="datetime-local" id="inp-deadline" style="flex:1">
+            <button class="btn btn-primary btn-sm" onclick="saveDeadline()" style="white-space:nowrap;padding:10px 18px">Save</button>
+            <button class="btn btn-sm" onclick="clearDeadline()" style="white-space:nowrap;padding:10px 12px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;font-weight:600;cursor:pointer" title="Remove deadline">&times;</button>
+          </div>
         </div>
       </div>
 
@@ -2128,7 +2132,6 @@ function fbSetAvailBatch(updates) {
 
 function saveSettings() {
   L.settings.leagueName = val('inp-league-name');
-  L.settings.deadline = document.getElementById('inp-deadline').value;
   const ref = leagueRef('settings');
   if (ref) ref.set(L.settings); else localSave();
   renderHeader(); renderDeadline();
@@ -2138,6 +2141,25 @@ function saveSettings() {
     db.ref('/userLeagues/' + currentUser.uid + '/' + activeLeagueId + '/name').set(L.settings.leagueName);
     db.ref('/leagues/' + activeLeagueId + '/info/name').set(L.settings.leagueName);
   }
+}
+
+function saveDeadline() {
+  const val = document.getElementById('inp-deadline').value;
+  if (!val) { toast('Please pick a date and time first'); return; }
+  L.settings.deadline = val;
+  const ref = leagueRef('settings');
+  if (ref) ref.set(L.settings); else localSave();
+  renderDeadline();
+  toast('Deadline saved!');
+}
+
+function clearDeadline() {
+  document.getElementById('inp-deadline').value = '';
+  L.settings.deadline = '';
+  const ref = leagueRef('settings');
+  if (ref) ref.set(L.settings); else localSave();
+  renderDeadline();
+  toast('Deadline removed');
 }
 
 function fbSetBooked(matchKey, slotData) {
