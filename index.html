@@ -255,6 +255,21 @@
     .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--primary-dark); color: #fff; padding: 12px 22px; border-radius: 24px; font-size: 14px; font-weight: 600; z-index: 999; opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: nowrap; }
     .toast.show { opacity: 1; }
 
+    /* ── AIFA CTA Banner ── */
+    .aifa-cta-banner { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 32px 20px; text-align: center; border-top: 2px solid #2563eb; }
+    .aifa-cta-inner { max-width: 520px; margin: 0 auto; }
+    .aifa-cta-icon { font-size: 36px; margin-bottom: 12px; }
+    .aifa-cta-headline { font-size: 20px; font-weight: 800; color: #fff; line-height: 1.3; margin-bottom: 8px; }
+    .aifa-cta-text { font-size: 15px; color: #94a3b8; line-height: 1.6; margin-bottom: 20px; }
+    .aifa-cta-btn { display: inline-block; background: #2563eb; color: #fff; padding: 14px 28px; border-radius: 12px; font-size: 16px; font-weight: 700; text-decoration: none; transition: background 0.15s, transform 0.1s; }
+    .aifa-cta-btn:hover { background: #1d4ed8; transform: translateY(-1px); }
+    .aifa-cta-btn:active { transform: scale(0.98); }
+    .aifa-cta-examples { margin-top: 18px; font-size: 13px; color: #64748b; }
+    .aifa-cta-examples a { color: #60a5fa; text-decoration: none; font-weight: 600; }
+    .aifa-cta-examples a:hover { text-decoration: underline; }
+    .aifa-cta-tags { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
+    .aifa-cta-tag { background: rgba(37,99,235,0.15); color: #60a5fa; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+
     /* ── Footer ── */
     .aifa-footer { background: #0f172a; color: #64748b; text-align: center; padding: 28px 20px 32px; border-top: 1px solid #1e293b; }
     .aifa-footer-brand { font-size: 15px; font-weight: 700; color: #94a3b8; margin-bottom: 6px; }
@@ -748,6 +763,25 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- ── AIFA CTA Banner ── -->
+  <div class="aifa-cta-banner">
+    <div class="aifa-cta-inner">
+      <div class="aifa-cta-icon">&#128161;</div>
+      <div class="aifa-cta-headline">Got an idea for an app or automation?</div>
+      <div class="aifa-cta-text">Need help developing it, or just curious how much it would cost? We build software, automations and AI systems for businesses &mdash; BoxLeague Pro is just one example.</div>
+      <div class="aifa-cta-text" style="margin-top:-8px;font-size:14px;color:#94a3b8"><strong style="color:#60a5fa">Want your club&rsquo;s branding on this app?</strong> We can add your logo, colours, and club name for a small fee. Just ask.</div>
+      <a href="mailto:grant@aifusionautomations.com?subject=App%20Idea%20%2F%20Enquiry" class="aifa-cta-btn">Get in Touch</a>
+      <div class="aifa-cta-tags">
+        <span class="aifa-cta-tag">Custom Apps</span>
+        <span class="aifa-cta-tag">AI Automations</span>
+        <span class="aifa-cta-tag">Business Software</span>
+        <span class="aifa-cta-tag">CRM Systems</span>
+        <span class="aifa-cta-tag">Club Branding</span>
+      </div>
+      <div class="aifa-cta-examples">See what else we&rsquo;re building at <a href="https://tools.aifusionautomations.com" target="_blank">tools.aifusionautomations.com</a></div>
+    </div>
   </div>
 
   <!-- Footer -->
