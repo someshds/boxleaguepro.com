@@ -411,7 +411,7 @@
     </div>
   </div>
   <div class="browse-body">
-    <!-- Step A: Returning user leagues -->
+    <!-- Returning user: Your Leagues -->
     <div id="browse-my-leagues" style="display:none">
       <div class="section-title" style="margin-top:8px">Your Leagues</div>
       <div id="browse-my-leagues-list"></div>
@@ -424,55 +424,93 @@
       <button onclick="adminDeleteAllLeagues()" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">Delete All My Leagues</button>
     </div>
 
-    <!-- Step B: Find or create club (collapsible for returning users) -->
-    <div id="browse-join-section">
-      <div id="browse-join-toggle" style="display:none;margin-bottom:16px">
-        <button class="btn btn-secondary btn-full" onclick="toggleJoinSection()" id="browse-join-toggle-btn" style="font-size:15px">Join or create another league</button>
-      </div>
-      <div id="browse-join-content">
-        <div class="section-title" id="tour-target-join">Find your club</div>
-        <div class="fg">
-          <input class="fi" id="inp-club-search" placeholder="Search or type club name..." oninput="searchClubs()">
+    <!-- Two clear options -->
+    <div id="browse-options">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+        <div class="option-card" onclick="showJoinFlow()" id="opt-join" style="text-align:center;padding:24px 16px;cursor:pointer;border:2px solid transparent;transition:border-color 0.2s">
+          <div style="font-size:36px;margin-bottom:8px">&#127934;</div>
+          <div style="font-size:17px;font-weight:800;color:#1a1a1a">Join a League</div>
+          <div style="font-size:13px;color:#6b7280;margin-top:4px">Find your club &amp; league</div>
         </div>
-        <div id="club-results"></div>
-        <div id="club-create-option" style="display:none">
-          <div class="option-card" onclick="createClubFromSearch()">
+        <div class="option-card" onclick="showCreateFlow()" id="opt-create" style="text-align:center;padding:24px 16px;cursor:pointer;border:2px solid transparent;transition:border-color 0.2s">
+          <div style="font-size:36px;margin-bottom:8px">&#10133;</div>
+          <div style="font-size:17px;font-weight:800;color:#1a1a1a">Start a League</div>
+          <div style="font-size:13px;color:#6b7280;margin-top:4px">Create a new box league</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JOIN FLOW: Select club → select league -->
+    <div id="join-flow" style="display:none">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+        <button class="btn btn-secondary btn-sm" onclick="hideJoinFlow()" style="padding:6px 12px">&larr;</button>
+        <div class="section-title" style="margin:0" id="tour-target-join">Select your club</div>
+      </div>
+      <div class="fg">
+        <input class="fi" id="inp-club-search" placeholder="Search for your club..." oninput="searchClubs()" style="font-size:16px">
+      </div>
+      <div id="club-results"></div>
+      <div id="club-create-option" style="display:none">
+        <div class="option-card" onclick="createClubFromSearch()">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-size:28px">+</span>
+            <div>
+              <div class="option-card-name" id="club-create-name">Create new club</div>
+              <div class="option-card-desc">Can't find your club? Create it.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Leagues at selected club -->
+      <div id="browse-leagues" style="display:none">
+        <div class="divider" style="margin:20px 0"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="section-title" style="margin-bottom:0">Leagues at <span id="browse-club-name"></span></div>
+          <button class="btn btn-secondary btn-sm" onclick="clearClubSelection()">&larr; Change club</button>
+        </div>
+        <div id="league-results"></div>
+      </div>
+    </div>
+
+    <!-- CREATE FLOW: Club → League name → End date → Share -->
+    <div id="create-flow" style="display:none">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+        <button class="btn btn-secondary btn-sm" onclick="hideCreateFlow()" style="padding:6px 12px">&larr;</button>
+        <div class="section-title" style="margin:0">Create a New League</div>
+      </div>
+
+      <!-- Step 1: Club -->
+      <div id="create-step-club">
+        <div class="fg">
+          <label class="fl">Club Name</label>
+          <input class="fi" id="inp-create-club-search" placeholder="Search or type club name..." oninput="searchClubsCreate()" style="font-size:16px">
+        </div>
+        <div id="create-club-results"></div>
+        <div id="create-club-create-option" style="display:none">
+          <div class="option-card" onclick="createClubFromCreate()">
             <div style="display:flex;align-items:center;gap:12px">
               <span style="font-size:28px">+</span>
               <div>
-                <div class="option-card-name" id="club-create-name">Create new club</div>
+                <div class="option-card-name" id="create-club-create-name">Create new club</div>
                 <div class="option-card-desc">First one here? Set up your club.</div>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Step C: Select or create league (shown after club selected) -->
-        <div id="browse-leagues" style="display:none">
-      <div class="divider" style="margin:20px 0"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div class="section-title" style="margin-bottom:0">Leagues at <span id="browse-club-name"></span></div>
-        <button class="btn btn-secondary btn-sm" onclick="clearClubSelection()">&larr; Change club</button>
-      </div>
-      <div id="league-results"></div>
-      <div class="option-card" onclick="showCreateLeagueForm()">
-        <div style="display:flex;align-items:center;gap:12px">
-          <span style="font-size:28px">+</span>
-          <div>
-            <div class="option-card-name">Create a new league</div>
-            <div class="option-card-desc">Start a new box league at this club</div>
-          </div>
+      <!-- Step 2: League details (shown after club selected) -->
+      <div id="create-step-details" style="display:none">
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:14px;color:#166534">
+          <strong id="create-selected-club-name"></strong> <button onclick="resetCreateClub()" style="background:none;border:none;color:#059669;font-size:13px;font-weight:600;cursor:pointer;text-decoration:underline;margin-left:8px">Change</button>
         </div>
-      </div>
-      <div id="create-league-form" style="display:none" class="card mt12">
-        <div class="card-title" style="margin-bottom:12px">New League</div>
         <div class="fg">
           <label class="fl">League Name</label>
-          <input class="fi" id="inp-create-league-name" placeholder="e.g. Men's Doubles Box 3">
+          <input class="fi" id="inp-create-league-name" placeholder="e.g. Men's Doubles Box 3" style="font-size:16px">
         </div>
         <div class="fg">
           <label class="fl">Sport</label>
-          <select class="fi" id="inp-create-league-sport">
+          <select class="fi" id="inp-create-league-sport" style="font-size:16px">
             <option value="tennis">Tennis</option>
             <option value="padel">Padel</option>
             <option value="badminton">Badminton</option>
@@ -481,11 +519,32 @@
             <option value="other">Other</option>
           </select>
         </div>
-        <button class="btn btn-primary btn-full" onclick="createLeagueInClub()">Create League</button>
+        <div class="fg">
+          <label class="fl">League End Date</label>
+          <input class="fi" type="date" id="inp-create-league-deadline" style="font-size:16px">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="createLeagueInClub()" style="font-size:16px;padding:14px;margin-top:8px">Create League</button>
+      </div>
+
+      <!-- Step 3: Share (shown after league created) -->
+      <div id="create-step-share" style="display:none">
+        <div style="text-align:center;padding:20px 0">
+          <div style="font-size:48px;margin-bottom:12px">&#9989;</div>
+          <div style="font-size:20px;font-weight:800;color:#166534;margin-bottom:4px">League Created!</div>
+          <div style="font-size:14px;color:#6b7280" id="create-share-league-name"></div>
+        </div>
+        <div style="background:#f0fdf4;border:2px solid #22c55e;border-radius:14px;padding:20px;margin-bottom:16px">
+          <div style="font-size:13px;font-weight:700;color:#166534;letter-spacing:1px;margin-bottom:8px">INVITE LINK</div>
+          <div id="create-share-link" style="font-size:14px;word-break:break-all;background:#fff;padding:12px;border-radius:8px;font-weight:600;margin-bottom:14px;border:1px solid #bbf7d0;color:#1a1a1a"></div>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-primary" onclick="copyCreateInviteLink()" style="flex:1;font-size:15px">&#128203; Copy Link</button>
+            <button class="btn btn-whatsapp" onclick="shareCreateWhatsApp()" style="flex:1;font-size:15px">&#128172; WhatsApp</button>
+          </div>
+          <button class="btn btn-secondary btn-full" onclick="shareCreateEmail()" style="margin-top:10px;font-size:14px">&#9993; Send via Email</button>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="enterCreatedLeague()" style="font-size:16px;padding:14px">Continue to League &rarr;</button>
       </div>
     </div>
-      </div><!-- /browse-join-content -->
-    </div><!-- /browse-join-section -->
   </div>
 </div>
 
@@ -1557,12 +1616,7 @@ function loadUserLeagues() {
   });
 }
 
-function toggleJoinSection() {
-  const content = document.getElementById('browse-join-content');
-  const isHidden = content.style.display === 'none';
-  content.style.display = isHidden ? 'block' : 'none';
-  document.getElementById('browse-join-toggle-btn').textContent = isHidden ? 'Hide' : 'Join or create another league';
-}
+let createdLeagueId = null; // Track league just created for the share flow
 
 function renderMyLeagues() {
   const el = document.getElementById('browse-my-leagues-list');
@@ -1570,27 +1624,13 @@ function renderMyLeagues() {
   const ids = Object.keys(userLeagues);
   const hasLeagues = ids.length > 0;
 
-  // For returning users: collapse the join/create section behind a button
-  const joinToggle = document.getElementById('browse-join-toggle');
-  const joinContent = document.getElementById('browse-join-content');
-  if (joinToggle && joinContent) {
-    if (hasLeagues) {
-      joinToggle.style.display = 'block';
-      joinContent.style.display = 'none';
-    } else {
-      joinToggle.style.display = 'none';
-      joinContent.style.display = 'block';
-    }
-  }
-
-  // Admin tools — always update visibility (before early return)
+  // Admin tools — always update visibility
   const admin = isAdmin();
   const adminEl = document.getElementById('admin-tools');
   if (adminEl) adminEl.style.display = admin ? 'block' : 'none';
 
   if (!hasLeagues) { wrap.style.display = 'none'; return; }
   wrap.style.display = 'block';
-  const sportEmoji = { tennis:'&#127934;', padel:'&#127955;', badminton:'&#127992;', squash:'&#129351;', other:'&#127941;' };
   el.innerHTML = ids.map(id => {
     const lg = userLeagues[id];
     const deleteBtn = admin ? `<button onclick="deleteLeague('${esc(id)}', event)" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap" title="Delete league">&#128465; Delete</button>` : '';
@@ -1602,6 +1642,133 @@ function renderMyLeagues() {
       ${deleteBtn}
     </div>`;
   }).join('');
+}
+
+/* ── JOIN FLOW ── */
+function showJoinFlow() {
+  document.getElementById('browse-options').style.display = 'none';
+  document.getElementById('join-flow').style.display = 'block';
+  document.getElementById('inp-club-search').value = '';
+  document.getElementById('club-results').innerHTML = '';
+  document.getElementById('club-create-option').style.display = 'none';
+  document.getElementById('browse-leagues').style.display = 'none';
+  document.getElementById('inp-club-search').focus();
+}
+
+function hideJoinFlow() {
+  document.getElementById('join-flow').style.display = 'none';
+  document.getElementById('browse-options').style.display = 'block';
+}
+
+/* ── CREATE FLOW ── */
+function showCreateFlow() {
+  document.getElementById('browse-options').style.display = 'none';
+  document.getElementById('create-flow').style.display = 'block';
+  document.getElementById('create-step-club').style.display = 'block';
+  document.getElementById('create-step-details').style.display = 'none';
+  document.getElementById('create-step-share').style.display = 'none';
+  document.getElementById('inp-create-club-search').value = '';
+  document.getElementById('create-club-results').innerHTML = '';
+  document.getElementById('create-club-create-option').style.display = 'none';
+  selectedClubId = null;
+  selectedClubName = '';
+  document.getElementById('inp-create-club-search').focus();
+}
+
+function hideCreateFlow() {
+  document.getElementById('create-flow').style.display = 'none';
+  document.getElementById('browse-options').style.display = 'block';
+}
+
+function searchClubsCreate() {
+  const q = document.getElementById('inp-create-club-search').value.toLowerCase();
+  const results = document.getElementById('create-club-results');
+  const createOpt = document.getElementById('create-club-create-option');
+  if (!q) { results.innerHTML = ''; createOpt.style.display = 'none'; return; }
+  const matches = Object.entries(allClubs).filter(([id, c]) => c.name.toLowerCase().includes(q));
+  if (matches.length > 0) {
+    results.innerHTML = matches.map(([id, c]) =>
+      `<div class="club-list-item" onclick="selectClubForCreate('${esc(id)}','${esc(c.name)}')">
+        <span class="club-list-item-name">${esc(c.name)}</span>
+        <span class="club-list-item-count">&rarr;</span>
+      </div>`
+    ).join('');
+  } else {
+    results.innerHTML = '';
+  }
+  document.getElementById('create-club-create-name').textContent = 'Create "' + document.getElementById('inp-create-club-search').value + '"';
+  createOpt.style.display = 'block';
+}
+
+function selectClubForCreate(clubId, clubName) {
+  selectedClubId = clubId;
+  selectedClubName = clubName;
+  document.getElementById('create-step-club').style.display = 'none';
+  document.getElementById('create-step-details').style.display = 'block';
+  document.getElementById('create-selected-club-name').textContent = clubName;
+  document.getElementById('inp-create-league-name').focus();
+}
+
+function createClubFromCreate() {
+  const name = document.getElementById('inp-create-club-search').value;
+  if (!name) { toast('Enter a club name'); return; }
+  if (!FIREBASE_READY) {
+    const id = 'C' + Date.now();
+    allClubs[id] = { name };
+    selectClubForCreate(id, name);
+    return;
+  }
+  const ref = db.ref('/clubs').push();
+  ref.set({ name, createdBy: currentUser.uid, createdAt: Date.now() }).then(() => {
+    selectClubForCreate(ref.key, name);
+    toast('Club created!');
+  });
+}
+
+function resetCreateClub() {
+  document.getElementById('create-step-details').style.display = 'none';
+  document.getElementById('create-step-club').style.display = 'block';
+  document.getElementById('inp-create-club-search').value = '';
+  document.getElementById('create-club-results').innerHTML = '';
+  document.getElementById('create-club-create-option').style.display = 'none';
+  selectedClubId = null;
+  selectedClubName = '';
+}
+
+function showCreateShareStep(leagueId, leagueName) {
+  createdLeagueId = leagueId;
+  document.getElementById('create-step-club').style.display = 'none';
+  document.getElementById('create-step-details').style.display = 'none';
+  document.getElementById('create-step-share').style.display = 'block';
+  document.getElementById('create-share-league-name').textContent = leagueName + ' at ' + selectedClubName;
+  const link = window.location.origin + window.location.pathname + '?league=' + leagueId;
+  document.getElementById('create-share-link').textContent = link;
+}
+
+function copyCreateInviteLink() {
+  const link = document.getElementById('create-share-link').textContent;
+  navigator.clipboard.writeText(link).then(() => toast('Link copied!')).catch(() => toast('Copy failed'));
+}
+
+function shareCreateWhatsApp() {
+  const link = document.getElementById('create-share-link').textContent;
+  const leagueName = document.getElementById('create-share-league-name').textContent;
+  const msg = encodeURIComponent('Join our box league!\n\n' + leagueName + '\n\n' + link);
+  window.open('https://wa.me/?text=' + msg, '_blank');
+}
+
+function shareCreateEmail() {
+  const link = document.getElementById('create-share-link').textContent;
+  const leagueName = document.getElementById('create-share-league-name').textContent;
+  const subject = encodeURIComponent('Join ' + leagueName);
+  const body = encodeURIComponent('Hi,\n\nI\'ve set up a box league and would like you to join!\n\n' + leagueName + '\n\nClick the link below to join:\n' + link + '\n\nSee you on court!');
+  window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
+}
+
+function enterCreatedLeague() {
+  if (createdLeagueId) {
+    startWizard(createdLeagueId, document.getElementById('create-share-league-name').textContent.split(' at ')[0]);
+  }
 }
 
 function searchClubs() {
@@ -1703,14 +1870,15 @@ function createLeagueInClub() {
   if (!name) { toast('Enter a league name'); return; }
 
   const code = genCode();
+  const deadline = val('inp-create-league-deadline') || '';
 
   if (!FIREBASE_READY) {
     const id = 'L' + Date.now();
     userLeagues[id] = { name, sport, code, role: 'organiser', clubId: selectedClubId, clubName: selectedClubName };
     localStorage.setItem('blp_leagues', JSON.stringify(userLeagues));
-    const leagueData = { info: { name, sport, code, clubId: selectedClubId, clubName: selectedClubName, organiserUid: 'demo', createdAt: Date.now() }, groups: {}, availability: {}, settings: { leagueName: name }, booked: {}, members: {} };
+    const leagueData = { info: { name, sport, code, clubId: selectedClubId, clubName: selectedClubName, organiserUid: 'demo', createdAt: Date.now() }, groups: {}, availability: {}, settings: { leagueName: name, deadline: deadline }, booked: {}, members: {} };
     localStorage.setItem('blp_league_' + id, JSON.stringify(leagueData));
-    startWizard(id, name);
+    showCreateShareStep(id, name);
     return;
   }
 
@@ -1719,14 +1887,14 @@ function createLeagueInClub() {
   const updates = {};
   updates['/leagues/' + leagueId] = {
     info: { name, sport, code, clubId: selectedClubId, clubName: selectedClubName, organiserUid: currentUser.uid, createdAt: Date.now() },
-    groups: {}, availability: {}, settings: { leagueName: name }, booked: {}, members: {}
+    groups: {}, availability: {}, settings: { leagueName: name, deadline: deadline }, booked: {}, members: {}
   };
   updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = { name, sport, code, role: 'organiser', clubId: selectedClubId, clubName: selectedClubName };
   updates['/clubLeagues/' + selectedClubId + '/' + leagueId] = { name, sport };
   updates['/codes/' + code] = leagueId;
 
   db.ref().update(updates).then(() => {
-    startWizard(leagueId, name);
+    showCreateShareStep(leagueId, name);
   }).catch(err => {
     console.error('Create league error:', err);
     toast('Error creating league');
@@ -2002,6 +2170,10 @@ function wizToggleCell(el) {
 function wizChangeWeek(dir) { wizWeekOff += dir; renderWizAvailGrid(); }
 
 function goToBrowse() {
+  // Reset flow states
+  document.getElementById('browse-options').style.display = 'block';
+  document.getElementById('join-flow').style.display = 'none';
+  document.getElementById('create-flow').style.display = 'none';
   showScreen('browse');
 }
 
