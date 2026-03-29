@@ -608,7 +608,7 @@
           <div class="edu-tip-title">Setting Up Your League</div>
         </div>
         <div class="edu-tip-body">
-          Add your <strong>teams</strong> (doubles pairs). Then share the <strong>league code</strong> so players can join and fill in their availability.
+          Add your <strong>teams</strong> (doubles pairs). Then share the <strong>invite link</strong> so players can join and fill in their availability.
           <br><br>
           <strong>Tip:</strong> Use the quick template below to add all teams in seconds.
         </div>
@@ -2388,7 +2388,7 @@ function renderMembers() {
   if (!el) return;
   const memberKeys = Object.keys(L.members);
   if (memberKeys.length === 0) {
-    el.innerHTML = '<div class="txt-muted" style="padding:8px 0">No members have joined yet. Share the league code!</div>';
+    el.innerHTML = '<div class="txt-muted" style="padding:8px 0">No members have joined yet. Share the invite link!</div>';
     return;
   }
   const allPlayers = getAllPlayers();
