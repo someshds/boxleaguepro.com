@@ -425,19 +425,7 @@
     </div>
 
     <!-- Step B: Find or create club -->
-    <!-- Join by code -->
-    <div id="tour-target-join" style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:16px;box-shadow:var(--shadow)">
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Have a league code?</div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.4">Your league organiser will have shared a 6-character code (e.g. AK7T3P). Enter it below to join their league instantly.</div>
-      <div style="display:flex;gap:8px">
-        <input class="fi" id="inp-league-code" placeholder="e.g. AK7T3P" maxlength="6" style="flex:1;text-transform:uppercase;letter-spacing:2px;font-weight:700;text-align:center">
-        <button class="btn btn-primary" onclick="joinByCode()" style="white-space:nowrap">Join</button>
-      </div>
-      <div id="join-code-error" style="display:none;color:#ef4444;font-size:13px;margin-top:6px"></div>
-      <div style="font-size:12px;color:var(--muted);margin-top:6px">Don't have a code? Search for your club below and browse available leagues.</div>
-    </div>
-
-    <div class="section-title">Find your club</div>
+    <div class="section-title" id="tour-target-join">Find your club</div>
     <div class="fg">
       <input class="fi" id="inp-club-search" placeholder="Search or type club name..." oninput="searchClubs()">
     </div>
@@ -2831,11 +2819,11 @@ function closeFeedback() {
    ══════════════════════════════════════ */
 const TOUR_STEPS = [
   { target: null, title: 'Welcome to BoxLeague Pro! \u{1F3BE}', text: "Let's take a quick tour to get you set up. It only takes 30 seconds." },
-  { target: '#inp-club-search', title: 'Step 1: Find Your Club', text: 'Search for your club or create a new one. This is where all your leagues will live.' },
-  { target: '#tour-target-join', title: 'Step 2: Join a League', text: 'A league code is a 6-character shortcut (like AK7T3P) that takes you straight into a league — no searching needed. When someone creates a league, they get a code to share with players via WhatsApp, text, or email. Just type it here and tap Join. Don\'t have a code? Scroll down to find your club or create a new league.' },
-  { target: null, title: 'Step 3: Quick Setup', text: "The wizard walks you through entering your name, picking your partner (for doubles), and setting your availability. Takes under a minute.", icon: '\u{2699}\u{FE0F}' },
-  { target: null, title: 'Step 4: Invite Your Players', text: 'Share the league code or WhatsApp link with your players. They can join and set their own availability.', icon: '\u{1F4E8}' },
-  { target: null, title: 'Step 5: Find & Book Matches', text: "The Match Finder shows available opponents based on everyone's availability. Tap to book a match instantly.", icon: '\u{1F3BE}' },
+  { target: '#inp-club-search', title: 'Step 1: Find Your Club', text: 'Search for your club by name, or create a new one if it\'s not listed yet. This is where all your leagues will live.' },
+  { target: '#tour-target-join', title: 'Step 2: Join or Create a League', text: 'Pick an existing league at your club, or create a new one. If someone sent you an invite link, it will take you straight to the right league automatically.' },
+  { target: null, title: 'Step 3: Quick Setup', text: "A short wizard walks you through entering your name, picking your doubles partner, and marking when you're free to play. Takes under a minute.", icon: '\u{2699}\u{FE0F}' },
+  { target: null, title: 'Step 4: Invite Your Players', text: 'After setup, you get a share link. Send it to your players via WhatsApp, text, or email. They click the link, sign up, and set their own availability.', icon: '\u{1F4E8}' },
+  { target: null, title: 'Step 5: Find & Book Matches', text: "The Match Finder compares everyone's availability and shows times when all players can play. Tap a time slot to book a match instantly.", icon: '\u{1F3BE}' },
   { target: null, title: "You're All Set! \u{1F3C6}", text: "That's it \u2014 no spreadsheets, no WhatsApp chaos. If you need help, tap the chat bubble in the bottom corner." }
 ];
 
