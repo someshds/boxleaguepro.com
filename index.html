@@ -256,6 +256,33 @@
     .my-match.ready { border-left-color: var(--green); }
     .my-match.blocked { border-left-color: var(--amber); }
 
+    /* ── Guided Tour ── */
+    .tour-overlay { position: fixed; inset: 0; z-index: 99999; pointer-events: none; opacity: 0; transition: opacity 0.3s ease; }
+    .tour-overlay.active { opacity: 1; pointer-events: auto; }
+    .tour-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.7); transition: clip-path 0.4s ease; }
+    .tour-tooltip { position: absolute; background: #fff; border-radius: 12px; padding: 20px; max-width: 340px; width: calc(100vw - 40px); box-shadow: 0 8px 32px rgba(0,0,0,0.25); z-index: 100000; transform: translateY(8px); opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease; }
+    .tour-tooltip.visible { transform: translateY(0); opacity: 1; }
+    .tour-tooltip-title { font-size: 18px; font-weight: 800; color: #1a1a1a; margin-bottom: 6px; }
+    .tour-tooltip-text { font-size: 14px; color: #6b7280; line-height: 1.5; margin-bottom: 16px; }
+    .tour-tooltip-btns { display: flex; gap: 8px; align-items: center; }
+    .tour-btn { padding: 10px 18px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; transition: all 0.15s; }
+    .tour-btn-primary { background: #3884F4; color: #fff; flex: 1; }
+    .tour-btn-primary:hover { background: #2563eb; }
+    .tour-btn-secondary { background: transparent; color: #6b7280; border: 1.5px solid #e2e8f0; }
+    .tour-btn-secondary:hover { background: #f1f5f9; }
+    .tour-btn-skip { background: none; border: none; color: #9ca3af; font-size: 13px; font-weight: 600; cursor: pointer; padding: 8px 4px; }
+    .tour-btn-skip:hover { color: #6b7280; }
+    .tour-dots { display: flex; gap: 6px; justify-content: center; margin-top: 14px; }
+    .tour-dot { width: 8px; height: 8px; border-radius: 50%; background: #e2e8f0; transition: background 0.2s; }
+    .tour-dot.active { background: #3884F4; }
+    .tour-dot.done { background: #00D296; }
+    .tour-help-btn { position: fixed; bottom: 140px; right: 20px; z-index: 9998; width: 40px; height: 40px; border-radius: 50%; background: #3884F4; color: #fff; font-size: 20px; font-weight: 800; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(56,132,244,0.4); display: flex; align-items: center; justify-content: center; transition: transform 0.15s; }
+    .tour-help-btn:hover { transform: scale(1.1); }
+    @media (max-width: 480px) {
+      .tour-tooltip { max-width: calc(100vw - 32px); padding: 16px; }
+      .tour-help-btn { bottom: 120px; right: 12px; width: 36px; height: 36px; font-size: 18px; }
+    }
+
     /* ── Share link cards ── */
     .share-card { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; }
 
@@ -399,7 +426,7 @@
 
     <!-- Step B: Find or create club -->
     <!-- Join by code -->
-    <div style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:16px;box-shadow:var(--shadow)">
+    <div id="tour-target-join" style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:16px;box-shadow:var(--shadow)">
       <div style="font-size:15px;font-weight:700;margin-bottom:8px">Have a league code?</div>
       <div style="display:flex;gap:8px">
         <input class="fi" id="inp-league-code" placeholder="Enter 6-character code" maxlength="6" style="flex:1;text-transform:uppercase;letter-spacing:2px;font-weight:700;text-align:center">
@@ -773,6 +800,7 @@
 
   </div>
 
+  <!-- Footer -->
   <!-- ── AIFA CTA Banner ── -->
   <div class="aifa-cta-banner">
     <div class="aifa-cta-inner">
@@ -792,7 +820,6 @@
     </div>
   </div>
 
-  <!-- Footer -->
   <div class="aifa-footer">
     <div class="aifa-footer-brand">Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a></div>
     <div class="aifa-footer-sub">Helping clubs &amp; players organise matches with AI</div>
@@ -875,6 +902,18 @@
     </div>
   </div>
 </div>
+
+<!-- ── Guided Tour ── -->
+<div id="tour-overlay" class="tour-overlay">
+  <div class="tour-backdrop" id="tour-backdrop"></div>
+  <div class="tour-tooltip" id="tour-tooltip">
+    <div class="tour-tooltip-title" id="tour-title"></div>
+    <div class="tour-tooltip-text" id="tour-text"></div>
+    <div class="tour-tooltip-btns" id="tour-btns"></div>
+    <div class="tour-dots" id="tour-dots"></div>
+  </div>
+</div>
+<button id="tour-help-btn" class="tour-help-btn" onclick="startTour()" title="Take a tour" style="display:none">?</button>
 
 <!-- ── Toast ── -->
 <div id="toast" class="toast"></div>
@@ -1434,6 +1473,7 @@ function onAuthSuccess() {
   const photoUrl = currentUser.photoURL || getDefaultAvatar();
   document.getElementById('browse-user-photo').src = photoUrl;
   loadUserLeagues();
+  setTimeout(checkAndStartTour, 600);
 
   // Check URL params for shared league link
   const params = new URLSearchParams(window.location.search);
@@ -2782,6 +2822,118 @@ function openFeedback() {
 }
 function closeFeedback() {
   document.getElementById('feedback-modal').style.display = 'none';
+}
+
+/* ══════════════════════════════════════
+   GUIDED TOUR
+   ══════════════════════════════════════ */
+const TOUR_STEPS = [
+  { target: null, title: 'Welcome to BoxLeague Pro! \u{1F3BE}', text: "Let's take a quick tour to get you set up. It only takes 30 seconds." },
+  { target: '#inp-club-search', title: 'Step 1: Find Your Club', text: 'Search for your club or create a new one. This is where all your leagues will live.' },
+  { target: '#tour-target-join', title: 'Step 2: Join or Create a League', text: 'Already have a league code? Enter it here. Or create a new league and invite your players.' },
+  { target: null, title: 'Step 3: Quick Setup', text: "The wizard walks you through entering your name, picking your partner (for doubles), and setting your availability. Takes under a minute.", icon: '\u{2699}\u{FE0F}' },
+  { target: null, title: 'Step 4: Invite Your Players', text: 'Share the league code or WhatsApp link with your players. They can join and set their own availability.', icon: '\u{1F4E8}' },
+  { target: null, title: 'Step 5: Find & Book Matches', text: "The Match Finder shows available opponents based on everyone's availability. Tap to book a match instantly.", icon: '\u{1F3BE}' },
+  { target: null, title: "You're All Set! \u{1F3C6}", text: "That's it \u2014 no spreadsheets, no WhatsApp chaos. If you need help, tap the chat bubble in the bottom corner." }
+];
+
+let tourStep = 0;
+let tourActive = false;
+
+function startTour() {
+  tourStep = 0;
+  tourActive = true;
+  document.getElementById('tour-tooltip').style.display = '';
+  document.getElementById('tour-overlay').classList.add('active');
+  renderTourStep();
+}
+
+function endTour(markComplete) {
+  tourActive = false;
+  const overlay = document.getElementById('tour-overlay');
+  const tooltip = document.getElementById('tour-tooltip');
+  tooltip.classList.remove('visible');
+  setTimeout(() => {
+    overlay.classList.remove('active');
+    document.getElementById('tour-backdrop').style.clipPath = '';
+    tooltip.style.display = 'none';
+  }, 300);
+  if (markComplete && FIREBASE_READY && currentUser) {
+    db.ref('/users/' + currentUser.uid + '/tourCompleted').set(true);
+  }
+}
+
+function renderTourStep() {
+  const step = TOUR_STEPS[tourStep];
+  const tooltip = document.getElementById('tour-tooltip');
+  const backdrop = document.getElementById('tour-backdrop');
+
+  // Hide tooltip for transition
+  tooltip.classList.remove('visible');
+
+  setTimeout(() => {
+    document.getElementById('tour-title').innerHTML = (step.icon && !step.target ? '<span style="font-size:28px;display:block;margin-bottom:6px">' + step.icon + '</span>' : '') + esc(step.title);
+    document.getElementById('tour-text').textContent = step.text;
+
+    // Dots
+    document.getElementById('tour-dots').innerHTML = TOUR_STEPS.map((_, i) =>
+      `<div class="tour-dot${i === tourStep ? ' active' : i < tourStep ? ' done' : ''}"></div>`
+    ).join('');
+
+    // Buttons
+    const isFirst = tourStep === 0;
+    const isLast = tourStep === TOUR_STEPS.length - 1;
+    let btns = '';
+    if (!isFirst && !isLast) btns += `<button class="tour-btn tour-btn-secondary" onclick="tourPrev()">Back</button>`;
+    if (!isLast) btns += `<button class="tour-btn tour-btn-skip" onclick="endTour(true)">Skip</button>`;
+    if (isLast) btns += `<button class="tour-btn tour-btn-primary" onclick="endTour(true)">Get Started!</button>`;
+    else if (isFirst) btns += `<button class="tour-btn tour-btn-primary" onclick="tourNext()">Let's Go!</button>`;
+    else btns += `<button class="tour-btn tour-btn-primary" onclick="tourNext()">Next</button>`;
+    document.getElementById('tour-btns').innerHTML = btns;
+
+    // Spotlight + position
+    const targetEl = step.target ? document.querySelector(step.target) : null;
+    if (targetEl) {
+      const rect = targetEl.getBoundingClientRect();
+      const pad = 8;
+      const cx = rect.left - pad;
+      const cy = rect.top - pad;
+      const cw = rect.width + pad * 2;
+      const ch = rect.height + pad * 2;
+      const cr = 10;
+      backdrop.style.clipPath = `polygon(evenodd, 0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, ${cx + cr}px ${cy}px, ${cx + cw - cr}px ${cy}px, ${cx + cw}px ${cy + cr}px, ${cx + cw}px ${cy + ch - cr}px, ${cx + cw - cr}px ${cy + ch}px, ${cx + cr}px ${cy + ch}px, ${cx}px ${cy + ch - cr}px, ${cx}px ${cy + cr}px, ${cx + cr}px ${cy}px)`;
+
+      // Position tooltip below target
+      const tooltipW = Math.min(340, window.innerWidth - 40);
+      let left = rect.left + rect.width / 2 - tooltipW / 2;
+      left = Math.max(16, Math.min(left, window.innerWidth - tooltipW - 16));
+      let top = rect.bottom + pad + 12;
+      if (top + 200 > window.innerHeight) top = rect.top - pad - 220;
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = top + 'px';
+    } else {
+      // Centred modal
+      backdrop.style.clipPath = '';
+      const tooltipW = Math.min(340, window.innerWidth - 40);
+      tooltip.style.left = (window.innerWidth / 2 - tooltipW / 2) + 'px';
+      tooltip.style.top = Math.max(120, window.innerHeight / 2 - 120) + 'px';
+    }
+
+    // Show tooltip
+    requestAnimationFrame(() => tooltip.classList.add('visible'));
+  }, tourActive ? 200 : 0);
+}
+
+function tourNext() { if (tourStep < TOUR_STEPS.length - 1) { tourStep++; renderTourStep(); } }
+function tourPrev() { if (tourStep > 0) { tourStep--; renderTourStep(); } }
+
+function checkAndStartTour() {
+  // Show help button
+  document.getElementById('tour-help-btn').style.display = 'flex';
+  if (!FIREBASE_READY || !currentUser) return;
+  db.ref('/users/' + currentUser.uid + '/tourCompleted').once('value', snap => {
+    if (!snap.val()) startTour();
+  });
 }
 
 /* ══════════════════════════════════════
