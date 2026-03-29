@@ -182,9 +182,9 @@
     .edu-tip-close { position: absolute; top: 10px; right: 12px; background: none; border: none; font-size: 20px; color: #64748b; cursor: pointer; padding: 4px; line-height: 1; }
     .edu-tip-close:hover { color: var(--text); }
     .edu-tip-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding-right: 28px; }
-    .edu-tip-icon { font-size: 24px; flex-shrink: 0; }
-    .edu-tip-title { font-size: 17px; font-weight: 800; color: #1e40af; }
-    .edu-tip-body { font-size: 15px; color: #1e3a8a; line-height: 1.6; }
+    .edu-tip-icon { font-size: 28px; flex-shrink: 0; }
+    .edu-tip-title { font-size: 19px; font-weight: 800; color: #1e40af; }
+    .edu-tip-body { font-size: 16px; color: #1e3a8a; line-height: 1.65; }
     .edu-tip-body strong { color: #1e40af; }
 
     /* ── Badges ── */
@@ -427,12 +427,14 @@
     <!-- Step B: Find or create club -->
     <!-- Join by code -->
     <div id="tour-target-join" style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:16px;box-shadow:var(--shadow)">
-      <div style="font-size:15px;font-weight:700;margin-bottom:8px">Have a league code?</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Have a league code?</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.4">Your league organiser will have shared a 6-character code (e.g. AK7T3P). Enter it below to join their league instantly.</div>
       <div style="display:flex;gap:8px">
-        <input class="fi" id="inp-league-code" placeholder="Enter 6-character code" maxlength="6" style="flex:1;text-transform:uppercase;letter-spacing:2px;font-weight:700;text-align:center">
+        <input class="fi" id="inp-league-code" placeholder="e.g. AK7T3P" maxlength="6" style="flex:1;text-transform:uppercase;letter-spacing:2px;font-weight:700;text-align:center">
         <button class="btn btn-primary" onclick="joinByCode()" style="white-space:nowrap">Join</button>
       </div>
       <div id="join-code-error" style="display:none;color:#ef4444;font-size:13px;margin-top:6px"></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px">Don't have a code? Search for your club below and browse available leagues.</div>
     </div>
 
     <div class="section-title">Find your club</div>
