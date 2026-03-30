@@ -420,8 +420,17 @@
 
     <!-- Admin tools -->
     <div id="admin-tools" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:12px;padding:14px 16px;margin-bottom:16px">
-      <div style="font-size:14px;font-weight:700;color:#92400e;margin-bottom:8px">&#128272; Admin Tools</div>
-      <button onclick="adminDeleteAllLeagues()" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">Delete All My Leagues</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:14px;font-weight:700;color:#92400e">&#128272; Admin Console</div>
+        <button onclick="toggleAdminConsole()" id="admin-toggle-btn" style="background:#92400e;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer">Expand</button>
+      </div>
+      <div id="admin-console-body" style="display:none">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <button onclick="adminLoadAllUsers()" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Load All Users</button>
+          <button onclick="adminDeleteAllLeagues()" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Delete All My Leagues</button>
+        </div>
+        <div id="admin-user-list" style="max-height:400px;overflow-y:auto"></div>
+      </div>
     </div>
 
     <!-- Two clear options -->
@@ -1081,6 +1090,154 @@ function deleteLeague(leagueId, event) {
       console.error('Delete failed:', err);
       toast('Delete failed: ' + err.message);
     });
+  });
+}
+
+function toggleAdminConsole() {
+  const body = document.getElementById('admin-console-body');
+  const btn = document.getElementById('admin-toggle-btn');
+  const isHidden = body.style.display === 'none';
+  body.style.display = isHidden ? 'block' : 'none';
+  btn.textContent = isHidden ? 'Collapse' : 'Expand';
+}
+
+function adminLoadAllUsers() {
+  if (!isAdmin() || !FIREBASE_READY) return;
+  const el = document.getElementById('admin-user-list');
+  el.innerHTML = '<div style="color:#92400e;font-size:13px;padding:8px 0">Loading...</div>';
+
+  // Get all leagues, extract all members
+  db.ref('/leagues').once('value', snap => {
+    const leagues = snap.val() || {};
+    const userMap = {}; // email -> { name, leagues: [{leagueId, leagueName, role}], uid }
+
+    Object.entries(leagues).forEach(([leagueId, league]) => {
+      const leagueName = league.info?.name || 'Unnamed';
+      const clubName = league.info?.clubName || '';
+      const members = league.members || {};
+      Object.entries(members).forEach(([emailKey, member]) => {
+        const email = member.email || emailKey.replace(/,/g, '.');
+        if (!userMap[email]) {
+          userMap[email] = { name: member.name || member.playerName || email, uid: member.uid, email, leagues: [] };
+        }
+        if (member.playerName) userMap[email].name = member.playerName + (member.partnerName ? ' / ' + member.partnerName : '');
+        userMap[email].leagues.push({ leagueId, leagueName, clubName, role: member.role || 'player', emailKey });
+      });
+    });
+
+    // Also get all userLeagues to find users who own leagues but haven't joined as members
+    db.ref('/userLeagues').once('value', ulSnap => {
+      const allUserLeagues = ulSnap.val() || {};
+      Object.entries(allUserLeagues).forEach(([uid, uls]) => {
+        Object.entries(uls).forEach(([leagueId, ul]) => {
+          // We already have members from leagues — this catches organiser-only entries
+        });
+      });
+
+      const users = Object.values(userMap).sort((a, b) => a.name.localeCompare(b.name));
+
+      if (users.length === 0) {
+        el.innerHTML = '<div style="color:#92400e;font-size:13px;padding:8px 0">No users found.</div>';
+        return;
+      }
+
+      el.innerHTML = '<div style="font-size:11px;color:#92400e;font-weight:700;letter-spacing:1px;margin-bottom:8px">' + users.length + ' USERS FOUND</div>' +
+        users.map(u => {
+          const leagueList = u.leagues.map(l =>
+            '<span style="font-size:11px;background:#fde68a;border-radius:4px;padding:2px 6px;margin:2px;display:inline-block">' +
+            esc(l.leagueName) + ' <span style="color:#92400e;font-size:10px">(' + l.role + ')</span></span>'
+          ).join(' ');
+          const deleteButtons = u.leagues.map(l =>
+            '<button onclick="adminRemoveUserFromLeague(\'' + esc(l.emailKey) + '\',\'' + esc(l.leagueId) + '\',\'' + esc(u.uid || '') + '\')" ' +
+            'style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:600;cursor:pointer;margin:2px">' +
+            'Remove from ' + esc(l.leagueName) + '</button>'
+          ).join(' ');
+          return '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;margin-bottom:6px">' +
+            '<div style="display:flex;justify-content:space-between;align-items:start">' +
+            '<div><div style="font-size:14px;font-weight:700;color:#1a1a1a">' + esc(u.name) + '</div>' +
+            '<div style="font-size:12px;color:#6b7280;margin-top:2px">' + esc(u.email) + '</div></div>' +
+            '<button onclick="adminDeleteUser(\'' + esc(u.email) + '\')" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Delete User</button>' +
+            '</div>' +
+            '<div style="margin-top:6px">' + leagueList + '</div>' +
+            '<div style="margin-top:4px">' + deleteButtons + '</div>' +
+            '</div>';
+        }).join('');
+    });
+  });
+}
+
+function adminRemoveUserFromLeague(emailKey, leagueId, uid) {
+  if (!isAdmin()) return;
+  if (!confirm('Remove this user from the league?')) return;
+  const updates = {};
+  updates['/leagues/' + leagueId + '/members/' + emailKey] = null;
+  updates['/leagues/' + leagueId + '/availability/' + emailKey] = null;
+  if (uid) updates['/userLeagues/' + uid + '/' + leagueId] = null;
+
+  // Also remove from groups
+  db.ref('/leagues/' + leagueId + '/groups').once('value', snap => {
+    const groups = snap.val() || {};
+    Object.entries(groups).forEach(([groupName, members]) => {
+      if (members && typeof members === 'object') {
+        Object.entries(members).forEach(([k, v]) => {
+          if (v && (v.email === emailKey.replace(/,/g, '.') || k === emailKey)) {
+            updates['/leagues/' + leagueId + '/groups/' + groupName + '/' + k] = null;
+          }
+        });
+      }
+    });
+    db.ref().update(updates).then(() => {
+      toast('User removed from league');
+      adminLoadAllUsers(); // Refresh
+    }).catch(err => toast('Error: ' + err.message));
+  });
+}
+
+function adminDeleteUser(email) {
+  if (!isAdmin()) return;
+  if (!confirm('Remove ' + email + ' from ALL leagues? This cannot be undone.')) return;
+  if (!confirm('FINAL WARNING: This will remove the user from every league. Continue?')) return;
+
+  const emailKey = email.replace(/\./g, ',');
+
+  // Find all leagues this user is in and remove them
+  db.ref('/leagues').once('value', snap => {
+    const leagues = snap.val() || {};
+    const updates = {};
+    let uid = null;
+
+    Object.entries(leagues).forEach(([leagueId, league]) => {
+      const members = league.members || {};
+      if (members[emailKey]) {
+        if (members[emailKey].uid) uid = members[emailKey].uid;
+        updates['/leagues/' + leagueId + '/members/' + emailKey] = null;
+        updates['/leagues/' + leagueId + '/availability/' + emailKey] = null;
+        // Remove from groups
+        const groups = league.groups || {};
+        Object.entries(groups).forEach(([groupName, groupMembers]) => {
+          if (groupMembers && typeof groupMembers === 'object') {
+            Object.entries(groupMembers).forEach(([k, v]) => {
+              if (v && (v.email === email || k === emailKey)) {
+                updates['/leagues/' + leagueId + '/groups/' + groupName + '/' + k] = null;
+              }
+            });
+          }
+        });
+      }
+    });
+
+    // Remove userLeagues entry if we found their uid
+    if (uid) updates['/userLeagues/' + uid] = null;
+
+    if (Object.keys(updates).length === 0) {
+      toast('User not found in any league');
+      return;
+    }
+
+    db.ref().update(updates).then(() => {
+      toast('User deleted from all leagues');
+      adminLoadAllUsers();
+    }).catch(err => toast('Error: ' + err.message));
   });
 }
 
