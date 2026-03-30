@@ -256,30 +256,10 @@
     .my-match.ready { border-left-color: var(--green); }
     .my-match.blocked { border-left-color: var(--amber); }
 
-    /* ── Guided Tour ── */
-    .tour-overlay { position: fixed; inset: 0; z-index: 99999; pointer-events: none; opacity: 0; transition: opacity 0.3s ease; }
-    .tour-overlay.active { opacity: 1; pointer-events: auto; }
-    .tour-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.7); transition: clip-path 0.4s ease; }
-    .tour-tooltip { position: absolute; background: #fff; border-radius: 16px; padding: 28px 26px 24px; max-width: 420px; width: calc(100vw - 32px); box-shadow: 0 12px 48px rgba(0,0,0,0.3); z-index: 100000; transform: translateY(8px); opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease; }
-    .tour-tooltip.visible { transform: translateY(0); opacity: 1; }
-    .tour-tooltip-title { font-size: 22px; font-weight: 800; color: #1a1a1a; margin-bottom: 8px; }
-    .tour-tooltip-text { font-size: 16px; color: #4b5563; line-height: 1.6; margin-bottom: 18px; }
-    .tour-tooltip-btns { display: flex; gap: 8px; align-items: center; }
-    .tour-btn { padding: 12px 22px; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; border: none; transition: all 0.15s; }
-    .tour-btn-primary { background: #3884F4; color: #fff; flex: 1; }
-    .tour-btn-primary:hover { background: #2563eb; }
-    .tour-btn-secondary { background: transparent; color: #6b7280; border: 1.5px solid #e2e8f0; }
-    .tour-btn-secondary:hover { background: #f1f5f9; }
-    .tour-btn-skip { background: none; border: none; color: #9ca3af; font-size: 14px; font-weight: 600; cursor: pointer; padding: 10px 6px; }
-    .tour-btn-skip:hover { color: #6b7280; }
-    .tour-dots { display: flex; gap: 6px; justify-content: center; margin-top: 14px; }
-    .tour-dot { width: 8px; height: 8px; border-radius: 50%; background: #e2e8f0; transition: background 0.2s; }
-    .tour-dot.active { background: #3884F4; }
-    .tour-dot.done { background: #00D296; }
+    /* ── Help Button ── */
     .tour-help-btn { position: fixed; bottom: 140px; right: 20px; z-index: 9998; width: 40px; height: 40px; border-radius: 50%; background: #3884F4; color: #fff; font-size: 20px; font-weight: 800; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(56,132,244,0.4); display: flex; align-items: center; justify-content: center; transition: transform 0.15s; }
     .tour-help-btn:hover { transform: scale(1.1); }
     @media (max-width: 480px) {
-      .tour-tooltip { max-width: calc(100vw - 24px); padding: 22px 20px 18px; }
       .tour-help-btn { bottom: 120px; right: 12px; width: 36px; height: 36px; font-size: 18px; }
     }
 
@@ -880,38 +860,11 @@
 
   </div>
 
-  <!-- Footer -->
-  <!-- ── AIFA CTA Banner ── -->
-  <div class="aifa-cta-banner">
-    <div class="aifa-cta-inner">
-      <div class="aifa-cta-icon">&#128161;</div>
-      <div class="aifa-cta-headline">Got an idea for an app or automation?</div>
-      <div class="aifa-cta-text">Need help developing it, or just curious how much it would cost? We build software, automations and AI systems for businesses &mdash; BoxLeague Pro is just one example.</div>
-      <div class="aifa-cta-text" style="margin-top:-8px;font-size:14px;color:#94a3b8"><strong style="color:#60a5fa">Want your club&rsquo;s branding on this app?</strong> We can add your logo, colours, and club name for a small fee. Just ask.</div>
-      <a href="mailto:grant@aifusionautomations.com?subject=App%20Idea%20%2F%20Enquiry" class="aifa-cta-btn">Get in Touch</a>
-      <div class="aifa-cta-tags">
-        <span class="aifa-cta-tag">Custom Apps</span>
-        <span class="aifa-cta-tag">AI Automations</span>
-        <span class="aifa-cta-tag">Business Software</span>
-        <span class="aifa-cta-tag">CRM Systems</span>
-        <span class="aifa-cta-tag">Club Branding</span>
-      </div>
-      <div class="aifa-cta-examples">See what else we&rsquo;re building at <a href="https://tools.aifusionautomations.com" target="_blank">tools.aifusionautomations.com</a></div>
-    </div>
-  </div>
-
+  <!-- Footer (compact) -->
   <div class="aifa-footer">
     <div class="aifa-footer-brand">Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a></div>
     <div class="aifa-footer-sub">Helping clubs &amp; players organise matches with AI</div>
-    <div class="aifa-footer-links">
-      <a href="https://aifusionautomations.com" target="_blank">&#127760; Website</a>
-      <a href="javascript:void(0)" onclick="try{document.querySelector('[data-widget-id] button, .lc_text-widget-open, .chat-widget-open-btn').click()}catch(e){toast('Look for the chat bubble in the corner!')}" title="Open support chat">&#129302; Support Chatbot</a>
-      <a href="javascript:void(0)" onclick="openFeedback()">&#128172; Feedback &amp; Support</a>
-    </div>
-    <div class="aifa-footer-contact">
-      <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
-    </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.1 · Build 20260329</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.1 · Build 20260330</div>
   </div>
 </div>
 
@@ -984,16 +937,62 @@
 </div>
 
 <!-- ── Guided Tour ── -->
-<div id="tour-overlay" class="tour-overlay">
-  <div class="tour-backdrop" id="tour-backdrop"></div>
-  <div class="tour-tooltip" id="tour-tooltip">
-    <div class="tour-tooltip-title" id="tour-title"></div>
-    <div class="tour-tooltip-text" id="tour-text"></div>
-    <div class="tour-tooltip-btns" id="tour-btns"></div>
-    <div class="tour-dots" id="tour-dots"></div>
+<!-- Help / Info Modal -->
+<div id="help-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeHelp()">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);position:relative">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e2e8f0;position:sticky;top:0;background:#fff;z-index:1;border-radius:16px 16px 0 0">
+      <div style="font-size:17px;font-weight:700">&#127934; BoxLeague Pro</div>
+      <button onclick="closeHelp()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
+    </div>
+    <div style="padding:20px">
+      <!-- How it works -->
+      <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:12px">How it works</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+        <div style="display:flex;gap:12px;align-items:start">
+          <div style="min-width:28px;height:28px;border-radius:50%;background:#3884F4;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">1</div>
+          <div><div style="font-size:14px;font-weight:600;color:#1a1a1a">Create or join a league</div><div style="font-size:13px;color:#6b7280">Start a new box league at your club, or join one that already exists.</div></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:start">
+          <div style="min-width:28px;height:28px;border-radius:50%;background:#3884F4;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">2</div>
+          <div><div style="font-size:14px;font-weight:600;color:#1a1a1a">Invite your players</div><div style="font-size:13px;color:#6b7280">Share the invite link via WhatsApp, email, or text. Players sign up and set their availability.</div></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:start">
+          <div style="min-width:28px;height:28px;border-radius:50%;background:#3884F4;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">3</div>
+          <div><div style="font-size:14px;font-weight:600;color:#1a1a1a">Find &amp; book matches</div><div style="font-size:13px;color:#6b7280">Match Finder compares everyone&rsquo;s availability and shows times when all players can play. Tap to book.</div></div>
+        </div>
+      </div>
+
+      <div style="height:1px;background:#e2e8f0;margin:16px 0"></div>
+
+      <!-- Feedback & Support -->
+      <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:10px">Feedback &amp; Support</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+        <a href="javascript:void(0)" onclick="closeHelp();openFeedback()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#f1f5f9;border-radius:8px;font-size:13px;font-weight:600;color:#1e293b;text-decoration:none;border:1px solid #e2e8f0">&#128172; Feedback</a>
+        <a href="mailto:grant@aifusionautomations.com" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#f1f5f9;border-radius:8px;font-size:13px;font-weight:600;color:#1e293b;text-decoration:none;border:1px solid #e2e8f0">&#9993; Email Us</a>
+        <a href="tel:+447950964670" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#f1f5f9;border-radius:8px;font-size:13px;font-weight:600;color:#1e293b;text-decoration:none;border:1px solid #e2e8f0">&#128222; Call</a>
+      </div>
+
+      <div style="height:1px;background:#e2e8f0;margin:16px 0"></div>
+
+      <!-- AIFA Promo -->
+      <div style="background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:12px;padding:20px;color:#fff">
+        <div style="font-size:22px;margin-bottom:6px">&#128161;</div>
+        <div style="font-size:16px;font-weight:700;margin-bottom:6px">Got an idea for an app or automation?</div>
+        <div style="font-size:13px;color:#94a3b8;line-height:1.5;margin-bottom:8px">We build software, automations and AI systems for businesses &mdash; BoxLeague Pro is just one example.</div>
+        <div style="font-size:13px;color:#94a3b8;line-height:1.5;margin-bottom:14px"><strong style="color:#60a5fa">Want your club&rsquo;s branding on this app?</strong> We can add your logo, colours, and club name for a small fee.</div>
+        <a href="mailto:grant@aifusionautomations.com?subject=App%20Idea%20%2F%20Enquiry" style="display:block;text-align:center;background:#3884F4;color:#fff;font-weight:700;padding:12px;border-radius:10px;text-decoration:none;font-size:15px">Get in Touch</a>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;justify-content:center">
+          <span style="font-size:11px;color:#60a5fa;background:rgba(56,132,244,0.15);padding:3px 8px;border-radius:4px">Custom Apps</span>
+          <span style="font-size:11px;color:#60a5fa;background:rgba(56,132,244,0.15);padding:3px 8px;border-radius:4px">AI Automations</span>
+          <span style="font-size:11px;color:#60a5fa;background:rgba(56,132,244,0.15);padding:3px 8px;border-radius:4px">CRM Systems</span>
+          <span style="font-size:11px;color:#60a5fa;background:rgba(56,132,244,0.15);padding:3px 8px;border-radius:4px">Club Branding</span>
+        </div>
+        <div style="text-align:center;margin-top:10px"><a href="https://tools.aifusionautomations.com" target="_blank" style="font-size:12px;color:#60a5fa">tools.aifusionautomations.com</a></div>
+      </div>
+    </div>
   </div>
 </div>
-<button id="tour-help-btn" class="tour-help-btn" onclick="startTour()" title="Take a tour" style="display:none">?</button>
+<button id="tour-help-btn" class="tour-help-btn" onclick="openHelp()" title="Help &amp; Info" style="display:none">?</button>
 
 <!-- ── Toast ── -->
 <div id="toast" class="toast"></div>
@@ -3235,113 +3234,22 @@ function closeFeedback() {
 /* ══════════════════════════════════════
    GUIDED TOUR
    ══════════════════════════════════════ */
-const TOUR_STEPS = [
-  { target: null, title: 'Welcome to BoxLeague Pro! \u{1F3BE}', text: "Let's take a quick tour to get you set up. It only takes 30 seconds." },
-  { target: '#inp-club-search', title: 'Step 1: Find Your Club', text: 'Search for your club by name, or create a new one if it\'s not listed yet. This is where all your leagues will live.' },
-  { target: '#tour-target-join', title: 'Step 2: Join or Create a League', text: 'Pick an existing league at your club, or create a new one. If someone sent you an invite link, it will take you straight to the right league automatically.' },
-  { target: null, title: 'Step 3: Quick Setup', text: "A short wizard walks you through entering your name, picking your doubles partner, and marking when you're free to play. Takes under a minute.", icon: '\u{2699}\u{FE0F}' },
-  { target: null, title: 'Step 4: Invite Your Players', text: 'After setup, you get a share link. Send it to your players via WhatsApp, text, or email. They click the link, sign up, and set their own availability.', icon: '\u{1F4E8}' },
-  { target: null, title: 'Step 5: Find & Book Matches', text: "The Match Finder compares everyone's availability and shows times when all players can play. Tap a time slot to book a match instantly.", icon: '\u{1F3BE}' },
-  { target: null, title: "You're All Set! \u{1F3C6}", text: "That's it \u2014 no spreadsheets, no WhatsApp chaos. If you need help, tap the chat bubble in the bottom corner." }
-];
-
-let tourStep = 0;
-let tourActive = false;
-
-function startTour() {
-  tourStep = 0;
-  tourActive = true;
-  document.getElementById('tour-tooltip').style.display = '';
-  document.getElementById('tour-overlay').classList.add('active');
-  renderTourStep();
+/* ── Help Modal ── */
+function openHelp() {
+  document.getElementById('help-modal').style.display = 'flex';
 }
 
-function endTour(markComplete) {
-  tourActive = false;
-  const overlay = document.getElementById('tour-overlay');
-  const tooltip = document.getElementById('tour-tooltip');
-  tooltip.classList.remove('visible');
-  setTimeout(() => {
-    overlay.classList.remove('active');
-    document.getElementById('tour-backdrop').style.clipPath = '';
-    tooltip.style.display = 'none';
-  }, 300);
-  if (markComplete && FIREBASE_READY && currentUser) {
-    db.ref('/users/' + currentUser.uid + '/tourCompleted').set(true);
-  }
+function closeHelp() {
+  document.getElementById('help-modal').style.display = 'none';
 }
 
-function renderTourStep() {
-  const step = TOUR_STEPS[tourStep];
-  const tooltip = document.getElementById('tour-tooltip');
-  const backdrop = document.getElementById('tour-backdrop');
-
-  // Hide tooltip for transition
-  tooltip.classList.remove('visible');
-
-  setTimeout(() => {
-    document.getElementById('tour-title').innerHTML = (step.icon && !step.target ? '<span style="font-size:28px;display:block;margin-bottom:6px">' + step.icon + '</span>' : '') + esc(step.title);
-    document.getElementById('tour-text').textContent = step.text;
-
-    // Dots
-    document.getElementById('tour-dots').innerHTML = TOUR_STEPS.map((_, i) =>
-      `<div class="tour-dot${i === tourStep ? ' active' : i < tourStep ? ' done' : ''}"></div>`
-    ).join('');
-
-    // Buttons
-    const isFirst = tourStep === 0;
-    const isLast = tourStep === TOUR_STEPS.length - 1;
-    let btns = '';
-    if (!isFirst && !isLast) btns += `<button class="tour-btn tour-btn-secondary" onclick="tourPrev()">Back</button>`;
-    if (!isLast) btns += `<button class="tour-btn tour-btn-skip" onclick="endTour(true)">Skip</button>`;
-    if (isLast) btns += `<button class="tour-btn tour-btn-primary" onclick="endTour(true)">Get Started!</button>`;
-    else if (isFirst) btns += `<button class="tour-btn tour-btn-primary" onclick="tourNext()">Let's Go!</button>`;
-    else btns += `<button class="tour-btn tour-btn-primary" onclick="tourNext()">Next</button>`;
-    document.getElementById('tour-btns').innerHTML = btns;
-
-    // Spotlight + position
-    const targetEl = step.target ? document.querySelector(step.target) : null;
-    if (targetEl) {
-      const rect = targetEl.getBoundingClientRect();
-      const pad = 8;
-      const cx = rect.left - pad;
-      const cy = rect.top - pad;
-      const cw = rect.width + pad * 2;
-      const ch = rect.height + pad * 2;
-      const cr = 10;
-      backdrop.style.clipPath = `polygon(evenodd, 0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, ${cx + cr}px ${cy}px, ${cx + cw - cr}px ${cy}px, ${cx + cw}px ${cy + cr}px, ${cx + cw}px ${cy + ch - cr}px, ${cx + cw - cr}px ${cy + ch}px, ${cx + cr}px ${cy + ch}px, ${cx}px ${cy + ch - cr}px, ${cx}px ${cy + cr}px, ${cx + cr}px ${cy}px)`;
-
-      // Position tooltip below target
-      const tooltipW = Math.min(420, window.innerWidth - 32);
-      let left = rect.left + rect.width / 2 - tooltipW / 2;
-      left = Math.max(12, Math.min(left, window.innerWidth - tooltipW - 12));
-      let top = rect.bottom + pad + 14;
-      if (top + 240 > window.innerHeight) top = rect.top - pad - 260;
-      tooltip.style.left = left + 'px';
-      tooltip.style.top = top + 'px';
-    } else {
-      // Centred modal
-      backdrop.style.clipPath = '';
-      const tooltipW = Math.min(420, window.innerWidth - 32);
-      tooltip.style.left = (window.innerWidth / 2 - tooltipW / 2) + 'px';
-      tooltip.style.top = Math.max(100, window.innerHeight / 2 - 140) + 'px';
-    }
-
-    // Show tooltip
-    requestAnimationFrame(() => tooltip.classList.add('visible'));
-  }, tourActive ? 200 : 0);
-}
-
-function tourNext() { if (tourStep < TOUR_STEPS.length - 1) { tourStep++; renderTourStep(); } }
-function tourPrev() { if (tourStep > 0) { tourStep--; renderTourStep(); } }
+// Legacy compatibility — old code calls startTour/endTour
+function startTour() { openHelp(); }
+function endTour() { closeHelp(); }
 
 function checkAndStartTour() {
-  // Show help button
+  // Show the ? help button
   document.getElementById('tour-help-btn').style.display = 'flex';
-  if (!FIREBASE_READY || !currentUser) return;
-  db.ref('/users/' + currentUser.uid + '/tourCompleted').once('value', snap => {
-    if (!snap.val()) startTour();
-  });
 }
 
 /* ══════════════════════════════════════
