@@ -1148,46 +1148,77 @@ function adminLoadLeagues() {
   const el = document.getElementById('admin-league-list');
   el.innerHTML = '<div style="color:#92400e;font-size:13px;padding:8px 0">Loading leagues...</div>';
 
-  const leagueIds = Object.keys(userLeagues);
-  if (leagueIds.length === 0) {
-    el.innerHTML = '<div style="color:#92400e;font-size:13px;padding:8px 0">No leagues found.</div>';
-    return;
-  }
-
+  // Collect league IDs from userLeagues AND from all clubs
+  const leagueIdSet = new Set(Object.keys(userLeagues));
   const leagueData = [];
-  let loaded = 0;
 
-  leagueIds.forEach(leagueId => {
-    db.ref('/leagues/' + leagueId).once('value', snap => {
-      const league = snap.val();
-      if (league) {
-        const info = league.info || {};
-        const settings = league.settings || {};
-        const memberCount = league.members ? Object.keys(league.members).length : 0;
-        const deadline = settings.deadline || info.deadline || '';
-        leagueData.push({
-          id: leagueId,
-          name: info.name || 'Unnamed',
-          clubName: info.clubName || '',
-          sport: info.sport || '',
-          deadline,
-          memberCount,
-          createdAt: info.createdAt || 0,
-          clubId: info.clubId,
-          code: info.code
-        });
-      }
-      loaded++;
-      if (loaded === leagueIds.length) {
-        renderAdminLeagueList(el, leagueData);
-      }
-    }, err => {
-      loaded++;
-      if (loaded === leagueIds.length) {
-        renderAdminLeagueList(el, leagueData);
+  // First, scan all clubs for their leagues
+  db.ref('/clubLeagues').once('value', snap => {
+    const allClubLeagues = snap.val() || {};
+    Object.values(allClubLeagues).forEach(clubLgs => {
+      if (clubLgs && typeof clubLgs === 'object') {
+        Object.keys(clubLgs).forEach(lid => leagueIdSet.add(lid));
       }
     });
+    loadLeagueDetails();
+  }, () => {
+    // If can't read all clubLeagues, fall back to scanning known clubs
+    db.ref('/clubs').once('value', clubSnap => {
+      const clubs = clubSnap.val() || {};
+      const clubIds = Object.keys(clubs);
+      let clubsLoaded = 0;
+      if (clubIds.length === 0) { loadLeagueDetails(); return; }
+      clubIds.forEach(cid => {
+        db.ref('/clubLeagues/' + cid).once('value', clSnap => {
+          const cls = clSnap.val() || {};
+          Object.keys(cls).forEach(lid => leagueIdSet.add(lid));
+          clubsLoaded++;
+          if (clubsLoaded === clubIds.length) loadLeagueDetails();
+        }, () => { clubsLoaded++; if (clubsLoaded === clubIds.length) loadLeagueDetails(); });
+      });
+    }, () => { loadLeagueDetails(); });
   });
+
+  function loadLeagueDetails() {
+    const leagueIds = Array.from(leagueIdSet);
+    if (leagueIds.length === 0) {
+      el.innerHTML = '<div style="color:#92400e;font-size:13px;padding:8px 0">No leagues found.</div>';
+      return;
+    }
+
+    let loaded = 0;
+    leagueIds.forEach(leagueId => {
+      db.ref('/leagues/' + leagueId).once('value', snap => {
+        const league = snap.val();
+        if (league) {
+          const info = league.info || {};
+          const settings = league.settings || {};
+          const memberCount = league.members ? Object.keys(league.members).length : 0;
+          const deadline = settings.deadline || info.deadline || '';
+          leagueData.push({
+            id: leagueId,
+            name: info.name || 'Unnamed',
+            clubName: info.clubName || '',
+            sport: info.sport || '',
+            deadline,
+            memberCount,
+            createdAt: info.createdAt || 0,
+            clubId: info.clubId,
+            code: info.code
+          });
+        }
+        loaded++;
+        if (loaded === leagueIds.length) {
+          renderAdminLeagueList(el, leagueData);
+        }
+      }, err => {
+        loaded++;
+        if (loaded === leagueIds.length) {
+          renderAdminLeagueList(el, leagueData);
+        }
+      });
+    });
+  }
 }
 
 function renderAdminLeagueList(el, leagues) {
@@ -1270,45 +1301,74 @@ function adminLoadAllUsers() {
   const el = document.getElementById('admin-user-list');
   el.innerHTML = '<div style="color:#92400e;font-size:13px;padding:8px 0">Loading...</div>';
 
-  // Load members from admin's own leagues (security rules allow this)
-  const leagueIds = Object.keys(userLeagues);
-  if (leagueIds.length === 0) {
-    el.innerHTML = '<div style="color:#92400e;font-size:13px;padding:8px 0">No leagues found. Create a league first.</div>';
-    return;
-  }
+  // Collect league IDs from userLeagues AND from all clubs (same approach as adminLoadLeagues)
+  const leagueIdSet = new Set(Object.keys(userLeagues));
 
-  const userMap = {};
-  let loaded = 0;
-
-  leagueIds.forEach(leagueId => {
-    db.ref('/leagues/' + leagueId).once('value', snap => {
-      const league = snap.val();
-      if (league) {
-        const leagueName = league.info?.name || 'Unnamed';
-        const clubName = league.info?.clubName || '';
-        const members = league.members || {};
-        Object.entries(members).forEach(([emailKey, member]) => {
-          const email = member.email || emailKey.replace(/,/g, '.');
-          if (!userMap[email]) {
-            userMap[email] = { name: member.name || member.playerName || email, uid: member.uid, email, leagues: [] };
-          }
-          if (member.playerName) userMap[email].name = member.playerName + (member.partnerName ? ' / ' + member.partnerName : '');
-          userMap[email].leagues.push({ leagueId, leagueName, clubName, role: member.role || 'player', emailKey });
-        });
-      }
-
-      loaded++;
-      if (loaded === leagueIds.length) {
-        renderAdminUserList(el, userMap);
-      }
-    }, err => {
-      console.error('Admin load error for league ' + leagueId + ':', err);
-      loaded++;
-      if (loaded === leagueIds.length) {
-        renderAdminUserList(el, userMap);
+  db.ref('/clubLeagues').once('value', snap => {
+    const allClubLeagues = snap.val() || {};
+    Object.values(allClubLeagues).forEach(clubLgs => {
+      if (clubLgs && typeof clubLgs === 'object') {
+        Object.keys(clubLgs).forEach(lid => leagueIdSet.add(lid));
       }
     });
+    loadUsersFromLeagues();
+  }, () => {
+    db.ref('/clubs').once('value', clubSnap => {
+      const clubs = clubSnap.val() || {};
+      const clubIds = Object.keys(clubs);
+      let clubsLoaded = 0;
+      if (clubIds.length === 0) { loadUsersFromLeagues(); return; }
+      clubIds.forEach(cid => {
+        db.ref('/clubLeagues/' + cid).once('value', clSnap => {
+          const cls = clSnap.val() || {};
+          Object.keys(cls).forEach(lid => leagueIdSet.add(lid));
+          clubsLoaded++;
+          if (clubsLoaded === clubIds.length) loadUsersFromLeagues();
+        }, () => { clubsLoaded++; if (clubsLoaded === clubIds.length) loadUsersFromLeagues(); });
+      });
+    }, () => { loadUsersFromLeagues(); });
   });
+
+  function loadUsersFromLeagues() {
+    const leagueIds = Array.from(leagueIdSet);
+    if (leagueIds.length === 0) {
+      el.innerHTML = '<div style="color:#92400e;font-size:13px;padding:8px 0">No leagues found. Create a league first.</div>';
+      return;
+    }
+
+    const userMap = {};
+    let loaded = 0;
+
+    leagueIds.forEach(leagueId => {
+      db.ref('/leagues/' + leagueId).once('value', snap => {
+        const league = snap.val();
+        if (league) {
+          const leagueName = league.info?.name || 'Unnamed';
+          const clubName = league.info?.clubName || '';
+          const members = league.members || {};
+          Object.entries(members).forEach(([emailKey, member]) => {
+            const email = member.email || emailKey.replace(/,/g, '.');
+            if (!userMap[email]) {
+              userMap[email] = { name: member.name || member.playerName || email, uid: member.uid, email, leagues: [] };
+            }
+            if (member.playerName) userMap[email].name = member.playerName + (member.partnerName ? ' / ' + member.partnerName : '');
+            userMap[email].leagues.push({ leagueId, leagueName, clubName, role: member.role || 'player', emailKey });
+          });
+        }
+
+        loaded++;
+        if (loaded === leagueIds.length) {
+          renderAdminUserList(el, userMap);
+        }
+      }, err => {
+        console.error('Admin load error for league ' + leagueId + ':', err);
+        loaded++;
+        if (loaded === leagueIds.length) {
+          renderAdminUserList(el, userMap);
+        }
+      });
+    });
+  }
 }
 
 function renderAdminUserList(el, userMap) {
