@@ -2289,18 +2289,29 @@ function hideJoinFlow() {
 }
 
 /* ── CREATE FLOW ── */
-function showCreateFlow() {
+function showCreateFlow(preselectedClubId, preselectedClubName) {
   document.getElementById('browse-options').style.display = 'none';
   document.getElementById('create-flow').style.display = 'block';
-  document.getElementById('create-step-club').style.display = 'block';
-  document.getElementById('create-step-details').style.display = 'none';
   document.getElementById('create-step-share').style.display = 'none';
-  document.getElementById('inp-create-club-search').value = '';
-  document.getElementById('create-club-results').innerHTML = '';
-  document.getElementById('create-club-create-option').style.display = 'none';
-  selectedClubId = null;
-  selectedClubName = '';
-  document.getElementById('inp-create-club-search').focus();
+
+  if (preselectedClubId && preselectedClubName) {
+    // Skip club selection — go straight to league details
+    selectedClubId = preselectedClubId;
+    selectedClubName = preselectedClubName;
+    document.getElementById('create-step-club').style.display = 'none';
+    document.getElementById('create-step-details').style.display = 'block';
+    document.getElementById('create-selected-club-name').textContent = preselectedClubName;
+    document.getElementById('inp-create-league-name').focus();
+  } else {
+    document.getElementById('create-step-club').style.display = 'block';
+    document.getElementById('create-step-details').style.display = 'none';
+    document.getElementById('inp-create-club-search').value = '';
+    document.getElementById('create-club-results').innerHTML = '';
+    document.getElementById('create-club-create-option').style.display = 'none';
+    selectedClubId = null;
+    selectedClubName = '';
+    document.getElementById('inp-create-club-search').focus();
+  }
 }
 
 function hideCreateFlow() {
@@ -2466,7 +2477,11 @@ function renderClubLeagues(leagues) {
   const el = document.getElementById('league-results');
   const ids = Object.keys(leagues);
   if (ids.length === 0) {
-    el.innerHTML = '<div class="txt-muted" style="padding:8px 0;margin-bottom:8px">No leagues yet at this club. Create the first one!</div>';
+    const cid = selectedClubId;
+    const cname = selectedClubName;
+    el.innerHTML = '<div class="txt-muted" style="padding:8px 0;margin-bottom:8px">No leagues yet at this club. Create the first one!</div>' +
+      '<button class="btn btn-primary" id="btn-create-from-join" style="width:100%;padding:14px;font-size:15px;font-weight:700">+ Create a League Here</button>';
+    document.getElementById('btn-create-from-join').onclick = function() { hideJoinFlow(); showCreateFlow(cid, cname); };
     return;
   }
   el.innerHTML = ids.map(id => {
