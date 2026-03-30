@@ -2476,9 +2476,10 @@ function selectClub(clubId, clubName) {
 function renderClubLeagues(leagues) {
   const el = document.getElementById('league-results');
   const ids = Object.keys(leagues);
+  const cid = selectedClubId;
+  const cname = selectedClubName;
+
   if (ids.length === 0) {
-    const cid = selectedClubId;
-    const cname = selectedClubName;
     el.innerHTML = '<div class="txt-muted" style="padding:8px 0;margin-bottom:8px">No leagues yet at this club. Create the first one!</div>' +
       '<button class="btn btn-primary" id="btn-create-from-join" style="width:100%;padding:14px;font-size:15px;font-weight:700">+ Create a League Here</button>';
     document.getElementById('btn-create-from-join').onclick = function() { hideJoinFlow(); showCreateFlow(cid, cname); };
@@ -2490,7 +2491,9 @@ function renderClubLeagues(leagues) {
       <div class="league-card-name">${esc(lg.name)}</div>
       <div class="league-card-meta">${esc(lg.sport || 'Tennis')}</div>
     </div>`;
-  }).join('');
+  }).join('') +
+    '<div style="margin-top:12px"><button class="btn btn-secondary" id="btn-create-from-join" style="width:100%;padding:12px;font-size:14px;font-weight:700">+ Create a New League</button></div>';
+  document.getElementById('btn-create-from-join').onclick = function() { hideJoinFlow(); showCreateFlow(cid, cname); };
 }
 
 function clearClubSelection() {
