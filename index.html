@@ -429,7 +429,10 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
           <button onclick="adminLoadAllUsers()" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Load Users</button>
           <button onclick="adminLoadLeagues()" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Load Leagues</button>
+          <button onclick="adminDatabaseAudit()" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">&#128270; Database Audit</button>
+          <button onclick="adminNukeTestData()" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">&#128165; Clean All Test Data</button>
         </div>
+        <div id="admin-audit-results" style="max-height:400px;overflow-y:auto;margin-bottom:8px"></div>
         <div id="admin-league-list" style="max-height:300px;overflow-y:auto;margin-bottom:8px"></div>
         <div id="admin-user-list" style="max-height:400px;overflow-y:auto"></div>
       </div>
@@ -1546,6 +1549,176 @@ function adminDeleteAllLeagues() {
   }).catch(err => {
     toast('Delete failed: ' + err.message);
   });
+}
+
+// ── Database Audit & Cleanup ──
+function adminDatabaseAudit() {
+  if (!isAdmin() || !FIREBASE_READY) return;
+  const el = document.getElementById('admin-audit-results');
+  el.innerHTML = '<div style="color:#7c3aed;font-size:13px;padding:8px 0;font-weight:600">Scanning database...</div>';
+
+  const report = { users: {}, userLeagues: {}, clubs: {}, clubLeagues: {}, codes: {}, leagues: {}, orphanedData: [] };
+  let tasks = 0, done = 0;
+
+  function check() {
+    done++;
+    if (done < tasks) return;
+    renderAuditReport(el, report);
+  }
+
+  // Read all top-level nodes
+  const nodes = ['users', 'userLeagues', 'clubs', 'clubLeagues', 'codes', 'leagues'];
+  nodes.forEach(node => {
+    tasks++;
+    db.ref('/' + node).once('value', snap => {
+      report[node] = snap.val() || {};
+      check();
+    }, () => {
+      report[node] = '⛔ Permission denied';
+      check();
+    });
+  });
+}
+
+function renderAuditReport(el, r) {
+  let html = '<div style="font-size:11px;color:#7c3aed;font-weight:700;letter-spacing:1px;margin-bottom:12px">DATABASE AUDIT REPORT</div>';
+
+  // Users
+  if (typeof r.users === 'string') {
+    html += '<div style="margin-bottom:8px;padding:8px;background:#fef2f2;border-radius:6px;font-size:12px">/users: ' + r.users + '</div>';
+  } else {
+    const uids = Object.keys(r.users);
+    html += '<div style="margin-bottom:8px;padding:8px;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:6px">';
+    html += '<div style="font-size:12px;font-weight:700;color:#7c3aed">/users — ' + uids.length + ' entries</div>';
+    uids.forEach(uid => {
+      const u = r.users[uid];
+      const consent = u.consent ? '✅ consent (' + (u.consent.timestamp ? new Date(u.consent.timestamp).toLocaleDateString() : '?') + ')' : '';
+      const tour = u.tourCompleted ? '✅ tour done' : '❌ tour not done';
+      html += '<div style="font-size:11px;color:#4b5563;padding:2px 0">' + esc(uid) + ' — ' + consent + ' ' + tour + '</div>';
+    });
+    html += '</div>';
+  }
+
+  // UserLeagues
+  if (typeof r.userLeagues === 'string') {
+    html += '<div style="margin-bottom:8px;padding:8px;background:#fef2f2;border-radius:6px;font-size:12px">/userLeagues: ' + r.userLeagues + '</div>';
+  } else {
+    const uids = Object.keys(r.userLeagues);
+    html += '<div style="margin-bottom:8px;padding:8px;background:#eff6ff;border:1px solid #93c5fd;border-radius:6px">';
+    html += '<div style="font-size:12px;font-weight:700;color:#1d4ed8">/userLeagues — ' + uids.length + ' users</div>';
+    uids.forEach(uid => {
+      const leagues = Object.keys(r.userLeagues[uid] || {});
+      html += '<div style="font-size:11px;color:#4b5563;padding:2px 0">' + esc(uid) + ' → ' + leagues.length + ' leagues: ' + leagues.map(l => esc(l).substring(0,8) + '...').join(', ') + '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Clubs
+  if (typeof r.clubs === 'string') {
+    html += '<div style="margin-bottom:8px;padding:8px;background:#fef2f2;border-radius:6px;font-size:12px">/clubs: ' + r.clubs + '</div>';
+  } else {
+    const clubIds = Object.keys(r.clubs);
+    html += '<div style="margin-bottom:8px;padding:8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px">';
+    html += '<div style="font-size:12px;font-weight:700;color:#059669">/clubs — ' + clubIds.length + ' clubs</div>';
+    clubIds.forEach(cid => {
+      const c = r.clubs[cid];
+      html += '<div style="font-size:11px;color:#4b5563;padding:2px 0">' + esc(c.name || cid) + ' (id: ' + esc(cid) + ', created by: ' + esc(c.createdBy || '?') + ')</div>';
+    });
+    html += '</div>';
+  }
+
+  // ClubLeagues
+  if (typeof r.clubLeagues === 'string') {
+    html += '<div style="margin-bottom:8px;padding:8px;background:#fef2f2;border-radius:6px;font-size:12px">/clubLeagues: ' + r.clubLeagues + '</div>';
+  } else {
+    const clubIds = Object.keys(r.clubLeagues);
+    html += '<div style="margin-bottom:8px;padding:8px;background:#fefce8;border:1px solid #fde68a;border-radius:6px">';
+    html += '<div style="font-size:12px;font-weight:700;color:#92400e">/clubLeagues — ' + clubIds.length + ' clubs with leagues</div>';
+    clubIds.forEach(cid => {
+      const leagues = Object.keys(r.clubLeagues[cid] || {});
+      const clubName = (r.clubs && typeof r.clubs === 'object' && r.clubs[cid]) ? r.clubs[cid].name : cid;
+      html += '<div style="font-size:11px;color:#4b5563;padding:2px 0">' + esc(clubName) + ' → ' + leagues.length + ' leagues</div>';
+    });
+    html += '</div>';
+  }
+
+  // Codes
+  if (typeof r.codes === 'string') {
+    html += '<div style="margin-bottom:8px;padding:8px;background:#fef2f2;border-radius:6px;font-size:12px">/codes: ' + r.codes + '</div>';
+  } else {
+    const codes = Object.keys(r.codes);
+    html += '<div style="margin-bottom:8px;padding:8px;background:#fff1f2;border:1px solid #fca5a5;border-radius:6px">';
+    html += '<div style="font-size:12px;font-weight:700;color:#dc2626">/codes — ' + codes.length + ' join codes</div>';
+    codes.forEach(code => {
+      html += '<div style="font-size:11px;color:#4b5563;padding:2px 0">' + esc(code) + ' → league: ' + esc(r.codes[code]) + '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Leagues
+  if (typeof r.leagues === 'string') {
+    html += '<div style="margin-bottom:8px;padding:8px;background:#fef2f2;border-radius:6px;font-size:12px">/leagues: ' + r.leagues + '</div>';
+  } else {
+    const leagueIds = Object.keys(r.leagues);
+    html += '<div style="margin-bottom:8px;padding:8px;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:6px">';
+    html += '<div style="font-size:12px;font-weight:700;color:#047857">/leagues — ' + leagueIds.length + ' leagues</div>';
+    leagueIds.forEach(lid => {
+      const lg = r.leagues[lid];
+      const info = lg.info || {};
+      const members = lg.members ? Object.keys(lg.members).length : 0;
+      html += '<div style="font-size:11px;color:#4b5563;padding:2px 0">' + esc(info.name || 'Unnamed') + ' (' + esc(info.clubName || '?') + ') — ' + members + ' members — id: ' + esc(lid).substring(0,12) + '...</div>';
+    });
+    html += '</div>';
+  }
+
+  el.innerHTML = html;
+}
+
+function adminNukeTestData() {
+  if (!isAdmin() || !FIREBASE_READY) return;
+  if (!confirm('⚠️ This will DELETE ALL data from the database:\\n\\n• All leagues\\n• All clubs\\n• All user data\\n• All join codes\\n• All userLeagues\\n\\nThis is a FULL RESET. Continue?')) return;
+  if (!confirm('FINAL WARNING: Type OK to confirm you want to wipe the entire database.')) return;
+
+  const el = document.getElementById('admin-audit-results');
+  el.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:8px 0;font-weight:600">Cleaning database...</div>';
+
+  // Delete all top-level nodes
+  const updates = {};
+  const nodes = ['users', 'userLeagues', 'clubs', 'clubLeagues', 'codes', 'leagues'];
+
+  let tasks = 0, done = 0;
+  nodes.forEach(node => {
+    tasks++;
+    db.ref('/' + node).once('value', snap => {
+      const data = snap.val();
+      if (data && typeof data === 'object') {
+        Object.keys(data).forEach(key => {
+          updates['/' + node + '/' + key] = null;
+        });
+      }
+      done++;
+      if (done >= tasks) executeCleanup();
+    }, () => {
+      done++;
+      if (done >= tasks) executeCleanup();
+    });
+  });
+
+  function executeCleanup() {
+    const keyCount = Object.keys(updates).length;
+    if (keyCount === 0) {
+      el.innerHTML = '<div style="color:#059669;font-size:13px;padding:8px 0;font-weight:600">✅ Database is already clean — nothing to delete.</div>';
+      return;
+    }
+    db.ref().update(updates).then(() => {
+      el.innerHTML = '<div style="color:#059669;font-size:13px;padding:8px 0;font-weight:600">✅ Database cleaned! Deleted ' + keyCount + ' entries across all nodes. Refresh the page to start fresh.</div>';
+      // Reset local state
+      userLeagues = {};
+      toast('Database wiped — ' + keyCount + ' entries removed');
+    }).catch(err => {
+      el.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:8px 0;font-weight:600">❌ Cleanup error: ' + esc(err.message) + '</div>';
+    });
+  }
 }
 
 function esc(s) { if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
