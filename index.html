@@ -1899,9 +1899,11 @@ function notifyBooking(matchKey, date, slot) {
 
 // ── Google Sign-In GDPR Consent ──
 let pendingGoogleUser = null;
+let consentModalActive = false; // Flag to prevent tour from starting while consent is showing
 
 function showGoogleConsent(user) {
   pendingGoogleUser = user;
+  consentModalActive = true;
   const modal = document.getElementById('google-consent-modal');
   modal.style.display = 'flex';
 }
@@ -1909,6 +1911,7 @@ function showGoogleConsent(user) {
 function acceptGoogleConsent() {
   const modal = document.getElementById('google-consent-modal');
   modal.style.display = 'none';
+  consentModalActive = false;
   if (pendingGoogleUser) {
     addContactToGHL(
       pendingGoogleUser.displayName || pendingGoogleUser.email.split('@')[0],
@@ -1923,6 +1926,7 @@ function acceptGoogleConsent() {
 function declineGoogleConsent() {
   const modal = document.getElementById('google-consent-modal');
   modal.style.display = 'none';
+  consentModalActive = false;
   pendingGoogleUser = null;
   // User declined — still signed in, just not added to CRM
   // Now start tour after consent is dismissed
@@ -1942,8 +1946,7 @@ function onAuthSuccess() {
   document.getElementById('browse-user-photo').src = photoUrl;
   loadUserLeagues();
   // Only auto-start tour if consent modal isn't showing (consent modal triggers tour after dismiss)
-  const consentModal = document.getElementById('google-consent-modal');
-  if (!consentModal || consentModal.style.display !== 'flex') {
+  if (!consentModalActive) {
     setTimeout(checkAndStartTour, 600);
   }
 
@@ -3571,6 +3574,8 @@ function tourPrev() { if (tourStep > 0) { tourStep--; renderTourStep(); } }
 function checkAndStartTour() {
   // Always show the ? help button
   document.getElementById('tour-help-btn').style.display = 'flex';
+  // Never start tour while consent modal is active
+  if (consentModalActive) return;
   // Auto-start tour for new users who haven't completed it
   if (!FIREBASE_READY || !currentUser) return;
   db.ref('/users/' + currentUser.uid + '/tourCompleted').once('value', snap => {
