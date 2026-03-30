@@ -406,9 +406,10 @@
       </div>
       <div id="admin-console-body" style="display:none">
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-          <button onclick="adminLoadAllUsers()" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Load All Users</button>
-          <button onclick="adminDeleteAllLeagues()" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Delete All My Leagues</button>
+          <button onclick="adminLoadAllUsers()" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Load Users</button>
+          <button onclick="adminLoadLeagues()" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Load Leagues</button>
         </div>
+        <div id="admin-league-list" style="max-height:300px;overflow-y:auto;margin-bottom:8px"></div>
         <div id="admin-user-list" style="max-height:400px;overflow-y:auto"></div>
       </div>
     </div>
@@ -1098,6 +1099,128 @@ function toggleAdminConsole() {
   const isHidden = body.style.display === 'none';
   body.style.display = isHidden ? 'block' : 'none';
   btn.textContent = isHidden ? 'Collapse' : 'Expand';
+}
+
+function adminLoadLeagues() {
+  if (!isAdmin() || !FIREBASE_READY) return;
+  const el = document.getElementById('admin-league-list');
+  el.innerHTML = '<div style="color:#92400e;font-size:13px;padding:8px 0">Loading leagues...</div>';
+
+  const leagueIds = Object.keys(userLeagues);
+  if (leagueIds.length === 0) {
+    el.innerHTML = '<div style="color:#92400e;font-size:13px;padding:8px 0">No leagues found.</div>';
+    return;
+  }
+
+  const leagueData = [];
+  let loaded = 0;
+
+  leagueIds.forEach(leagueId => {
+    db.ref('/leagues/' + leagueId).once('value', snap => {
+      const league = snap.val();
+      if (league) {
+        const info = league.info || {};
+        const settings = league.settings || {};
+        const memberCount = league.members ? Object.keys(league.members).length : 0;
+        const deadline = settings.deadline || info.deadline || '';
+        leagueData.push({
+          id: leagueId,
+          name: info.name || 'Unnamed',
+          clubName: info.clubName || '',
+          sport: info.sport || '',
+          deadline,
+          memberCount,
+          createdAt: info.createdAt || 0,
+          clubId: info.clubId,
+          code: info.code
+        });
+      }
+      loaded++;
+      if (loaded === leagueIds.length) {
+        renderAdminLeagueList(el, leagueData);
+      }
+    }, err => {
+      loaded++;
+      if (loaded === leagueIds.length) {
+        renderAdminLeagueList(el, leagueData);
+      }
+    });
+  });
+}
+
+function renderAdminLeagueList(el, leagues) {
+  if (leagues.length === 0) {
+    el.innerHTML = '<div style="color:#92400e;font-size:13px;padding:8px 0">No leagues found.</div>';
+    return;
+  }
+
+  const now = new Date();
+  el.innerHTML = '<div style="font-size:11px;color:#92400e;font-weight:700;letter-spacing:1px;margin-bottom:8px">' + leagues.length + ' LEAGUES</div>' +
+    leagues.map(lg => {
+      let deadlineHtml = '<span style="color:#9ca3af">No end date set</span>';
+      if (lg.deadline) {
+        const d = new Date(lg.deadline);
+        const expired = d < now;
+        const daysLeft = Math.ceil((d - now) / (1000 * 60 * 60 * 24));
+        deadlineHtml = '<span style="color:' + (expired ? '#dc2626' : daysLeft <= 7 ? '#f59e0b' : '#059669') + ';font-weight:600">' +
+          (expired ? 'Expired ' : 'Ends ') + lg.deadline +
+          (expired ? '' : ' (' + daysLeft + ' days left)') + '</span>';
+      }
+      const created = lg.createdAt ? new Date(lg.createdAt).toLocaleDateString() : '?';
+      return '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;margin-bottom:6px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:start">' +
+        '<div>' +
+        '<div style="font-size:14px;font-weight:700;color:#1a1a1a">' + esc(lg.name) + '</div>' +
+        '<div style="font-size:12px;color:#6b7280;margin-top:2px">' + esc(lg.clubName) + (lg.sport ? ' &middot; ' + esc(lg.sport) : '') + ' &middot; ' + lg.memberCount + ' members</div>' +
+        '<div style="font-size:12px;margin-top:4px">' + deadlineHtml + '</div>' +
+        '<div style="font-size:11px;color:#9ca3af;margin-top:2px">Created: ' + created + '</div>' +
+        '</div>' +
+        '<button onclick="adminDeleteLeague(\'' + esc(lg.id) + '\',\'' + esc(lg.name) + '\',\'' + esc(lg.clubId || '') + '\',\'' + esc(lg.code || '') + '\')" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Delete</button>' +
+        '</div></div>';
+    }).join('');
+}
+
+function adminDeleteLeague(leagueId, leagueName, clubId, code) {
+  if (!isAdmin()) return;
+  if (!confirm('Delete "' + leagueName + '"? This removes the league and all its data permanently.')) return;
+
+  const updates = {};
+  updates['/leagues/' + leagueId] = null;
+  if (clubId) updates['/clubLeagues/' + clubId + '/' + leagueId] = null;
+  if (code) updates['/codes/' + code] = null;
+
+  // Remove from all users' userLeagues
+  db.ref('/userLeagues').once('value', snap => {
+    const allUL = snap.val() || {};
+    Object.entries(allUL).forEach(([uid, leagues]) => {
+      if (leagues && leagues[leagueId]) {
+        updates['/userLeagues/' + uid + '/' + leagueId] = null;
+      }
+    });
+
+    db.ref().update(updates).then(() => {
+      toast('"' + leagueName + '" deleted');
+      adminLoadLeagues();
+    }).catch(err => {
+      // If reading all userLeagues fails, still delete the league itself
+      const fallback = {};
+      fallback['/leagues/' + leagueId] = null;
+      fallback['/userLeagues/' + currentUser.uid + '/' + leagueId] = null;
+      if (clubId) fallback['/clubLeagues/' + clubId + '/' + leagueId] = null;
+      if (code) fallback['/codes/' + code] = null;
+      db.ref().update(fallback).then(() => {
+        toast('"' + leagueName + '" deleted (partial cleanup)');
+        adminLoadLeagues();
+      }).catch(e => toast('Error: ' + e.message));
+    });
+  }, () => {
+    // Can't read all userLeagues — delete what we can
+    updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = null;
+    db.ref().update(updates).then(() => {
+      toast('"' + leagueName + '" deleted');
+      adminLoadLeagues();
+    }).catch(e => toast('Error: ' + e.message));
+  });
 }
 
 function adminLoadAllUsers() {
