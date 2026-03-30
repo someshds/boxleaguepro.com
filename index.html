@@ -1680,6 +1680,8 @@ function acceptGoogleConsent() {
     );
     pendingGoogleUser = null;
   }
+  // Now start tour after consent is dismissed
+  setTimeout(checkAndStartTour, 400);
 }
 
 function declineGoogleConsent() {
@@ -1687,6 +1689,8 @@ function declineGoogleConsent() {
   modal.style.display = 'none';
   pendingGoogleUser = null;
   // User declined — still signed in, just not added to CRM
+  // Now start tour after consent is dismissed
+  setTimeout(checkAndStartTour, 400);
 }
 
 function getDefaultAvatar() {
@@ -1701,7 +1705,11 @@ function onAuthSuccess() {
   const photoUrl = currentUser.photoURL || getDefaultAvatar();
   document.getElementById('browse-user-photo').src = photoUrl;
   loadUserLeagues();
-  setTimeout(checkAndStartTour, 600);
+  // Only auto-start tour if consent modal isn't showing (consent modal triggers tour after dismiss)
+  const consentModal = document.getElementById('google-consent-modal');
+  if (!consentModal || consentModal.style.display !== 'flex') {
+    setTimeout(checkAndStartTour, 600);
+  }
 
   // Check URL params for shared league link
   const params = new URLSearchParams(window.location.search);
