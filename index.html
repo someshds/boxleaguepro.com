@@ -256,6 +256,32 @@
     .my-match.ready { border-left-color: var(--green); }
     .my-match.blocked { border-left-color: var(--amber); }
 
+    /* ── Open Matches ── */
+    .om-filters { display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 4px; margin-bottom: 16px; }
+    .om-filters::-webkit-scrollbar { display: none; }
+    .om-chip { padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; border: 1.5px solid var(--border); background: var(--card); color: var(--muted); transition: all 0.15s; }
+    .om-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .om-card { background: var(--card); border-radius: var(--radius); padding: 18px; margin-bottom: 12px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+    .om-card-header { margin-bottom: 12px; }
+    .om-card-title { font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 2px; }
+    .om-card-venue { font-size: 14px; color: var(--muted); font-weight: 600; }
+    .om-card-players { display: flex; align-items: center; gap: -4px; margin: 12px 0; }
+    .om-card-players .avatar { width: 36px; height: 36px; font-size: 13px; border: 2px solid #fff; margin-left: -6px; }
+    .om-card-players .avatar:first-child { margin-left: 0; }
+    .om-card-footer { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+    .om-meta { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; color: var(--muted); }
+    .om-meta svg { width: 16px; height: 16px; }
+    .om-spots { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 700; margin-left: auto; }
+    .om-spots.available { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+    .om-spots.full { background: var(--primary-dark); color: #fff; }
+    .om-player-names { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .om-player-name { font-size: 11px; color: var(--muted); text-align: center; }
+    .om-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .om-empty { text-align: center; padding: 40px 20px; }
+    .om-empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .om-empty-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .om-empty-text { font-size: 15px; color: var(--muted); line-height: 1.5; }
+
     /* ── Guided Tour ── */
     .tour-overlay { position: fixed; inset: 0; z-index: 99999; pointer-events: none; opacity: 0; transition: opacity 0.3s ease; }
     .tour-overlay.active { opacity: 1; pointer-events: auto; }
@@ -880,6 +906,28 @@
       </div>
     </div>
 
+    <!-- ── Open Matches Tab ── -->
+    <div id="tab-open" class="section">
+      <div class="edu-tip" id="tip-open">
+        <button class="edu-tip-close" onclick="closeTip('open')">&times;</button>
+        <div class="edu-tip-header">
+          <div class="edu-tip-icon">&#127934;</div>
+          <div class="edu-tip-title">Open Matches</div>
+        </div>
+        <div class="edu-tip-body">
+          Need players for a game? <strong>Create an open match</strong> and other players can join. Book a court, set the date and time, and watch the spots fill up!
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h2 class="section-title" style="margin-bottom:0">Open Matches</h2>
+        <button class="btn btn-primary btn-sm" onclick="showCreateOpenMatch()">+ New Game</button>
+      </div>
+
+      <div id="om-filters" class="om-filters"></div>
+      <div id="om-list"></div>
+    </div>
+
   </div>
 
   <!-- Footer -->
@@ -894,7 +942,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.1 · Build 20260330</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.2 · Build 20260402</div>
   </div>
 </div>
 
@@ -1089,7 +1137,7 @@ let currentUser = null;       // Firebase user object
 let userLeagues = {};         // { leagueId: { info, role } }
 let activeLeagueId = null;    // Currently viewing
 const ADMIN_EMAILS = ['grantdeswardt@gmail.com', 'grant@aifusionautomations.com'];
-let L = { groups: [], availability: {}, settings: {}, booked: {}, members: {} }; // Active league data
+let L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {} }; // Active league data
 let currentTab = 'availability';
 let weekOff = 0;
 let listeners = [];           // Active Firebase listeners (to detach on league switch)
@@ -1608,7 +1656,7 @@ function closeTip(id) {
   localStorage.setItem('blp_tip_' + id, 'closed');
 }
 function initTips() {
-  ['setup','availability','everyone','matches'].forEach(id => {
+  ['setup','availability','everyone','matches','open'].forEach(id => {
     const el = document.getElementById('tip-' + id);
     if (el && localStorage.getItem('blp_tip_' + id) === 'closed') el.style.display = 'none';
   });
@@ -2666,8 +2714,8 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
 
   // Build nav tabs
   const tabs = isOrganiser
-    ? [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['setup','Setup']]
-    : [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder']];
+    ? [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['open','Open Matches'],['setup','Setup']]
+    : [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['open','Open Matches']];
 
   document.getElementById('app-nav').innerHTML = tabs.map(([id, label], i) =>
     `<div class="nav-tab${i===0?' active':''}" onclick="showTab('${id}')">${label}</div>`
@@ -2688,6 +2736,7 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
         L.settings = parsed.settings || {};
         L.booked = parsed.booked || {};
         L.members = parsed.members || {};
+        L.openMatches = parsed.openMatches || {};
       }
     } catch(e) {}
     if (!L.settings) L.settings = {};
@@ -2740,6 +2789,12 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
     if (membersInitial) { showTab('availability'); membersInitial = false; }
   });
   listeners.push({ ref: ref.child('members'), event: 'value', fn: l5 });
+
+  const l6 = ref.child('openMatches').on('value', snap => {
+    L.openMatches = snap.val() || {};
+    if (currentTab === 'open') renderOpenMatches();
+  });
+  listeners.push({ ref: ref.child('openMatches'), event: 'value', fn: l6 });
 }
 
 function detachListeners() {
@@ -2861,13 +2916,14 @@ function showTab(t) {
 
   document.querySelectorAll('#app-nav .nav-tab').forEach(el => {
     const text = el.textContent.trim();
-    const map = { 'My Availability':'availability', 'Everyone':'everyone', 'Match Finder':'matches', 'Setup':'setup' };
+    const map = { 'My Availability':'availability', 'Everyone':'everyone', 'Match Finder':'matches', 'Open Matches':'open', 'Setup':'setup' };
     el.classList.toggle('active', map[text] === t);
   });
 
   if (t === 'availability') { checkPlayerLink(); }
   if (t === 'everyone') { renderAllAvail(); renderMissing(); }
   if (t === 'matches') { renderMatchFinder(); }
+  if (t === 'open') { renderOpenMatches(); }
   if (t === 'setup') { renderGroups(); renderMembers(); }
 }
 
@@ -3572,6 +3628,287 @@ function shareResults() {
   const code = userLeagues[activeLeagueId] ? userLeagues[activeLeagueId].code : '';
   msg += `\nLeague code: ${code}\nJoin at: https://boxleaguepro.com`;
   copyText(msg);
+}
+
+/* ══════════════════════════════════════
+   OPEN MATCHES
+   ══════════════════════════════════════ */
+let omFilter = 'upcoming';
+
+function renderOpenMatches() {
+  const list = document.getElementById('om-list');
+  const filtersEl = document.getElementById('om-filters');
+  if (!list) return;
+
+  // Build date filter chips
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dates = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    dates.push(d);
+  }
+
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let fh = `<div class="om-chip ${omFilter === 'upcoming' ? 'active' : ''}" onclick="setOmFilter('upcoming')">Upcoming</div>`;
+  dates.forEach(d => {
+    const key = ds(d);
+    fh += `<div class="om-chip ${omFilter === key ? 'active' : ''}" onclick="setOmFilter('${key}')">${dayNames[d.getDay()]}<br><strong>${d.getDate()}</strong><br>${monthNames[d.getMonth()]}</div>`;
+  });
+  filtersEl.innerHTML = fh;
+
+  // Get all open matches as array
+  const matches = Object.entries(L.openMatches || {}).map(([id, m]) => ({ id, ...m }));
+
+  // Filter
+  const filtered = matches.filter(m => {
+    const mDate = new Date(m.date + 'T00:00:00');
+    if (mDate < today && !isSameDay(mDate, today)) return false; // hide past
+    if (omFilter === 'upcoming') return true;
+    return m.date === omFilter;
+  }).sort((a, b) => {
+    if (a.date !== b.date) return a.date.localeCompare(b.date);
+    return (a.time || '').localeCompare(b.time || '');
+  });
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="om-empty">
+      <div class="om-empty-icon">&#127934;</div>
+      <div class="om-empty-title">No open matches${omFilter !== 'upcoming' ? ' on this day' : ''}</div>
+      <div class="om-empty-text">Be the first to create a game! Tap <strong>+ New Game</strong> above to book a court and find players.</div>
+    </div>`;
+    return;
+  }
+
+  const myName = getMyPlayerName();
+  list.innerHTML = filtered.map(m => {
+    const players = m.players || [];
+    const maxP = m.maxPlayers || 4;
+    const spotsLeft = maxP - players.length;
+    const isFull = spotsLeft <= 0;
+    const iJoined = players.includes(myName);
+    const isCreator = m.createdBy === (currentUser ? currentUser.email : '');
+    const mDate = new Date(m.date + 'T00:00:00');
+    const dateStr = `${mDate.getDate()} ${monthNames[mDate.getMonth()]}`;
+    const slotLabel = SLOT_LABELS[m.slot] || m.slot || m.time || '';
+
+    let avatarsHtml = players.map(p => avatarHtml(p)).join('');
+    // Empty spots
+    for (let i = 0; i < spotsLeft; i++) {
+      avatarsHtml += `<span class="avatar" style="background:#e5e7eb;color:#9ca3af;border:2px dashed #d1d5db;margin-left:${i === 0 && players.length === 0 ? '0' : '-6px'}">?</span>`;
+    }
+
+    let playerNamesHtml = players.map(p => `<span class="om-player-name">${esc(p.split(' ')[0])}</span>`).join('');
+
+    let actionsHtml = '';
+    if (!isFull && !iJoined && myName) {
+      actionsHtml += `<button class="btn btn-success btn-sm" onclick="joinOpenMatch('${esc(m.id)}')">Join Game</button>`;
+    } else if (iJoined) {
+      actionsHtml += `<button class="btn btn-danger btn-sm" onclick="leaveOpenMatch('${esc(m.id)}')">Leave</button>`;
+    } else if (isFull && !iJoined) {
+      actionsHtml += `<span style="font-size:13px;color:var(--muted);font-weight:600">Game is full</span>`;
+    }
+    if (isCreator) {
+      actionsHtml += `<button class="btn btn-secondary btn-sm" onclick="deleteOpenMatch('${esc(m.id)}')" style="margin-left:auto">Delete</button>`;
+    }
+    if (!myName) {
+      actionsHtml = `<span style="font-size:13px;color:var(--amber);font-weight:600">Link your account to a player name to join</span>`;
+    }
+
+    return `<div class="om-card">
+      <div class="om-card-header">
+        <div class="om-card-title">${esc(m.title || 'Open Game')}</div>
+        <div class="om-card-venue">${esc(m.venue || L.settings.leagueName || 'League')}</div>
+      </div>
+      <div class="om-card-players">${avatarsHtml}</div>
+      ${playerNamesHtml ? `<div class="om-player-names">${playerNamesHtml}</div>` : ''}
+      <div class="om-card-footer">
+        <span class="om-meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>${slotLabel}</span>
+        <span class="om-meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>${dateStr}</span>
+        <span class="om-spots ${isFull ? 'full' : 'available'}">${isFull ? 'Full' : spotsLeft + '/' + maxP + ' Available'}</span>
+      </div>
+      ${m.notes ? `<div style="margin-top:8px;font-size:13px;color:var(--muted);font-style:italic">${esc(m.notes)}</div>` : ''}
+      ${m.courtBooked ? `<div style="margin-top:6px;font-size:12px;color:#059669;font-weight:600">&#9989; Court booked</div>` : ''}
+      <div class="om-actions">${actionsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+function isSameDay(a, b) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+function setOmFilter(f) {
+  omFilter = f;
+  renderOpenMatches();
+}
+
+function showCreateOpenMatch() {
+  if (!currentUser) { toast('Sign in first'); return; }
+  const myName = getMyPlayerName();
+  if (!myName) { toast('Link your account to a player name first (My Availability tab)'); return; }
+
+  // Build date options for next 30 days
+  const now = new Date();
+  const dateOpts = [];
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + i);
+    dateOpts.push(d);
+  }
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  const slotOpts = SLOTS.map(s => `<option value="${s}">${SLOT_LABELS[s]}</option>`).join('');
+  const dateOptHtml = dateOpts.map(d => {
+    const val = ds(d);
+    const label = `${dayNames[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}`;
+    return `<option value="${val}">${label}</option>`;
+  }).join('');
+
+  const html = `
+    <div style="padding:20px">
+      <h3 style="font-size:20px;font-weight:800;margin-bottom:16px">Create Open Match</h3>
+      <div class="fg">
+        <label class="fl">Title</label>
+        <input class="fi" id="om-title" placeholder="e.g. Doubles Mix-In, Friendly Game" value="Open Doubles">
+      </div>
+      <div class="fg">
+        <label class="fl">Date</label>
+        <select class="fi" id="om-date">${dateOptHtml}</select>
+      </div>
+      <div class="fg">
+        <label class="fl">Time Slot</label>
+        <select class="fi" id="om-slot">${slotOpts}</select>
+      </div>
+      <div class="fg">
+        <label class="fl">Max Players</label>
+        <select class="fi" id="om-max">
+          <option value="2">2 players</option>
+          <option value="4" selected>4 players (doubles)</option>
+          <option value="6">6 players</option>
+          <option value="8">8 players</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">Venue / Court</label>
+        <input class="fi" id="om-venue" placeholder="e.g. Court 3" value="${esc(L.settings.leagueName || '')}">
+      </div>
+      <div class="fg">
+        <label class="fl">Notes (optional)</label>
+        <input class="fi" id="om-notes" placeholder="e.g. All levels welcome, bring water">
+      </div>
+      <div class="fg">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="om-court" style="width:18px;height:18px">
+          <span style="font-size:15px;font-weight:600">Court already booked</span>
+        </label>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:20px">
+        <button class="btn btn-secondary" onclick="closeCreateOpenMatch()" style="flex:1">Cancel</button>
+        <button class="btn btn-primary" onclick="createOpenMatch()" style="flex:1">Create Game</button>
+      </div>
+    </div>`;
+
+  // Show in a modal
+  let modal = document.getElementById('om-create-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'om-create-modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px';
+    modal.onclick = function(e) { if (e.target === modal) closeCreateOpenMatch(); };
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `<div style="background:#fff;border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">${html}</div>`;
+  modal.style.display = 'flex';
+}
+
+function closeCreateOpenMatch() {
+  const modal = document.getElementById('om-create-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function createOpenMatch() {
+  const title = document.getElementById('om-title').value.trim() || 'Open Game';
+  const date = document.getElementById('om-date').value;
+  const slot = document.getElementById('om-slot').value;
+  const maxPlayers = parseInt(document.getElementById('om-max').value) || 4;
+  const venue = document.getElementById('om-venue').value.trim();
+  const notes = document.getElementById('om-notes').value.trim();
+  const courtBooked = document.getElementById('om-court').checked;
+  const myName = getMyPlayerName();
+
+  const match = {
+    title,
+    date,
+    slot,
+    maxPlayers,
+    venue,
+    notes,
+    courtBooked,
+    players: [myName],
+    createdBy: currentUser.email,
+    createdAt: new Date().toISOString()
+  };
+
+  if (FIREBASE_READY) {
+    const newRef = db.ref('/leagues/' + activeLeagueId + '/openMatches').push();
+    newRef.set(match);
+  } else {
+    const id = 'om_' + Date.now();
+    L.openMatches[id] = match;
+  }
+
+  closeCreateOpenMatch();
+  toast('Game created! Other players can now join.');
+  renderOpenMatches();
+}
+
+function joinOpenMatch(matchId) {
+  const myName = getMyPlayerName();
+  if (!myName) { toast('Link your account first'); return; }
+  const match = L.openMatches[matchId];
+  if (!match) return;
+  const players = match.players || [];
+  if (players.includes(myName)) { toast('Already joined'); return; }
+  if (players.length >= (match.maxPlayers || 4)) { toast('Game is full'); return; }
+  players.push(myName);
+
+  if (FIREBASE_READY) {
+    db.ref('/leagues/' + activeLeagueId + '/openMatches/' + matchId + '/players').set(players);
+  } else {
+    match.players = players;
+    renderOpenMatches();
+  }
+  toast('You joined the game!');
+}
+
+function leaveOpenMatch(matchId) {
+  const myName = getMyPlayerName();
+  if (!myName) return;
+  const match = L.openMatches[matchId];
+  if (!match) return;
+  const players = (match.players || []).filter(p => p !== myName);
+
+  if (FIREBASE_READY) {
+    db.ref('/leagues/' + activeLeagueId + '/openMatches/' + matchId + '/players').set(players);
+  } else {
+    match.players = players;
+    renderOpenMatches();
+  }
+  toast('You left the game');
+}
+
+function deleteOpenMatch(matchId) {
+  if (!confirm('Delete this open match?')) return;
+  if (FIREBASE_READY) {
+    db.ref('/leagues/' + activeLeagueId + '/openMatches/' + matchId).remove();
+  } else {
+    delete L.openMatches[matchId];
+    renderOpenMatches();
+  }
+  toast('Game deleted');
 }
 
 /* ══════════════════════════════════════
