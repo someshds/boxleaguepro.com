@@ -670,8 +670,9 @@
           <select class="fi" id="inp-create-league-sport" style="font-size:16px">
             <option value="tennis">Tennis</option>
             <option value="padel">Padel</option>
-            <option value="badminton">Badminton</option>
             <option value="squash">Squash</option>
+            <option value="racketball">Racketball</option>
+            <option value="badminton">Badminton</option>
             <option value="singles">Singles (any sport)</option>
             <option value="other">Other</option>
           </select>
@@ -4000,9 +4001,19 @@ function renderOpenMatches() {
       actionsHtml = `<span style="font-size:13px;color:var(--amber);font-weight:600">Link your account to a player name to join</span>`;
     }
 
+    const sportIcons = { tennis: '🎾', padel: '🥎', squash: '🏸', racketball: '🏸', badminton: '🏸', other: '🏅' };
+    const levelColors = { fun: '#059669', intermediate: '#d97706', advanced: '#dc2626' };
+    const levelLabels = { fun: 'Fun', intermediate: 'Intermediate', advanced: 'Advanced' };
+    const mSport = m.sport || 'tennis';
+    const mLevel = m.level || '';
+
     return `<div class="om-card">
       <div class="om-card-header">
         <div class="om-card-title">${esc(m.title || 'Open Game')}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+          <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:20px;font-size:11px;font-weight:700;color:#059669">${sportIcons[mSport] || '🏅'} ${esc(mSport.charAt(0).toUpperCase() + mSport.slice(1))}</span>
+          ${mLevel ? `<span style="display:inline-flex;align-items:center;padding:2px 8px;background:${levelColors[mLevel] || '#6b7280'}15;border:1px solid ${levelColors[mLevel] || '#6b7280'}40;border-radius:20px;font-size:11px;font-weight:700;color:${levelColors[mLevel] || '#6b7280'}">${levelLabels[mLevel] || mLevel}</span>` : ''}
+        </div>
         <div class="om-card-venue">${esc(m.venue || L.settings.leagueName || 'League')}</div>
       </div>
       <div class="om-card-players">${avatarsHtml}</div>
@@ -4056,6 +4067,25 @@ function showCreateOpenMatch() {
       <div class="fg">
         <label class="fl">Title</label>
         <input class="fi" id="om-title" placeholder="e.g. Doubles Mix-In, Friendly Game" value="Open Doubles">
+      </div>
+      <div class="fg">
+        <label class="fl">Sport</label>
+        <select class="fi" id="om-sport">
+          <option value="tennis">Tennis</option>
+          <option value="padel">Padel</option>
+          <option value="squash">Squash</option>
+          <option value="racketball">Racketball</option>
+          <option value="badminton">Badminton</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">Level</label>
+        <select class="fi" id="om-level">
+          <option value="fun">Fun — all welcome</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
       </div>
       <div class="fg">
         <label class="fl">Date</label>
@@ -4114,6 +4144,8 @@ function closeCreateOpenMatch() {
 
 function createOpenMatch() {
   const title = document.getElementById('om-title').value.trim() || 'Open Game';
+  const sport = document.getElementById('om-sport').value;
+  const level = document.getElementById('om-level').value;
   const date = document.getElementById('om-date').value;
   const slot = document.getElementById('om-slot').value;
   const maxPlayers = parseInt(document.getElementById('om-max').value) || 4;
@@ -4124,6 +4156,8 @@ function createOpenMatch() {
 
   const match = {
     title,
+    sport,
+    level,
     date,
     slot,
     maxPlayers,
