@@ -1997,15 +1997,15 @@ function signOut() {
 }
 
 function openProfile() {
-  if (!activeLeagueId || !currentUser) return;
+  if (!currentUser) return;
   const emailKey = sanitizeEmail(currentUser.email);
   const member = L.members[emailKey];
-  document.getElementById('profile-name').value = member ? member.playerName || '' : '';
+  document.getElementById('profile-name').value = member ? member.playerName || '' : (mixInMode ? currentUser.displayName || '' : '');
   document.getElementById('profile-partner').value = member ? member.partnerName || '' : '';
   document.getElementById('profile-error').style.display = 'none';
-  // Hide partner field for singles leagues
-  const lg = userLeagues[activeLeagueId];
-  const isSingles = lg && lg.sport && (lg.sport.toLowerCase() === 'squash' || lg.sport.toLowerCase() === 'singles');
+  // Hide partner field for singles leagues or mix-in mode
+  const lg = activeLeagueId ? userLeagues[activeLeagueId] : null;
+  const isSingles = mixInMode || (lg && lg.sport && (lg.sport.toLowerCase() === 'squash' || lg.sport.toLowerCase() === 'singles'));
   document.getElementById('profile-partner-wrap').style.display = isSingles ? 'none' : 'block';
   loadProfilePhoto();
   document.getElementById('profile-modal').style.display = 'flex';
@@ -2279,8 +2279,10 @@ let clubBookingUrl = '';   // Current league's club court booking URL
 let wizWeekOff = 0;
 let wizAvailability = {};  // Temporary availability during wizard
 
+const MIXIN_LEAGUE_ID = '__global_mixin__';
+
 function omPath() {
-  return mixInMode ? '/globalMixins' : '/leagues/' + activeLeagueId + '/openMatches';
+  return mixInMode ? '/leagues/' + MIXIN_LEAGUE_ID + '/openMatches' : '/leagues/' + activeLeagueId + '/openMatches';
 }
 
 function goToMixIn() {
@@ -2312,7 +2314,7 @@ function enterMixInMode() {
   // Listen to global mix-in matches
   if (FIREBASE_READY) {
     detachListeners();
-    const ref = db.ref('/globalMixins');
+    const ref = db.ref('/leagues/' + MIXIN_LEAGUE_ID + '/openMatches');
     const l1 = ref.on('value', snap => {
       L.openMatches = snap.val() || {};
       if (currentTab === 'open') renderOpenMatches();
