@@ -811,7 +811,7 @@
       </button>
     </div>
     <div class="app-league-name" id="app-league-name"></div>
-    <div class="app-league-code">League code: <span id="app-league-code" onclick="copyLeagueCode()" title="Tap to copy"></span></div>
+    <div class="app-league-code" id="app-league-code-wrap">League code: <span id="app-league-code" onclick="copyLeagueCode()" title="Tap to copy"></span></div>
     <div class="progress-bar-wrap" id="progress-wrap" style="display:none">
       <div class="progress-label">
         <span id="progress-text">0 of 0 players submitted</span>
@@ -2264,6 +2264,7 @@ if (FIREBASE_READY) {
    BROWSE — CLUBS & LEAGUES
    ══════════════════════════════════════ */
 let selectedGameType = null; // 'singles', 'doubles', 'mixin'
+let mixInMode = false;       // true when user entered via Mix-In (hide league tabs)
 let allClubs = {};        // { clubId: { name, bookingUrl, ... } }
 let selectedClubId = null;
 let selectedClubName = '';
@@ -2272,11 +2273,12 @@ let wizWeekOff = 0;
 let wizAvailability = {};  // Temporary availability during wizard
 
 function goToMixIn() {
+  mixInMode = true;
   const ids = Object.keys(userLeagues);
   if (ids.length > 0) {
     enterLeague(ids[0]);
-    setTimeout(() => showTab('open'), 500);
   } else {
+    mixInMode = false;
     showJoinFlow();
     toast('Join or create a league first, then use the Open Matches tab');
   }
@@ -2285,17 +2287,7 @@ function goToMixIn() {
 function selectGameType(type) {
   selectedGameType = type;
   if (type === 'mixin') {
-    // Go to browse, then immediately try to enter a league's Open Matches tab
-    // If user has leagues, enter the first one and switch to Open Matches
-    const ids = Object.keys(userLeagues);
-    if (ids.length > 0) {
-      enterLeague(ids[0]);
-      setTimeout(() => showTab('open'), 500);
-    } else {
-      // Need to join/create a league first — go to browse with a note
-      goToBrowse();
-      toast('Join or create a league first, then use the Open Matches tab');
-    }
+    goToMixIn();
     return;
   }
   // For singles/doubles, go to browse screen with sport pre-selected
@@ -2976,15 +2968,27 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   document.getElementById('app-user-first').textContent = (currentUser.displayName || 'You').split(' ')[0];
 
   // Build nav tabs
-  const tabs = isOrganiser
-    ? [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['open','Open Matches'],['setup','Setup']]
-    : [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['open','Open Matches']];
+  let tabs;
+  if (mixInMode) {
+    tabs = [['open','Open Matches']];
+  } else if (isOrganiser) {
+    tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['open','Open Matches'],['setup','Setup']];
+  } else {
+    tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['open','Open Matches']];
+  }
 
   document.getElementById('app-nav').innerHTML = tabs.map(([id, label], i) =>
     `<div class="nav-tab${i===0?' active':''}" onclick="showTab('${id}')">${label}</div>`
   ).join('');
 
-  currentTab = 'availability';
+  currentTab = mixInMode ? 'open' : 'availability';
+
+  // Hide league-specific header elements in mix-in mode
+  document.getElementById('app-league-code-wrap').style.display = mixInMode ? 'none' : '';
+  document.getElementById('progress-wrap').style.display = mixInMode ? 'none' : '';
+  document.getElementById('deadline-banner').style.display = mixInMode ? 'none' : '';
+  document.getElementById('app-league-name').textContent = mixInMode ? 'Mix-In Games' : (leagueInfo.name || 'League');
+
   showScreen('app');
   initTips();
 
@@ -3009,7 +3013,7 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
     document.getElementById('inp-deadline').value = L.settings.deadline || '';
     document.getElementById('inp-booking-url').value = clubBookingUrl || '';
     renderAll();
-    showTab('availability');
+    showTab(mixInMode ? 'open' : 'availability');
     return;
   }
 
@@ -3052,7 +3056,7 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   const l5 = ref.child('members').on('value', snap => {
     L.members = snap.val() || {};
     renderMembers();
-    if (membersInitial) { showTab('availability'); membersInitial = false; }
+    if (membersInitial) { showTab(mixInMode ? 'open' : 'availability'); membersInitial = false; }
   });
   listeners.push({ ref: ref.child('members'), event: 'value', fn: l5 });
 
@@ -3079,6 +3083,7 @@ function goToHub() {
   detachListeners();
   activeLeagueId = null;
   clubBookingUrl = '';
+  mixInMode = false;
   L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {} };
   showScreen('welcome');
 }
@@ -3272,7 +3277,8 @@ function renderAll() {
    ══════════════════════════════════════ */
 function renderHeader() {
   const el = document.getElementById('app-league-name');
-  if (L.settings.leagueName) el.textContent = L.settings.leagueName;
+  if (mixInMode) { el.textContent = 'Mix-In Games'; }
+  else if (L.settings.leagueName) el.textContent = L.settings.leagueName;
   // Update invite link in Setup tab
   const linkEl = document.getElementById('setup-invite-link');
   if (linkEl && activeLeagueId) {
@@ -3282,6 +3288,7 @@ function renderHeader() {
 
 function renderProgress() {
   const wrap = document.getElementById('progress-wrap');
+  if (mixInMode) { wrap.style.display = 'none'; return; }
   const players = getAllPlayers();
   if (players.length === 0) { wrap.style.display = 'none'; return; }
 
@@ -3305,6 +3312,7 @@ function renderProgress() {
 
 function renderDeadline() {
   const banner = document.getElementById('deadline-banner');
+  if (mixInMode) { banner.style.display = 'none'; return; }
   if (!L.settings.deadline) { banner.style.display = 'none'; return; }
   const dl = new Date(L.settings.deadline);
   const now = new Date();
