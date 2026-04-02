@@ -358,6 +358,27 @@
     .aifa-footer-links a { display: inline-flex; align-items: center; gap: 5px; background: #1e293b; color: #94a3b8; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; text-decoration: none; transition: background 0.15s; }
     .aifa-footer-links a:hover { background: #334155; color: #fff; text-decoration: none; }
 
+    /* ── Welcome screen ── */
+    .welcome-screen { padding-bottom: 40px; }
+    .welcome-header { background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%); color: #fff; padding: 28px 20px 24px; text-align: center; }
+    .welcome-title { font-size: 28px; font-weight: 800; letter-spacing: -0.3px; margin-bottom: 4px; }
+    .welcome-subtitle { font-size: 16px; opacity: 0.85; font-weight: 500; }
+    .welcome-body { padding: 20px; max-width: 520px; margin: 0 auto; }
+    .welcome-heading { font-size: 18px; font-weight: 700; color: var(--muted); text-align: center; margin-bottom: 16px; }
+    .wc-card { background: var(--card); border-radius: 16px; padding: 24px 20px; margin-bottom: 14px; box-shadow: var(--shadow); cursor: pointer; border: 2.5px solid transparent; transition: all 0.2s; position: relative; overflow: hidden; }
+    .wc-card:hover { border-color: var(--primary-light); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+    .wc-card:active { transform: scale(0.98); }
+    .wc-card-icon { font-size: 40px; margin-bottom: 10px; }
+    .wc-card-title { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+    .wc-card-desc { font-size: 14px; color: var(--muted); line-height: 1.5; }
+    .wc-card-badge { position: absolute; top: 14px; right: 14px; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .wc-card-players { display: flex; gap: 4px; margin-top: 10px; }
+    .wc-card-players span { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .wc-card-feature { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--primary-dark); background: #eff6ff; padding: 4px 10px; border-radius: 12px; margin-top: 10px; margin-right: 6px; }
+    .welcome-existing { text-align: center; margin-top: 20px; }
+    .welcome-existing a { color: var(--primary); font-weight: 700; font-size: 15px; cursor: pointer; text-decoration: none; }
+    .welcome-existing a:hover { text-decoration: underline; }
+
     /* ── User menu ── */
     .user-pill { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.15); padding: 5px 12px 5px 6px; border-radius: 20px; cursor: pointer; border: none; color: #fff; font-size: 13px; font-weight: 600; }
     .user-pill img { width: 24px; height: 24px; border-radius: 50%; }
@@ -431,6 +452,84 @@
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
     <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.1</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SCREEN 1.5: WELCOME (Choose your game type)
+     ══════════════════════════════════════════════════════ -->
+<div id="screen-welcome" class="screen welcome-screen">
+  <div class="welcome-header">
+    <div style="font-size:36px;margin-bottom:8px">&#127934;</div>
+    <div class="welcome-title">BoxLeague Pro</div>
+    <div class="welcome-subtitle">What would you like to play?</div>
+  </div>
+  <div class="welcome-body">
+    <div class="welcome-heading">Choose your game type</div>
+
+    <div class="wc-card" onclick="selectGameType('singles')">
+      <div class="wc-card-badge" style="background:#eff6ff;color:var(--primary-dark)">1v1</div>
+      <div class="wc-card-icon">&#127941;</div>
+      <div class="wc-card-title">Singles Box League</div>
+      <div class="wc-card-desc">Compete individually in a box of 4-6 players. Play everyone once, climb the ladder.</div>
+      <div class="wc-card-players">
+        <span style="background:#2563eb;color:#fff">&#9899;</span>
+        <span style="font-size:18px">vs</span>
+        <span style="background:#dc2626;color:#fff">&#9899;</span>
+      </div>
+      <div style="margin-top:10px">
+        <span class="wc-card-feature">&#127934; Tennis</span>
+        <span class="wc-card-feature">&#127955; Squash</span>
+        <span class="wc-card-feature">&#127992; Badminton</span>
+      </div>
+    </div>
+
+    <div class="wc-card" onclick="selectGameType('doubles')">
+      <div class="wc-card-badge" style="background:#f0fdf4;color:#166534">2v2</div>
+      <div class="wc-card-icon">&#129309;</div>
+      <div class="wc-card-title">Doubles Box League</div>
+      <div class="wc-card-desc">Team up with a partner and take on other pairs. Find times when all 4 players are free.</div>
+      <div class="wc-card-players">
+        <span style="background:#2563eb;color:#fff">&#9899;</span>
+        <span style="background:#2563eb;color:#fff">&#9899;</span>
+        <span style="font-size:18px">vs</span>
+        <span style="background:#dc2626;color:#fff">&#9899;</span>
+        <span style="background:#dc2626;color:#fff">&#9899;</span>
+      </div>
+      <div style="margin-top:10px">
+        <span class="wc-card-feature">&#127934; Tennis</span>
+        <span class="wc-card-feature">&#129358; Padel</span>
+        <span class="wc-card-feature">&#127992; Badminton</span>
+      </div>
+    </div>
+
+    <div class="wc-card" onclick="selectGameType('mixin')">
+      <div class="wc-card-badge" style="background:#fef3c7;color:#92400e">Open</div>
+      <div class="wc-card-icon">&#127881;</div>
+      <div class="wc-card-title">Mix-In Games</div>
+      <div class="wc-card-desc">Book a court, post your game, and let other players join. No league required — just turn up and play!</div>
+      <div class="wc-card-players">
+        <span style="background:#059669;color:#fff">&#9899;</span>
+        <span style="background:#7c3aed;color:#fff">&#9899;</span>
+        <span style="background:#f59e0b;color:#fff">&#9899;</span>
+        <span style="background:#2563eb;color:#fff;border:2px dashed #e5e7eb">?</span>
+      </div>
+      <div style="margin-top:10px">
+        <span class="wc-card-feature">&#128197; Book a court</span>
+        <span class="wc-card-feature">&#128587; Find players</span>
+        <span class="wc-card-feature">&#9889; Instant join</span>
+      </div>
+    </div>
+
+    <div id="welcome-my-leagues" style="display:none">
+      <div class="divider" style="margin:20px 0"></div>
+      <div class="welcome-heading" style="margin-bottom:10px">Your Leagues</div>
+      <div id="welcome-leagues-list"></div>
+    </div>
+
+    <div class="welcome-existing">
+      <a onclick="skipWelcome()">Already have a league code? Join directly &rarr;</a>
+    </div>
   </div>
 </div>
 
@@ -974,7 +1073,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.3 · Build 20260402</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.4 · Build 20260402</div>
   </div>
 </div>
 
@@ -2083,12 +2182,7 @@ function getDefaultAvatar() {
 }
 
 function onAuthSuccess() {
-  showScreen('browse');
-  const displayName = currentUser.displayName || currentUser.email.split('@')[0];
-  const firstName = displayName.split(' ')[0];
-  document.getElementById('browse-user-name').textContent = firstName;
-  const photoUrl = currentUser.photoURL || getDefaultAvatar();
-  document.getElementById('browse-user-photo').src = photoUrl;
+  showScreen('welcome');
   loadUserLeagues();
   // Only auto-start tour if consent modal isn't showing (consent modal triggers tour after dismiss)
   if (!consentModalActive) {
@@ -2143,11 +2237,62 @@ if (FIREBASE_READY) {
 /* ══════════════════════════════════════
    BROWSE — CLUBS & LEAGUES
    ══════════════════════════════════════ */
+let selectedGameType = null; // 'singles', 'doubles', 'mixin'
 let allClubs = {};        // { clubId: { name, sport } }
 let selectedClubId = null;
 let selectedClubName = '';
 let wizWeekOff = 0;
 let wizAvailability = {};  // Temporary availability during wizard
+
+function selectGameType(type) {
+  selectedGameType = type;
+  if (type === 'mixin') {
+    // Go to browse, then immediately try to enter a league's Open Matches tab
+    // If user has leagues, enter the first one and switch to Open Matches
+    const ids = Object.keys(userLeagues);
+    if (ids.length > 0) {
+      enterLeague(ids[0]);
+      setTimeout(() => showTab('open'), 500);
+    } else {
+      // Need to join/create a league first — go to browse with a note
+      goToBrowse();
+      toast('Join or create a league first, then use the Open Matches tab');
+    }
+    return;
+  }
+  // For singles/doubles, go to browse screen with sport pre-selected
+  goToBrowse();
+}
+
+function skipWelcome() {
+  goToBrowse();
+  setTimeout(() => showJoinFlow(), 100);
+}
+
+function goToBrowse() {
+  showScreen('browse');
+  const displayName = currentUser.displayName || currentUser.email.split('@')[0];
+  const firstName = displayName.split(' ')[0];
+  document.getElementById('browse-user-name').textContent = firstName;
+  const photoUrl = currentUser.photoURL || getDefaultAvatar();
+  document.getElementById('browse-user-photo').src = photoUrl;
+}
+
+function renderWelcomeLeagues() {
+  const wrap = document.getElementById('welcome-my-leagues');
+  const list = document.getElementById('welcome-leagues-list');
+  if (!wrap || !list) return;
+  const ids = Object.keys(userLeagues);
+  if (ids.length === 0) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  list.innerHTML = ids.map(id => {
+    const lg = userLeagues[id];
+    return `<div class="league-card" onclick="enterLeague('${esc(id)}')" style="margin-bottom:8px">
+      <div class="league-card-name">${esc(lg.name || 'Unnamed League')}</div>
+      <div class="league-card-meta">${esc(lg.clubName || '')}${lg.clubName ? ' &middot; ' : ''}${esc(lg.sport || '')}</div>
+    </div>`;
+  }).join('');
+}
 
 function loadUserLeagues() {
   if (!FIREBASE_READY) {
@@ -2168,6 +2313,7 @@ function loadUserLeagues() {
 let createdLeagueId = null; // Track league just created for the share flow
 
 function renderMyLeagues() {
+  renderWelcomeLeagues();
   const el = document.getElementById('browse-my-leagues-list');
   const wrap = document.getElementById('browse-my-leagues');
   const ids = Object.keys(userLeagues);
@@ -2221,6 +2367,12 @@ function showCreateFlow() {
   document.getElementById('create-club-create-option').style.display = 'none';
   selectedClubId = null;
   selectedClubName = '';
+  // Pre-select sport based on game type choice
+  if (selectedGameType === 'singles') {
+    document.getElementById('inp-create-league-sport').value = 'singles';
+  } else if (selectedGameType === 'doubles') {
+    document.getElementById('inp-create-league-sport').value = 'tennis';
+  }
   document.getElementById('inp-create-club-search').focus();
 }
 
@@ -2862,8 +3014,8 @@ function detachListeners() {
 function goToHub() {
   detachListeners();
   activeLeagueId = null;
-  L = { groups: [], availability: {}, settings: {}, booked: {}, members: {} };
-  showScreen('browse');
+  L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {} };
+  showScreen('welcome');
 }
 
 function copyLeagueCode() {
