@@ -282,6 +282,19 @@
     .om-empty-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
     .om-empty-text { font-size: 15px; color: var(--muted); line-height: 1.5; }
 
+    /* ── Comments ── */
+    .comment { display: flex; gap: 10px; margin-bottom: 12px; }
+    .comment-avatar { flex-shrink: 0; }
+    .comment-avatar .avatar { width: 32px; height: 32px; font-size: 12px; }
+    .comment-avatar img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+    .comment-body { flex: 1; background: var(--card); border-radius: 12px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .comment-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 3px; }
+    .comment-name { font-size: 13px; font-weight: 700; color: var(--text); }
+    .comment-time { font-size: 11px; color: var(--muted); }
+    .comment-text { font-size: 14px; color: var(--text); line-height: 1.5; }
+    .comment-delete { background: none; border: none; font-size: 11px; color: var(--muted); cursor: pointer; padding: 2px 4px; margin-left: auto; }
+    .comment-delete:hover { color: var(--red); }
+
     /* ── Guided Tour ── */
     .tour-overlay { position: fixed; inset: 0; z-index: 99999; pointer-events: none; opacity: 0; transition: opacity 0.3s ease; }
     .tour-overlay.active { opacity: 1; pointer-events: auto; }
@@ -843,6 +856,11 @@
           <div id="my-matches-body"></div>
         </div>
 
+        <div id="my-open-games" class="mt12" style="display:none">
+          <div class="card-title" style="margin-bottom:10px">Your open games</div>
+          <div id="my-open-games-body"></div>
+        </div>
+
         <div class="card mt12" id="my-summary" style="display:none">
           <div class="card-title" style="margin-bottom:8px">Your upcoming availability</div>
           <div id="my-summary-body" class="txt-muted"></div>
@@ -928,6 +946,20 @@
       <div id="om-list"></div>
     </div>
 
+    <!-- ═══ COMMENTS SECTION (visible on all tabs) ═══ -->
+    <div id="league-comments" style="display:none;margin-top:24px">
+      <div class="divider"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="card-title">League Chat</div>
+        <span id="comments-count" style="font-size:13px;color:var(--muted);font-weight:600"></span>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <input class="fi" id="comment-input" placeholder="Write a message..." style="flex:1;margin:0" onkeydown="if(event.key==='Enter')postComment()">
+        <button class="btn btn-primary btn-sm" onclick="postComment()" style="flex-shrink:0">Send</button>
+      </div>
+      <div id="comments-list"></div>
+    </div>
+
   </div>
 
   <!-- Footer -->
@@ -942,7 +974,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.2 · Build 20260402</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.3 · Build 20260402</div>
   </div>
 </div>
 
@@ -981,6 +1013,16 @@
       <button onclick="closeProfile()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <div style="padding:20px">
+      <div style="text-align:center;margin-bottom:16px">
+        <div id="profile-photo-preview" style="width:72px;height:72px;border-radius:50%;margin:0 auto 10px;overflow:hidden;background:#e5e7eb;display:flex;align-items:center;justify-content:center;border:3px solid var(--primary-light)">
+          <img id="profile-photo-img" src="" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <span id="profile-photo-initials" style="font-size:24px;font-weight:800;color:#fff;background:var(--primary);width:100%;height:100%;display:flex;align-items:center;justify-content:center"></span>
+        </div>
+        <label class="btn btn-secondary btn-sm" style="font-size:12px;padding:6px 14px;cursor:pointer">
+          Change Photo
+          <input type="file" id="profile-photo-input" accept="image/*" onchange="handleProfilePhoto(this)" style="display:none">
+        </label>
+      </div>
       <div style="font-size:13px;font-weight:600;color:#6b7280;margin-bottom:4px">Player Name</div>
       <input class="fi" id="profile-name" placeholder="Your name" style="margin-bottom:12px">
       <div id="profile-partner-wrap">
@@ -1137,7 +1179,7 @@ let currentUser = null;       // Firebase user object
 let userLeagues = {};         // { leagueId: { info, role } }
 let activeLeagueId = null;    // Currently viewing
 const ADMIN_EMAILS = ['grantdeswardt@gmail.com', 'grant@aifusionautomations.com'];
-let L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {} }; // Active league data
+let L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {} }; // Active league data
 let currentTab = 'availability';
 let weekOff = 0;
 let listeners = [];           // Active Firebase listeners (to detach on league switch)
@@ -1837,6 +1879,7 @@ function openProfile() {
   const lg = userLeagues[activeLeagueId];
   const isSingles = lg && lg.sport && (lg.sport.toLowerCase() === 'squash' || lg.sport.toLowerCase() === 'singles');
   document.getElementById('profile-partner-wrap').style.display = isSingles ? 'none' : 'block';
+  loadProfilePhoto();
   document.getElementById('profile-modal').style.display = 'flex';
 }
 
@@ -1863,6 +1906,12 @@ function saveProfile() {
   const updates = {};
   updates['/leagues/' + activeLeagueId + '/members/' + emailKey + '/playerName'] = newName;
   updates['/leagues/' + activeLeagueId + '/members/' + emailKey + '/partnerName'] = newPartner;
+
+  // Save photo if changed
+  const pendingPhoto = document.getElementById('profile-photo-input').dataset.pending;
+  if (pendingPhoto) {
+    updates['/leagues/' + activeLeagueId + '/members/' + emailKey + '/photo'] = pendingPhoto;
+  }
 
   // Update team name in groups if names changed
   if (oldName !== newName || oldPartner !== newPartner) {
@@ -2737,6 +2786,7 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
         L.booked = parsed.booked || {};
         L.members = parsed.members || {};
         L.openMatches = parsed.openMatches || {};
+        L.comments = parsed.comments || {};
       }
     } catch(e) {}
     if (!L.settings) L.settings = {};
@@ -2793,8 +2843,15 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   const l6 = ref.child('openMatches').on('value', snap => {
     L.openMatches = snap.val() || {};
     if (currentTab === 'open') renderOpenMatches();
+    renderMyOpenGames();
   });
   listeners.push({ ref: ref.child('openMatches'), event: 'value', fn: l6 });
+
+  const l7 = ref.child('comments').on('value', snap => {
+    L.comments = snap.val() || {};
+    renderComments();
+  });
+  listeners.push({ ref: ref.child('comments'), event: 'value', fn: l7 });
 }
 
 function detachListeners() {
@@ -2969,7 +3026,7 @@ function checkPlayerLink() {
    ══════════════════════════════════════ */
 function renderAll() {
   renderGroups(); renderHeader(); renderDeadline(); renderProgress(); renderMembers();
-  checkPlayerLink();
+  checkPlayerLink(); renderComments(); renderMyOpenGames();
 }
 
 /* ══════════════════════════════════════
@@ -3694,7 +3751,7 @@ function renderOpenMatches() {
     const dateStr = `${mDate.getDate()} ${monthNames[mDate.getMonth()]}`;
     const slotLabel = SLOT_LABELS[m.slot] || m.slot || m.time || '';
 
-    let avatarsHtml = players.map(p => avatarHtml(p)).join('');
+    let avatarsHtml = players.map(p => avatarWithPhoto(p)).join('');
     // Empty spots
     for (let i = 0; i < spotsLeft; i++) {
       avatarsHtml += `<span class="avatar" style="background:#e5e7eb;color:#9ca3af;border:2px dashed #d1d5db;margin-left:${i === 0 && players.length === 0 ? '0' : '-6px'}">?</span>`;
@@ -3909,6 +3966,235 @@ function deleteOpenMatch(matchId) {
     renderOpenMatches();
   }
   toast('Game deleted');
+}
+
+/* ══════════════════════════════════════
+   MY OPEN GAMES (on Availability tab)
+   ══════════════════════════════════════ */
+function renderMyOpenGames() {
+  const container = document.getElementById('my-open-games');
+  const body = document.getElementById('my-open-games-body');
+  if (!container || !body) return;
+  const myName = getMyPlayerName();
+  if (!myName) { container.style.display = 'none'; return; }
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  const myGames = Object.entries(L.openMatches || {})
+    .map(([id, m]) => ({ id, ...m }))
+    .filter(m => {
+      const players = m.players || [];
+      if (!players.includes(myName)) return false;
+      const mDate = new Date(m.date + 'T00:00:00');
+      return mDate >= today;
+    })
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  if (myGames.length === 0) { container.style.display = 'none'; return; }
+  container.style.display = 'block';
+
+  body.innerHTML = myGames.map(m => {
+    const players = m.players || [];
+    const maxP = m.maxPlayers || 4;
+    const spotsLeft = maxP - players.length;
+    const isFull = spotsLeft <= 0;
+    const mDate = new Date(m.date + 'T00:00:00');
+    const dateStr = `${dayNames[mDate.getDay()]} ${mDate.getDate()} ${monthNames[mDate.getMonth()]}`;
+    const slotLabel = SLOT_LABELS[m.slot] || m.slot || '';
+    const avatars = players.map(p => avatarWithPhoto(p)).join('');
+
+    return `<div class="my-match ${isFull ? 'ready' : 'blocked'}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-size:15px;font-weight:700">${esc(m.title || 'Open Game')}</div>
+        <span style="font-size:12px;font-weight:700;padding:3px 8px;border-radius:12px;${isFull ? 'background:#dcfce7;color:#166534' : 'background:#fef3c7;color:#92400e'}">${isFull ? 'Full' : spotsLeft + ' spots left'}</span>
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:6px">${dateStr} &middot; ${slotLabel}</div>
+      <div style="display:flex;gap:2px;align-items:center">${avatars}</div>
+      ${m.courtBooked ? '<div style="font-size:12px;color:#059669;font-weight:600;margin-top:4px">&#9989; Court booked</div>' : '<div style="font-size:12px;color:var(--amber);font-weight:600;margin-top:4px">&#9888; Court not yet booked</div>'}
+    </div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════
+   PROFILE PHOTO
+   ══════════════════════════════════════ */
+function handleProfilePhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 500000) { toast('Photo too large (max 500KB)'); return; }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    // Resize to 128x128
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      const size = Math.min(img.width, img.height);
+      const sx = (img.width - size) / 2;
+      const sy = (img.height - size) / 2;
+      ctx.drawImage(img, sx, sy, size, size, 0, 0, 128, 128);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+
+      // Update preview
+      document.getElementById('profile-photo-img').src = dataUrl;
+      document.getElementById('profile-photo-img').style.display = 'block';
+      document.getElementById('profile-photo-initials').style.display = 'none';
+
+      // Store temporarily until save
+      document.getElementById('profile-photo-input').dataset.pending = dataUrl;
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function loadProfilePhoto() {
+  const emailKey = sanitizeEmail(currentUser.email);
+  const member = L.members[emailKey];
+  const photoImg = document.getElementById('profile-photo-img');
+  const photoInitials = document.getElementById('profile-photo-initials');
+
+  // Check for member photo, then Google photo, then initials
+  const memberPhoto = member && member.photo;
+  const googlePhoto = currentUser.photoURL;
+  const photo = memberPhoto || googlePhoto;
+
+  if (photo) {
+    photoImg.src = photo;
+    photoImg.style.display = 'block';
+    photoInitials.style.display = 'none';
+  } else {
+    photoImg.style.display = 'none';
+    photoInitials.style.display = 'flex';
+    const name = member ? member.playerName || '' : currentUser.displayName || '';
+    photoInitials.textContent = getInitials(name || '?');
+  }
+  // Clear any pending photo
+  document.getElementById('profile-photo-input').dataset.pending = '';
+}
+
+function getMemberPhoto(playerName) {
+  // Find member by player name, return photo or null
+  if (!L.members) return null;
+  for (const m of Object.values(L.members)) {
+    if (m.playerName === playerName && m.photo) return m.photo;
+  }
+  return null;
+}
+
+function avatarWithPhoto(name) {
+  const photo = getMemberPhoto(name);
+  if (photo) {
+    return `<span class="avatar" style="padding:0;overflow:hidden" title="${esc(name)}"><img src="${photo}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='${esc(getInitials(name))}';this.parentElement.style.background='${getPlayerColor(name)}'"></span>`;
+  }
+  return avatarHtml(name);
+}
+
+/* ══════════════════════════════════════
+   COMMENTS / LEAGUE CHAT
+   ══════════════════════════════════════ */
+function renderComments() {
+  const container = document.getElementById('league-comments');
+  const list = document.getElementById('comments-list');
+  const countEl = document.getElementById('comments-count');
+  if (!container || !list) return;
+
+  if (!activeLeagueId) { container.style.display = 'none'; return; }
+  container.style.display = 'block';
+
+  const comments = Object.entries(L.comments || {})
+    .map(([id, c]) => ({ id, ...c }))
+    .sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
+
+  countEl.textContent = comments.length > 0 ? comments.length + ' message' + (comments.length !== 1 ? 's' : '') : '';
+
+  if (comments.length === 0) {
+    list.innerHTML = `<div style="text-align:center;padding:16px;color:var(--muted);font-size:14px">No messages yet. Be the first to say something!</div>`;
+    return;
+  }
+
+  const isAdmin = currentUser && ADMIN_EMAILS.includes(currentUser.email);
+
+  list.innerHTML = comments.map(c => {
+    const canDelete = isAdmin || (currentUser && c.email === currentUser.email);
+    const timeAgo = getTimeAgo(c.timestamp);
+    const photo = c.photo;
+    let avatarEl;
+    if (photo) {
+      avatarEl = `<img src="${photo}" alt="" onerror="this.style.display='none'">`;
+    } else {
+      avatarEl = `<span class="avatar" style="background:${getPlayerColor(c.name || 'User')}">${esc(getInitials(c.name || '?'))}</span>`;
+    }
+
+    return `<div class="comment">
+      <div class="comment-avatar">${avatarEl}</div>
+      <div class="comment-body">
+        <div class="comment-header">
+          <span class="comment-name">${esc(c.name || 'Unknown')}</span>
+          <span class="comment-time">${timeAgo}</span>
+          ${canDelete ? `<button class="comment-delete" onclick="deleteComment('${esc(c.id)}')" title="Delete">&#128465;</button>` : ''}
+        </div>
+        <div class="comment-text">${esc(c.text)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function postComment() {
+  if (!currentUser) { toast('Sign in to comment'); return; }
+  const input = document.getElementById('comment-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const myName = getMyPlayerName() || currentUser.displayName || currentUser.email.split('@')[0];
+  const emailKey = sanitizeEmail(currentUser.email);
+  const member = L.members[emailKey];
+  const photo = (member && member.photo) || currentUser.photoURL || '';
+
+  const comment = {
+    text,
+    name: myName,
+    email: currentUser.email,
+    photo,
+    timestamp: new Date().toISOString()
+  };
+
+  if (FIREBASE_READY) {
+    db.ref('/leagues/' + activeLeagueId + '/comments').push().set(comment);
+  } else {
+    const id = 'c_' + Date.now();
+    L.comments[id] = comment;
+    renderComments();
+  }
+
+  input.value = '';
+}
+
+function deleteComment(commentId) {
+  if (FIREBASE_READY) {
+    db.ref('/leagues/' + activeLeagueId + '/comments/' + commentId).remove();
+  } else {
+    delete L.comments[commentId];
+    renderComments();
+  }
+}
+
+function getTimeAgo(isoStr) {
+  if (!isoStr) return '';
+  const now = new Date();
+  const then = new Date(isoStr);
+  const diff = Math.floor((now - then) / 1000);
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
+  return then.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
 /* ══════════════════════════════════════
