@@ -451,7 +451,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.1</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.5</div>
   </div>
 </div>
 
@@ -1102,7 +1102,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.4 · Build 20260402</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.5 · Build 20260402</div>
   </div>
 </div>
 
@@ -1844,9 +1844,7 @@ function showScreen(id) {
   if (el) el.classList.add('active');
 }
 
-/* ── Modal management ── */
-function showModal(id) { document.getElementById(id).classList.add('show'); }
-function hideModal(id) { document.getElementById(id).classList.remove('show'); }
+
 
 /* ══════════════════════════════════════
    AUTH
@@ -2021,10 +2019,29 @@ function saveProfile() {
   const errEl = document.getElementById('profile-error');
   errEl.style.display = 'none';
   if (!newName) { errEl.textContent = 'Please enter your name.'; errEl.style.display = 'block'; return; }
-  const lg = userLeagues[activeLeagueId];
-  const isSingles = lg && lg.sport && (lg.sport.toLowerCase() === 'squash' || lg.sport.toLowerCase() === 'singles');
+  const lg = activeLeagueId ? userLeagues[activeLeagueId] : null;
+  const isSingles = mixInMode || (lg && lg.sport && (lg.sport.toLowerCase() === 'squash' || lg.sport.toLowerCase() === 'singles'));
   if (!isSingles && !newPartner) { errEl.textContent = 'Please enter your partner\'s name.'; errEl.style.display = 'block'; return; }
-  if (!FIREBASE_READY || !activeLeagueId) { toast('Cannot save'); return; }
+
+  // Mix-in mode: no league member record to update
+  if (mixInMode || !activeLeagueId) {
+    if (FIREBASE_READY && currentUser) {
+      currentUser.updateProfile({ displayName: newName }).then(() => {
+        toast('Profile updated!');
+        closeProfile();
+        document.getElementById('app-user-first').textContent = newName.split(' ')[0];
+      }).catch(err => {
+        errEl.textContent = 'Save failed: ' + err.message;
+        errEl.style.display = 'block';
+      });
+    } else {
+      closeProfile();
+      toast('Profile updated!');
+    }
+    return;
+  }
+
+  if (!FIREBASE_READY) { toast('Cannot save'); return; }
 
   const emailKey = sanitizeEmail(currentUser.email);
   const member = L.members[emailKey];
@@ -2042,34 +2059,42 @@ function saveProfile() {
   }
 
   // Update team name in groups if names changed
-  if (oldName !== newName || oldPartner !== newPartner) {
-    const leagueRef = db.ref('/leagues/' + activeLeagueId);
-    leagueRef.child('groups').once('value', snap => {
-      const groups = snap.val() || {};
-      Object.entries(groups).forEach(([id, g]) => {
-        if (g.players) {
-          const playersLower = g.players.map(p => p.toLowerCase());
-          if (playersLower.includes(oldName.toLowerCase()) || playersLower.includes(oldPartner.toLowerCase())) {
-            // Update this team
-            const newPlayers = [newName, newPartner];
-            const newTeamName = newName + ' & ' + newPartner;
-            updates['/leagues/' + activeLeagueId + '/groups/' + id + '/name'] = newTeamName;
-            updates['/leagues/' + activeLeagueId + '/groups/' + id + '/players'] = newPlayers;
-          }
-        }
-      });
-
-      // Update availability keys if player name changed
-      if (oldName !== newName) {
-        leagueRef.child('availability').once('value', availSnap => {
-          const avail = availSnap.val() || {};
-          Object.entries(avail).forEach(([key, v]) => {
-            if (key.startsWith(oldName + '|')) {
-              const newKey = newName + key.substring(oldName.length);
-              updates['/leagues/' + activeLeagueId + '/availability/' + key] = null;
-              updates['/leagues/' + activeLeagueId + '/availability/' + newKey] = v;
+  if (oldName !== newName || oldPartner !== newPartner || pendingPhoto) {
+    if (oldName !== newName || oldPartner !== newPartner) {
+      const leagueRef = db.ref('/leagues/' + activeLeagueId);
+      leagueRef.child('groups').once('value', snap => {
+        const groups = snap.val() || {};
+        Object.entries(groups).forEach(([id, g]) => {
+          if (g.players) {
+            const playersLower = g.players.map(p => p.toLowerCase());
+            if (playersLower.includes(oldName.toLowerCase()) || playersLower.includes(oldPartner.toLowerCase())) {
+              const newPlayers = [newName, newPartner];
+              const newTeamName = newName + ' & ' + newPartner;
+              updates['/leagues/' + activeLeagueId + '/groups/' + id + '/name'] = newTeamName;
+              updates['/leagues/' + activeLeagueId + '/groups/' + id + '/players'] = newPlayers;
             }
+          }
+        });
+
+        if (oldName !== newName) {
+          leagueRef.child('availability').once('value', availSnap => {
+            const avail = availSnap.val() || {};
+            Object.entries(avail).forEach(([key, v]) => {
+              if (key.startsWith(oldName + '|')) {
+                const newKey = newName + key.substring(oldName.length);
+                updates['/leagues/' + activeLeagueId + '/availability/' + key] = null;
+                updates['/leagues/' + activeLeagueId + '/availability/' + newKey] = v;
+              }
+            });
+            db.ref().update(updates).then(() => {
+              toast('Profile updated!');
+              closeProfile();
+            }).catch(err => {
+              errEl.textContent = 'Save failed: ' + err.message;
+              errEl.style.display = 'block';
+            });
           });
+        } else {
           db.ref().update(updates).then(() => {
             toast('Profile updated!');
             closeProfile();
@@ -2077,17 +2102,18 @@ function saveProfile() {
             errEl.textContent = 'Save failed: ' + err.message;
             errEl.style.display = 'block';
           });
-        });
-      } else {
-        db.ref().update(updates).then(() => {
-          toast('Profile updated!');
-          closeProfile();
-        }).catch(err => {
-          errEl.textContent = 'Save failed: ' + err.message;
-          errEl.style.display = 'block';
-        });
-      }
-    });
+        }
+      });
+    } else {
+      // Photo-only change
+      db.ref().update(updates).then(() => {
+        toast('Profile updated!');
+        closeProfile();
+      }).catch(err => {
+        errEl.textContent = 'Save failed: ' + err.message;
+        errEl.style.display = 'block';
+      });
+    }
   } else {
     closeProfile();
     toast('No changes to save');
@@ -2341,12 +2367,17 @@ function skipWelcome() {
 }
 
 function goToBrowse() {
-  showScreen('browse');
+  // Reset flow states
+  document.getElementById('browse-options').style.display = 'block';
+  document.getElementById('join-flow').style.display = 'none';
+  document.getElementById('create-flow').style.display = 'none';
+  // Set user info
   const displayName = currentUser.displayName || currentUser.email.split('@')[0];
   const firstName = displayName.split(' ')[0];
   document.getElementById('browse-user-name').textContent = firstName;
   const photoUrl = currentUser.photoURL || getDefaultAvatar();
   document.getElementById('browse-user-photo').src = photoUrl;
+  showScreen('browse');
 }
 
 function renderWelcomeLeagues() {
@@ -2529,7 +2560,7 @@ function showCreateShareStep(leagueId, leagueName) {
 
 function copyCreateInviteLink() {
   const link = document.getElementById('create-share-link').textContent;
-  navigator.clipboard.writeText(link).then(() => toast('Link copied!')).catch(() => toast('Copy failed'));
+  copyText(link);
 }
 
 function shareCreateWhatsApp() {
@@ -2644,11 +2675,6 @@ function clearClubSelection() {
   document.getElementById('club-create-option').style.display = 'none';
 }
 
-function showCreateLeagueForm() {
-  document.getElementById('create-league-form').style.display = 'block';
-  document.getElementById('inp-create-league-name').focus();
-}
-
 function createLeagueInClub() {
   const name = val('inp-create-league-name');
   const sport = val('inp-create-league-sport');
@@ -2683,27 +2709,6 @@ function createLeagueInClub() {
   }).catch(err => {
     console.error('Create league error:', err);
     toast('Error creating league');
-  });
-}
-
-function joinByCode() {
-  const code = val('inp-league-code').toUpperCase();
-  const errEl = document.getElementById('join-code-error');
-  errEl.style.display = 'none';
-  if (!code || code.length < 4) {
-    errEl.textContent = 'Please enter a valid league code.';
-    errEl.style.display = 'block';
-    return;
-  }
-  if (!FIREBASE_READY) { toast('Not available in demo mode'); return; }
-  db.ref('/codes/' + code).once('value', snap => {
-    const leagueId = snap.val();
-    if (!leagueId) {
-      errEl.textContent = 'League not found. Check the code and try again.';
-      errEl.style.display = 'block';
-      return;
-    }
-    joinAndEnterLeague(leagueId);
   });
 }
 
@@ -2951,14 +2956,6 @@ function wizToggleCell(el) {
 }
 
 function wizChangeWeek(dir) { wizWeekOff += dir; renderWizAvailGrid(); }
-
-function goToBrowse() {
-  // Reset flow states
-  document.getElementById('browse-options').style.display = 'block';
-  document.getElementById('join-flow').style.display = 'none';
-  document.getElementById('create-flow').style.display = 'none';
-  showScreen('browse');
-}
 
 /* ══════════════════════════════════════
    ENTER / LEAVE A LEAGUE
@@ -4489,7 +4486,9 @@ function getMemberPhoto(playerName) {
 function avatarWithPhoto(name) {
   const photo = getMemberPhoto(name);
   if (photo) {
-    return `<span class="avatar" style="padding:0;overflow:hidden" title="${esc(name)}"><img src="${photo}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='${esc(getInitials(name))}';this.parentElement.style.background='${getPlayerColor(name)}'"></span>`;
+    const safeInitials = esc(getInitials(name)).replace(/'/g, '&#39;');
+    const safeColor = getPlayerColor(name).replace(/'/g, '');
+    return `<span class="avatar" style="padding:0;overflow:hidden" title="${esc(name)}"><img src="${photo}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='${safeInitials}';this.parentElement.style.background='${safeColor}'"></span>`;
   }
   return avatarHtml(name);
 }
