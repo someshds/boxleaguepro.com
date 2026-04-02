@@ -539,9 +539,12 @@
 <div id="screen-browse" class="screen browse-screen">
   <div class="browse-header">
     <div style="display:flex;justify-content:space-between;align-items:start">
-      <div>
-        <div class="browse-greeting">Welcome,</div>
-        <div class="browse-name" id="browse-user-name"></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button onclick="showScreen('welcome')" title="Home" style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;border:1px solid rgba(0,0,0,0.1);background:#f0fdf4;color:#059669;cursor:pointer;font-size:18px;transition:background 0.2s" onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'">&#127968;</button>
+        <div>
+          <div class="browse-greeting">Welcome,</div>
+          <div class="browse-name" id="browse-user-name"></div>
+        </div>
       </div>
       <button class="user-pill" onclick="signOut()" title="Sign out">
         <img id="browse-user-photo" src="" alt="" onerror="this.style.display='none'">
@@ -2218,11 +2221,15 @@ function onAuthSuccess() {
   // Check URL params for shared league link
   const params = new URLSearchParams(window.location.search);
   const sharedLeagueId = params.get('league');
+  const sharedMixin = params.get('mixin');
   if (sharedLeagueId) {
     // Clear the URL param so it doesn't re-trigger on refresh
     window.history.replaceState({}, '', window.location.pathname);
     // Wait for userLeagues to load, then join/enter
     setTimeout(() => { joinAndEnterLeague(sharedLeagueId); }, 500);
+  } else if (sharedMixin) {
+    window.history.replaceState({}, '', window.location.pathname);
+    setTimeout(() => { goToMixIn(); }, 500);
   }
 }
 
@@ -2272,16 +2279,48 @@ let clubBookingUrl = '';   // Current league's club court booking URL
 let wizWeekOff = 0;
 let wizAvailability = {};  // Temporary availability during wizard
 
+function omPath() {
+  return mixInMode ? '/globalMixins' : '/leagues/' + activeLeagueId + '/openMatches';
+}
+
 function goToMixIn() {
   mixInMode = true;
-  const ids = Object.keys(userLeagues);
-  if (ids.length > 0) {
-    enterLeague(ids[0]);
-  } else {
-    mixInMode = false;
-    showJoinFlow();
-    toast('Join or create a league first, then use the Open Matches tab');
+  enterMixInMode();
+}
+
+function enterMixInMode() {
+  activeLeagueId = null;
+  clubBookingUrl = '';
+  L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {} };
+
+  // Set header
+  document.getElementById('app-league-name').textContent = 'Mix-In Games';
+  document.getElementById('app-league-code').textContent = '';
+  document.getElementById('app-league-code-wrap').style.display = 'none';
+  document.getElementById('progress-wrap').style.display = 'none';
+  document.getElementById('deadline-banner').style.display = 'none';
+  const photoUrl = currentUser.photoURL || getDefaultAvatar();
+  document.getElementById('app-user-photo').src = photoUrl;
+  document.getElementById('app-user-first').textContent = (currentUser.displayName || 'You').split(' ')[0];
+
+  // Only Open Matches tab
+  document.getElementById('app-nav').innerHTML = '<div class="nav-tab active" onclick="showTab(\'open\')">Open Matches</div>';
+  currentTab = 'open';
+
+  showScreen('app');
+
+  // Listen to global mix-in matches
+  if (FIREBASE_READY) {
+    detachListeners();
+    const ref = db.ref('/globalMixins');
+    const l1 = ref.on('value', snap => {
+      L.openMatches = snap.val() || {};
+      if (currentTab === 'open') renderOpenMatches();
+    });
+    listeners.push({ ref, event: 'value', fn: l1 });
   }
+
+  showTab('open');
 }
 
 function selectGameType(type) {
@@ -3234,7 +3273,10 @@ function getMyPlayerName() {
   if (!currentUser) return '';
   const emailKey = sanitizeEmail(currentUser.email);
   const member = L.members[emailKey];
-  return member && member.playerName ? member.playerName : '';
+  if (member && member.playerName) return member.playerName;
+  // In mix-in mode (no league), fall back to display name
+  if (mixInMode) return currentUser.displayName || currentUser.email.split('@')[0];
+  return '';
 }
 
 function checkPlayerLink() {
@@ -4118,7 +4160,9 @@ function shareOpenMatch(matchId) {
   const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const dateStr = `${dayNames[mDate.getDay()]} ${mDate.getDate()} ${monthNames[mDate.getMonth()]}`;
   const slotLabel = SLOT_LABELS[m.slot] || m.slot || '';
-  const link = window.location.origin + window.location.pathname + '?league=' + activeLeagueId;
+  const link = mixInMode
+    ? window.location.origin + window.location.pathname + '?mixin=1'
+    : window.location.origin + window.location.pathname + '?league=' + activeLeagueId;
   const sportIcon = { tennis:'🎾', padel:'🥎', squash:'🏸', racketball:'🏸', badminton:'🏸' }[m.sport] || '🏅';
 
   const msg = `${sportIcon} ${m.title || 'Open Game'}\n📅 ${dateStr} · ${slotLabel}\n${m.venue ? '📍 ' + m.venue + '\n' : ''}${m.level ? '⭐ ' + m.level.charAt(0).toUpperCase() + m.level.slice(1) + '\n' : ''}👥 ${players.length}/${maxP} players${spotsLeft > 0 ? ' — ' + spotsLeft + ' spot' + (spotsLeft !== 1 ? 's' : '') + ' left!' : ' — FULL'}\n\nJoin here: ${link}`;
@@ -4262,7 +4306,7 @@ function createOpenMatch() {
   };
 
   if (FIREBASE_READY) {
-    const newRef = db.ref('/leagues/' + activeLeagueId + '/openMatches').push();
+    const newRef = db.ref(omPath()).push();
     newRef.set(match);
   } else {
     const id = 'om_' + Date.now();
@@ -4285,7 +4329,7 @@ function joinOpenMatch(matchId) {
   players.push(myName);
 
   if (FIREBASE_READY) {
-    db.ref('/leagues/' + activeLeagueId + '/openMatches/' + matchId + '/players').set(players);
+    db.ref(omPath() + '/' + matchId + '/players').set(players);
   } else {
     match.players = players;
     renderOpenMatches();
@@ -4301,7 +4345,7 @@ function leaveOpenMatch(matchId) {
   const players = (match.players || []).filter(p => p !== myName);
 
   if (FIREBASE_READY) {
-    db.ref('/leagues/' + activeLeagueId + '/openMatches/' + matchId + '/players').set(players);
+    db.ref(omPath() + '/' + matchId + '/players').set(players);
   } else {
     match.players = players;
     renderOpenMatches();
@@ -4312,7 +4356,7 @@ function leaveOpenMatch(matchId) {
 function deleteOpenMatch(matchId) {
   if (!confirm('Delete this open match?')) return;
   if (FIREBASE_READY) {
-    db.ref('/leagues/' + activeLeagueId + '/openMatches/' + matchId).remove();
+    db.ref(omPath() + '/' + matchId).remove();
   } else {
     delete L.openMatches[matchId];
     renderOpenMatches();
