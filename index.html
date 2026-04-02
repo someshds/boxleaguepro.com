@@ -573,9 +573,9 @@
       </div>
     </div>
 
-    <!-- Two clear options -->
+    <!-- Three options -->
     <div id="browse-options">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px">
         <div class="option-card" onclick="showJoinFlow()" id="opt-join" style="text-align:center;padding:24px 16px;cursor:pointer;border:2px solid transparent;transition:border-color 0.2s">
           <div style="font-size:36px;margin-bottom:8px">&#127934;</div>
           <div style="font-size:17px;font-weight:800;color:#1a1a1a">Join a League</div>
@@ -585,6 +585,11 @@
           <div style="font-size:36px;margin-bottom:8px">&#10133;</div>
           <div style="font-size:17px;font-weight:800;color:#1a1a1a">Start a League</div>
           <div style="font-size:13px;color:#6b7280;margin-top:4px">Create a new box league</div>
+        </div>
+        <div class="option-card" onclick="goToMixIn()" id="opt-mixin" style="text-align:center;padding:24px 16px;cursor:pointer;border:2px solid transparent;transition:border-color 0.2s;background:linear-gradient(135deg,#f0fdf4,#ecfeff)">
+          <div style="font-size:36px;margin-bottom:8px">&#127881;</div>
+          <div style="font-size:17px;font-weight:800;color:#1a1a1a">Mix-In Games</div>
+          <div style="font-size:13px;color:#6b7280;margin-top:4px">Open games &amp; social play</div>
         </div>
       </div>
     </div>
@@ -2264,6 +2269,17 @@ let selectedClubName = '';
 let clubBookingUrl = '';   // Current league's club court booking URL
 let wizWeekOff = 0;
 let wizAvailability = {};  // Temporary availability during wizard
+
+function goToMixIn() {
+  const ids = Object.keys(userLeagues);
+  if (ids.length > 0) {
+    enterLeague(ids[0]);
+    setTimeout(() => showTab('open'), 500);
+  } else {
+    showJoinFlow();
+    toast('Join or create a league first, then use the Open Matches tab');
+  }
+}
 
 function selectGameType(type) {
   selectedGameType = type;
