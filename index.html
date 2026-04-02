@@ -600,6 +600,10 @@
       </div>
       <div id="club-results"></div>
       <div id="club-create-option" style="display:none">
+        <div class="fg" style="margin-bottom:8px">
+          <label class="fl">Court Booking URL <span style="font-weight:400;color:#9ca3af">(optional)</span></label>
+          <input class="fi" id="inp-club-booking-url" placeholder="e.g. https://yourclub.mycourts.co.uk/" style="font-size:14px">
+        </div>
         <div class="option-card" onclick="createClubFromSearch()">
           <div style="display:flex;align-items:center;gap:12px">
             <span style="font-size:28px">+</span>
@@ -636,6 +640,10 @@
         </div>
         <div id="create-club-results"></div>
         <div id="create-club-create-option" style="display:none">
+          <div class="fg" style="margin-bottom:8px">
+            <label class="fl">Court Booking URL <span style="font-weight:400;color:#9ca3af">(optional)</span></label>
+            <input class="fi" id="inp-create-club-booking-url" placeholder="e.g. https://yourclub.mycourts.co.uk/" style="font-size:14px">
+          </div>
           <div class="option-card" onclick="createClubFromCreate()">
             <div style="display:flex;align-items:center;gap:12px">
               <span style="font-size:28px">+</span>
@@ -844,6 +852,14 @@
             <button class="btn btn-sm" onclick="clearDeadline()" style="white-space:nowrap;padding:10px 12px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;font-weight:600;cursor:pointer" title="Remove deadline">&times;</button>
           </div>
         </div>
+        <div class="fg">
+          <label class="fl">Court Booking URL <span style="font-weight:400;color:#9ca3af">(for your club)</span></label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input class="fi" id="inp-booking-url" placeholder="e.g. https://yourclub.mycourts.co.uk/" style="flex:1">
+            <button class="btn btn-primary btn-sm" onclick="saveBookingUrl()" style="white-space:nowrap;padding:10px 18px">Save</button>
+          </div>
+          <div style="font-size:12px;color:#9ca3af;margin-top:4px">Players will see a "Book a Court" link on match and open games screens</div>
+        </div>
       </div>
 
       <!-- Invite Link -->
@@ -953,6 +969,7 @@
         <div id="my-matches-card" class="mt12" style="display:none">
           <div class="card-title" style="margin-bottom:10px">Your matches to arrange</div>
           <div id="my-matches-body"></div>
+          <div id="mm-booking-link"></div>
         </div>
 
         <div id="my-open-games" class="mt12" style="display:none">
@@ -1014,6 +1031,7 @@
         </div>
       </div>
 
+      <div id="mf-booking-link"></div>
       <div id="match-summary" style="margin-bottom:14px"></div>
       <div id="match-results"></div>
 
@@ -1041,6 +1059,7 @@
         <button class="btn btn-primary btn-sm" onclick="showCreateOpenMatch()">+ New Game</button>
       </div>
 
+      <div id="om-booking-link"></div>
       <div id="om-filters" class="om-filters"></div>
       <div id="om-list"></div>
     </div>
@@ -2238,9 +2257,10 @@ if (FIREBASE_READY) {
    BROWSE — CLUBS & LEAGUES
    ══════════════════════════════════════ */
 let selectedGameType = null; // 'singles', 'doubles', 'mixin'
-let allClubs = {};        // { clubId: { name, sport } }
+let allClubs = {};        // { clubId: { name, bookingUrl, ... } }
 let selectedClubId = null;
 let selectedClubName = '';
+let clubBookingUrl = '';   // Current league's club court booking URL
 let wizWeekOff = 0;
 let wizAvailability = {};  // Temporary availability during wizard
 
@@ -2307,6 +2327,13 @@ function loadUserLeagues() {
   // Load all clubs for search
   db.ref('/clubs').on('value', snap => {
     allClubs = snap.val() || {};
+    // Auto-set East Grinstead booking URL if missing
+    Object.entries(allClubs).forEach(([id, c]) => {
+      if (c.name && c.name.toLowerCase().includes('east grinstead') && !c.bookingUrl) {
+        db.ref('/clubs/' + id + '/bookingUrl').set('https://egtsc.mycourts.co.uk/');
+        allClubs[id].bookingUrl = 'https://egtsc.mycourts.co.uk/';
+      }
+    });
   });
 }
 
@@ -2413,14 +2440,17 @@ function selectClubForCreate(clubId, clubName) {
 function createClubFromCreate() {
   const name = document.getElementById('inp-create-club-search').value;
   if (!name) { toast('Enter a club name'); return; }
+  const bookingUrl = (document.getElementById('inp-create-club-booking-url').value || '').trim();
   if (!FIREBASE_READY) {
     const id = 'C' + Date.now();
-    allClubs[id] = { name };
+    allClubs[id] = { name, bookingUrl };
     selectClubForCreate(id, name);
     return;
   }
+  const clubData = { name, createdBy: currentUser.uid, createdAt: Date.now() };
+  if (bookingUrl) clubData.bookingUrl = bookingUrl;
   const ref = db.ref('/clubs').push();
-  ref.set({ name, createdBy: currentUser.uid, createdAt: Date.now() }).then(() => {
+  ref.set(clubData).then(() => {
     selectClubForCreate(ref.key, name);
     toast('Club created!');
   });
@@ -2501,16 +2531,19 @@ function searchClubs() {
 function createClubFromSearch() {
   const name = val('inp-club-search');
   if (!name) { toast('Enter a club name'); return; }
+  const bookingUrl = (document.getElementById('inp-club-booking-url').value || '').trim();
 
   if (!FIREBASE_READY) {
     const id = 'C' + Date.now();
-    allClubs[id] = { name };
+    allClubs[id] = { name, bookingUrl };
     selectClub(id, name);
     return;
   }
 
+  const clubData = { name, createdBy: currentUser.uid, createdAt: Date.now() };
+  if (bookingUrl) clubData.bookingUrl = bookingUrl;
   const ref = db.ref('/clubs').push();
-  ref.set({ name, createdBy: currentUser.uid, createdAt: Date.now() }).then(() => {
+  ref.set(clubData).then(() => {
     selectClub(ref.key, name);
     toast('Club created!');
   });
@@ -2906,6 +2939,17 @@ function enterLeague(leagueId) {
 function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   activeLeagueId = leagueId;
 
+  // Load club booking URL
+  clubBookingUrl = '';
+  const cid = leagueInfo.clubId;
+  if (cid && allClubs[cid] && allClubs[cid].bookingUrl) {
+    clubBookingUrl = allClubs[cid].bookingUrl;
+  } else if (cid && FIREBASE_READY) {
+    db.ref('/clubs/' + cid + '/bookingUrl').once('value', snap => {
+      clubBookingUrl = snap.val() || '';
+    });
+  }
+
   // Set header
   document.getElementById('app-league-name').textContent = leagueInfo.name || 'League';
   document.getElementById('app-league-code').textContent = leagueInfo.code || leagueId;
@@ -2945,6 +2989,7 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
     if (!L.booked) L.booked = {};
     document.getElementById('inp-league-name').value = L.settings.leagueName || '';
     document.getElementById('inp-deadline').value = L.settings.deadline || '';
+    document.getElementById('inp-booking-url').value = clubBookingUrl || '';
     renderAll();
     showTab('availability');
     return;
@@ -2973,6 +3018,7 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
     L.settings = snap.val() || {};
     document.getElementById('inp-league-name').value = L.settings.leagueName || '';
     document.getElementById('inp-deadline').value = L.settings.deadline || '';
+    document.getElementById('inp-booking-url').value = clubBookingUrl || '';
     renderHeader(); renderDeadline();
   });
   listeners.push({ ref: ref.child('settings'), event: 'value', fn: l3 });
@@ -3014,6 +3060,7 @@ function detachListeners() {
 function goToHub() {
   detachListeners();
   activeLeagueId = null;
+  clubBookingUrl = '';
   L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {} };
   showScreen('welcome');
 }
@@ -3080,6 +3127,27 @@ function saveSettings() {
   if (FIREBASE_READY && activeLeagueId && L.settings.leagueName) {
     db.ref('/userLeagues/' + currentUser.uid + '/' + activeLeagueId + '/name').set(L.settings.leagueName);
     db.ref('/leagues/' + activeLeagueId + '/info/name').set(L.settings.leagueName);
+  }
+}
+
+function bookCourtHtml() {
+  if (!clubBookingUrl) return '';
+  return `<a href="${esc(clubBookingUrl)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#ecfdf5;color:#059669;border:1px solid #bbf7d0;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;margin-top:8px;transition:background 0.2s" onmouseover="this.style.background='#d1fae5'" onmouseout="this.style.background='#ecfdf5'">&#127934; Book a Court &rarr;</a>`;
+}
+
+function saveBookingUrl() {
+  const url = (document.getElementById('inp-booking-url').value || '').trim();
+  clubBookingUrl = url;
+  // Save to club record in Firebase
+  const leagueInfo = userLeagues[activeLeagueId];
+  const cid = leagueInfo && leagueInfo.clubId;
+  if (cid && FIREBASE_READY) {
+    db.ref('/clubs/' + cid + '/bookingUrl').set(url || null).then(() => {
+      if (allClubs[cid]) allClubs[cid].bookingUrl = url;
+      toast(url ? 'Booking URL saved!' : 'Booking URL removed');
+    });
+  } else {
+    toast(url ? 'Booking URL saved!' : 'Booking URL removed');
   }
 }
 
@@ -3486,6 +3554,7 @@ function renderMyMatches() {
   const player = getMyPlayerName();
   const card = document.getElementById('my-matches-card');
   const body = document.getElementById('my-matches-body');
+  const blEl = document.getElementById('mm-booking-link');
   if (!player || L.groups.length < 2) { card.style.display = 'none'; return; }
   const myGroup = L.groups.find(g => g.players.includes(player));
   if (!myGroup) { card.style.display = 'none'; return; }
@@ -3522,6 +3591,7 @@ function renderMyMatches() {
       ${slots.length > 0 ? `<div class="sug-slots" style="margin-top:6px">${slots.slice(0,3).map(s => `<span class="sug-slot">${fmtFull(s.date)} &middot; ${SLOT_LABELS[s.slot] || s.slot}</span>`).join('')}</div>` : ''}
     </div>`;
   }).join('');
+  if (blEl) blEl.innerHTML = bookCourtHtml();
 }
 
 function renderMySummary() {
@@ -3646,6 +3716,8 @@ function renderMatchFinder() {
   const el = document.getElementById('match-results');
   const shareEl = document.getElementById('share-results');
   const summaryEl = document.getElementById('match-summary');
+  const blEl = document.getElementById('mf-booking-link');
+  if (blEl) blEl.innerHTML = bookCourtHtml();
 
   if (L.groups.length < 2) {
     el.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--muted)"><div style="font-size:46px;margin-bottom:10px">&#127934;</div><h3 style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px">Need at least 2 teams</h3><p style="font-size:15px">Add teams in the Setup tab first</p></div>`;
@@ -3848,6 +3920,8 @@ function renderOpenMatches() {
   const list = document.getElementById('om-list');
   const filtersEl = document.getElementById('om-filters');
   if (!list) return;
+  const blEl = document.getElementById('om-booking-link');
+  if (blEl) blEl.innerHTML = bookCourtHtml();
 
   // Build date filter chips
   const now = new Date();
