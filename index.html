@@ -1066,6 +1066,7 @@
       </div>
 
       <div id="om-booking-link"></div>
+      <div id="om-summary" style="margin-bottom:14px"></div>
       <div id="om-filters" class="om-filters"></div>
       <div id="om-list"></div>
     </div>
@@ -3962,6 +3963,48 @@ function renderOpenMatches() {
   // Get all open matches as array
   const matches = Object.entries(L.openMatches || {}).map(([id, m]) => ({ id, ...m }));
 
+  // Build games summary
+  const summaryEl = document.getElementById('om-summary');
+  if (summaryEl) {
+    const upcoming = matches.filter(m => {
+      const mDate = new Date(m.date + 'T00:00:00');
+      return mDate >= today || isSameDay(mDate, today);
+    }).sort((a, b) => a.date.localeCompare(b.date));
+    if (upcoming.length > 0) {
+      const available = upcoming.filter(m => (m.players || []).length < (m.maxPlayers || 4)).length;
+      const full = upcoming.length - available;
+      let sh = `<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 16px">`;
+      sh += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:15px;font-weight:800">All Games</div><div style="display:flex;gap:8px">`;
+      if (available > 0) sh += `<span style="background:#ecfdf5;color:#059669;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">${available} available</span>`;
+      if (full > 0) sh += `<span style="background:#fef2f2;color:#dc2626;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">${full} full</span>`;
+      sh += `</div></div>`;
+      sh += upcoming.map(m => {
+        const p = m.players || [];
+        const maxP = m.maxPlayers || 4;
+        const spots = maxP - p.length;
+        const isFull = spots <= 0;
+        const mDate = new Date(m.date + 'T00:00:00');
+        const dateStr = `${dayNames[mDate.getDay()]} ${mDate.getDate()} ${monthNames[mDate.getMonth()]}`;
+        const slotLabel = SLOT_LABELS[m.slot] || m.slot || '';
+        const sportIcon = { tennis:'🎾', padel:'🥎', squash:'🏸', racketball:'🏸', badminton:'🏸' }[m.sport] || '🎾';
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid #f3f4f6">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sportIcon} ${esc(m.title || 'Open Game')}</div>
+            <div style="font-size:12px;color:var(--muted)">${dateStr} · ${slotLabel}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+            <span style="font-size:12px;font-weight:700;color:${isFull ? '#dc2626' : '#059669'}">${isFull ? 'Full' : spots + ' spot' + (spots !== 1 ? 's' : '')}</span>
+            <span style="font-size:11px;color:var(--muted)">${p.length}/${maxP}</span>
+          </div>
+        </div>`;
+      }).join('');
+      sh += `</div>`;
+      summaryEl.innerHTML = sh;
+    } else {
+      summaryEl.innerHTML = '';
+    }
+  }
+
   // Filter
   const filtered = matches.filter(m => {
     const mDate = new Date(m.date + 'T00:00:00');
@@ -4010,6 +4053,7 @@ function renderOpenMatches() {
     } else if (isFull && !iJoined) {
       actionsHtml += `<span style="font-size:13px;color:var(--muted);font-weight:600">Game is full</span>`;
     }
+    actionsHtml += `<button class="btn btn-sm" onclick="shareOpenMatch('${esc(m.id)}')" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700" title="Copy invite link">&#128279; Share</button>`;
     if (isCreator) {
       actionsHtml += `<button class="btn btn-secondary btn-sm" onclick="deleteOpenMatch('${esc(m.id)}')" style="margin-left:auto">Delete</button>`;
     }
@@ -4053,6 +4097,30 @@ function isSameDay(a, b) {
 function setOmFilter(f) {
   omFilter = f;
   renderOpenMatches();
+}
+
+function shareOpenMatch(matchId) {
+  const m = L.openMatches[matchId];
+  if (!m) { toast('Match not found'); return; }
+  const players = m.players || [];
+  const maxP = m.maxPlayers || 4;
+  const spotsLeft = maxP - players.length;
+  const mDate = new Date(m.date + 'T00:00:00');
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dateStr = `${dayNames[mDate.getDay()]} ${mDate.getDate()} ${monthNames[mDate.getMonth()]}`;
+  const slotLabel = SLOT_LABELS[m.slot] || m.slot || '';
+  const link = window.location.origin + window.location.pathname + '?league=' + activeLeagueId;
+  const sportIcon = { tennis:'🎾', padel:'🥎', squash:'🏸', racketball:'🏸', badminton:'🏸' }[m.sport] || '🏅';
+
+  const msg = `${sportIcon} ${m.title || 'Open Game'}\n📅 ${dateStr} · ${slotLabel}\n${m.venue ? '📍 ' + m.venue + '\n' : ''}${m.level ? '⭐ ' + m.level.charAt(0).toUpperCase() + m.level.slice(1) + '\n' : ''}👥 ${players.length}/${maxP} players${spotsLeft > 0 ? ' — ' + spotsLeft + ' spot' + (spotsLeft !== 1 ? 's' : '') + ' left!' : ' — FULL'}\n\nJoin here: ${link}`;
+
+  navigator.clipboard.writeText(msg).then(() => {
+    toast('Game link copied! Paste it in WhatsApp or any chat.');
+  }).catch(() => {
+    // Fallback: open WhatsApp share
+    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+  });
 }
 
 function showCreateOpenMatch() {
