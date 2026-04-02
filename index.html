@@ -1915,28 +1915,33 @@ function notifyBooking(matchKey, date, slot) {
   if (L.members) {
     Object.values(L.members).forEach(m => {
       if (m.email && m.playerName && matchPlayers.includes(m.playerName)) {
-        playerEmails.push(m.email);
+        playerEmails.push({ email: m.email, name: m.playerName });
       }
     });
   }
-  const payload = {
-    event: 'match_booked',
-    leagueName: L.settings.leagueName || 'League',
-    teamA: teamA.name,
-    teamB: teamB.name,
-    date: date,
-    slot: slot,
-    playerEmails: playerEmails,
-    bookedBy: currentUser ? currentUser.email : ''
-  };
-  fetch(GHL_WEBHOOK_BOOKING, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  }).then(r => {
-    console.log('Booking notification sent:', r.status);
-  }).catch(err => {
-    console.warn('Booking notification failed (non-blocking):', err);
+  // Send one webhook per player so GHL can Find Contact by email
+  const slotLabel = SLOT_LABELS[slot] || slot;
+  playerEmails.forEach(player => {
+    const payload = {
+      event: 'match_booked',
+      leagueName: L.settings.leagueName || 'League',
+      teamA: teamA.name,
+      teamB: teamB.name,
+      date: date,
+      slot: slotLabel,
+      email: player.email,
+      playerName: player.name,
+      bookedBy: currentUser ? currentUser.email : ''
+    };
+    fetch(GHL_WEBHOOK_BOOKING, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(r => {
+      console.log('Booking notification sent to', player.email, ':', r.status);
+    }).catch(err => {
+      console.warn('Booking notification failed (non-blocking):', err);
+    });
   });
 }
 
