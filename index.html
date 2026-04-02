@@ -429,10 +429,7 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
           <button onclick="adminLoadAllUsers()" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Load Users</button>
           <button onclick="adminLoadLeagues()" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Load Leagues</button>
-          <button onclick="adminDatabaseAudit()" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">&#128270; Database Audit</button>
-          <button onclick="adminNukeTestData()" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">&#128165; Clean All Test Data</button>
         </div>
-        <div id="admin-audit-results" style="max-height:400px;overflow-y:auto;margin-bottom:8px"></div>
         <div id="admin-league-list" style="max-height:300px;overflow-y:auto;margin-bottom:8px"></div>
         <div id="admin-user-list" style="max-height:400px;overflow-y:auto"></div>
       </div>
@@ -1165,21 +1162,8 @@ function adminLoadLeagues() {
     });
     loadLeagueDetails();
   }, () => {
-    // If can't read all clubLeagues, fall back to scanning known clubs
-    db.ref('/clubs').once('value', clubSnap => {
-      const clubs = clubSnap.val() || {};
-      const clubIds = Object.keys(clubs);
-      let clubsLoaded = 0;
-      if (clubIds.length === 0) { loadLeagueDetails(); return; }
-      clubIds.forEach(cid => {
-        db.ref('/clubLeagues/' + cid).once('value', clSnap => {
-          const cls = clSnap.val() || {};
-          Object.keys(cls).forEach(lid => leagueIdSet.add(lid));
-          clubsLoaded++;
-          if (clubsLoaded === clubIds.length) loadLeagueDetails();
-        }, () => { clubsLoaded++; if (clubsLoaded === clubIds.length) loadLeagueDetails(); });
-      });
-    }, () => { loadLeagueDetails(); });
+    // If can't read all clubLeagues, just use userLeagues
+    loadLeagueDetails();
   });
 
   function loadLeagueDetails() {
@@ -1214,7 +1198,7 @@ function adminLoadLeagues() {
         if (loaded === leagueIds.length) {
           renderAdminLeagueList(el, leagueData);
         }
-      }, err => {
+      }, () => {
         loaded++;
         if (loaded === leagueIds.length) {
           renderAdminLeagueList(el, leagueData);
@@ -1551,176 +1535,6 @@ function adminDeleteAllLeagues() {
   });
 }
 
-// ── Database Audit & Cleanup ──
-function adminDatabaseAudit() {
-  if (!isAdmin() || !FIREBASE_READY) return;
-  const el = document.getElementById('admin-audit-results');
-  el.innerHTML = '<div style="color:#7c3aed;font-size:13px;padding:8px 0;font-weight:600">Scanning database...</div>';
-
-  const report = { users: {}, userLeagues: {}, clubs: {}, clubLeagues: {}, codes: {}, leagues: {}, orphanedData: [] };
-  let tasks = 0, done = 0;
-
-  function check() {
-    done++;
-    if (done < tasks) return;
-    renderAuditReport(el, report);
-  }
-
-  // Read all top-level nodes
-  const nodes = ['users', 'userLeagues', 'clubs', 'clubLeagues', 'codes', 'leagues'];
-  nodes.forEach(node => {
-    tasks++;
-    db.ref('/' + node).once('value', snap => {
-      report[node] = snap.val() || {};
-      check();
-    }, () => {
-      report[node] = '⛔ Permission denied';
-      check();
-    });
-  });
-}
-
-function renderAuditReport(el, r) {
-  let html = '<div style="font-size:11px;color:#7c3aed;font-weight:700;letter-spacing:1px;margin-bottom:12px">DATABASE AUDIT REPORT</div>';
-
-  // Users
-  if (typeof r.users === 'string') {
-    html += '<div style="margin-bottom:8px;padding:8px;background:#fef2f2;border-radius:6px;font-size:12px">/users: ' + r.users + '</div>';
-  } else {
-    const uids = Object.keys(r.users);
-    html += '<div style="margin-bottom:8px;padding:8px;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:6px">';
-    html += '<div style="font-size:12px;font-weight:700;color:#7c3aed">/users — ' + uids.length + ' entries</div>';
-    uids.forEach(uid => {
-      const u = r.users[uid];
-      const consent = u.consent ? '✅ consent (' + (u.consent.timestamp ? new Date(u.consent.timestamp).toLocaleDateString() : '?') + ')' : '';
-      const tour = u.tourCompleted ? '✅ tour done' : '❌ tour not done';
-      html += '<div style="font-size:11px;color:#4b5563;padding:2px 0">' + esc(uid) + ' — ' + consent + ' ' + tour + '</div>';
-    });
-    html += '</div>';
-  }
-
-  // UserLeagues
-  if (typeof r.userLeagues === 'string') {
-    html += '<div style="margin-bottom:8px;padding:8px;background:#fef2f2;border-radius:6px;font-size:12px">/userLeagues: ' + r.userLeagues + '</div>';
-  } else {
-    const uids = Object.keys(r.userLeagues);
-    html += '<div style="margin-bottom:8px;padding:8px;background:#eff6ff;border:1px solid #93c5fd;border-radius:6px">';
-    html += '<div style="font-size:12px;font-weight:700;color:#1d4ed8">/userLeagues — ' + uids.length + ' users</div>';
-    uids.forEach(uid => {
-      const leagues = Object.keys(r.userLeagues[uid] || {});
-      html += '<div style="font-size:11px;color:#4b5563;padding:2px 0">' + esc(uid) + ' → ' + leagues.length + ' leagues: ' + leagues.map(l => esc(l).substring(0,8) + '...').join(', ') + '</div>';
-    });
-    html += '</div>';
-  }
-
-  // Clubs
-  if (typeof r.clubs === 'string') {
-    html += '<div style="margin-bottom:8px;padding:8px;background:#fef2f2;border-radius:6px;font-size:12px">/clubs: ' + r.clubs + '</div>';
-  } else {
-    const clubIds = Object.keys(r.clubs);
-    html += '<div style="margin-bottom:8px;padding:8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px">';
-    html += '<div style="font-size:12px;font-weight:700;color:#059669">/clubs — ' + clubIds.length + ' clubs</div>';
-    clubIds.forEach(cid => {
-      const c = r.clubs[cid];
-      html += '<div style="font-size:11px;color:#4b5563;padding:2px 0">' + esc(c.name || cid) + ' (id: ' + esc(cid) + ', created by: ' + esc(c.createdBy || '?') + ')</div>';
-    });
-    html += '</div>';
-  }
-
-  // ClubLeagues
-  if (typeof r.clubLeagues === 'string') {
-    html += '<div style="margin-bottom:8px;padding:8px;background:#fef2f2;border-radius:6px;font-size:12px">/clubLeagues: ' + r.clubLeagues + '</div>';
-  } else {
-    const clubIds = Object.keys(r.clubLeagues);
-    html += '<div style="margin-bottom:8px;padding:8px;background:#fefce8;border:1px solid #fde68a;border-radius:6px">';
-    html += '<div style="font-size:12px;font-weight:700;color:#92400e">/clubLeagues — ' + clubIds.length + ' clubs with leagues</div>';
-    clubIds.forEach(cid => {
-      const leagues = Object.keys(r.clubLeagues[cid] || {});
-      const clubName = (r.clubs && typeof r.clubs === 'object' && r.clubs[cid]) ? r.clubs[cid].name : cid;
-      html += '<div style="font-size:11px;color:#4b5563;padding:2px 0">' + esc(clubName) + ' → ' + leagues.length + ' leagues</div>';
-    });
-    html += '</div>';
-  }
-
-  // Codes
-  if (typeof r.codes === 'string') {
-    html += '<div style="margin-bottom:8px;padding:8px;background:#fef2f2;border-radius:6px;font-size:12px">/codes: ' + r.codes + '</div>';
-  } else {
-    const codes = Object.keys(r.codes);
-    html += '<div style="margin-bottom:8px;padding:8px;background:#fff1f2;border:1px solid #fca5a5;border-radius:6px">';
-    html += '<div style="font-size:12px;font-weight:700;color:#dc2626">/codes — ' + codes.length + ' join codes</div>';
-    codes.forEach(code => {
-      html += '<div style="font-size:11px;color:#4b5563;padding:2px 0">' + esc(code) + ' → league: ' + esc(r.codes[code]) + '</div>';
-    });
-    html += '</div>';
-  }
-
-  // Leagues
-  if (typeof r.leagues === 'string') {
-    html += '<div style="margin-bottom:8px;padding:8px;background:#fef2f2;border-radius:6px;font-size:12px">/leagues: ' + r.leagues + '</div>';
-  } else {
-    const leagueIds = Object.keys(r.leagues);
-    html += '<div style="margin-bottom:8px;padding:8px;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:6px">';
-    html += '<div style="font-size:12px;font-weight:700;color:#047857">/leagues — ' + leagueIds.length + ' leagues</div>';
-    leagueIds.forEach(lid => {
-      const lg = r.leagues[lid];
-      const info = lg.info || {};
-      const members = lg.members ? Object.keys(lg.members).length : 0;
-      html += '<div style="font-size:11px;color:#4b5563;padding:2px 0">' + esc(info.name || 'Unnamed') + ' (' + esc(info.clubName || '?') + ') — ' + members + ' members — id: ' + esc(lid).substring(0,12) + '...</div>';
-    });
-    html += '</div>';
-  }
-
-  el.innerHTML = html;
-}
-
-function adminNukeTestData() {
-  if (!isAdmin() || !FIREBASE_READY) return;
-  if (!confirm('⚠️ This will DELETE ALL data from the database:\\n\\n• All leagues\\n• All clubs\\n• All user data\\n• All join codes\\n• All userLeagues\\n\\nThis is a FULL RESET. Continue?')) return;
-  if (!confirm('FINAL WARNING: Type OK to confirm you want to wipe the entire database.')) return;
-
-  const el = document.getElementById('admin-audit-results');
-  el.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:8px 0;font-weight:600">Cleaning database...</div>';
-
-  // Delete all top-level nodes
-  const updates = {};
-  const nodes = ['users', 'userLeagues', 'clubs', 'clubLeagues', 'codes', 'leagues'];
-
-  let tasks = 0, done = 0;
-  nodes.forEach(node => {
-    tasks++;
-    db.ref('/' + node).once('value', snap => {
-      const data = snap.val();
-      if (data && typeof data === 'object') {
-        Object.keys(data).forEach(key => {
-          updates['/' + node + '/' + key] = null;
-        });
-      }
-      done++;
-      if (done >= tasks) executeCleanup();
-    }, () => {
-      done++;
-      if (done >= tasks) executeCleanup();
-    });
-  });
-
-  function executeCleanup() {
-    const keyCount = Object.keys(updates).length;
-    if (keyCount === 0) {
-      el.innerHTML = '<div style="color:#059669;font-size:13px;padding:8px 0;font-weight:600">✅ Database is already clean — nothing to delete.</div>';
-      return;
-    }
-    db.ref().update(updates).then(() => {
-      el.innerHTML = '<div style="color:#059669;font-size:13px;padding:8px 0;font-weight:600">✅ Database cleaned! Deleted ' + keyCount + ' entries across all nodes. Refresh the page to start fresh.</div>';
-      // Reset local state
-      userLeagues = {};
-      toast('Database wiped — ' + keyCount + ' entries removed');
-    }).catch(err => {
-      el.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:8px 0;font-weight:600">❌ Cleanup error: ' + esc(err.message) + '</div>';
-    });
-  }
-}
-
 function esc(s) { if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function val(id) { return document.getElementById(id).value.trim(); }
 function toast(msg) {
@@ -1769,11 +1583,9 @@ function sanitizeEmail(email) { return email.replace(/\./g, ','); } // Firebase 
 
 /* ── Player colours ── */
 const GROUP_COLORS = ['#1d4ed8','#0891b2','#dc2626','#d97706','#7c3aed','#059669','#be185d','#0d9488','#9333ea','#ea580c'];
-const PLAYER_COLORS = ['#1d4ed8','#dc2626','#059669','#d97706','#7c3aed','#0891b2','#be185d','#ea580c','#0d9488','#9333ea','#c026d3','#2563eb','#b91c1c','#15803d','#a16207','#6d28d9','#0e7490','#9d174d','#c2410c','#047857'];
 function getPlayerColor(name) {
-  const allPlayers = getAllPlayers();
-  const idx = allPlayers.indexOf(name);
-  return PLAYER_COLORS[idx >= 0 ? idx % PLAYER_COLORS.length : 0];
+  const idx = L.groups.findIndex(g => g.players.includes(name));
+  return GROUP_COLORS[idx >= 0 ? idx % GROUP_COLORS.length : 0];
 }
 function getInitials(name) {
   const parts = name.trim().split(/\s+/);
@@ -1783,6 +1595,11 @@ function avatarHtml(name) {
   return `<span class="avatar" style="background:${getPlayerColor(name)}" title="${esc(name)}">${esc(getInitials(name))}</span>`;
 }
 function getAllPlayers() { return L.groups.flatMap(g => g.players); }
+
+/* ── Time slots (2-hour blocks) ── */
+const SLOTS = ['9-11','11-1','1-3','3-5','5-7','7-9'];
+const SLOT_LABELS = { '9-11':'9–11am', '11-1':'11am–1pm', '1-3':'1–3pm', '3-5':'3–5pm', '5-7':'5–7pm', '7-9':'7–9pm' };
+const SLOT_SHORT = { '9-11':'9-11', '11-1':'11-1', '1-3':'1-3', '3-5':'3-5', '5-7':'5-7', '7-9':'7-9' };
 
 /* ── Educational tips ── */
 function closeTip(id) {
@@ -2291,29 +2108,18 @@ function hideJoinFlow() {
 }
 
 /* ── CREATE FLOW ── */
-function showCreateFlow(preselectedClubId, preselectedClubName) {
+function showCreateFlow() {
   document.getElementById('browse-options').style.display = 'none';
   document.getElementById('create-flow').style.display = 'block';
+  document.getElementById('create-step-club').style.display = 'block';
+  document.getElementById('create-step-details').style.display = 'none';
   document.getElementById('create-step-share').style.display = 'none';
-
-  if (preselectedClubId && preselectedClubName) {
-    // Skip club selection — go straight to league details
-    selectedClubId = preselectedClubId;
-    selectedClubName = preselectedClubName;
-    document.getElementById('create-step-club').style.display = 'none';
-    document.getElementById('create-step-details').style.display = 'block';
-    document.getElementById('create-selected-club-name').textContent = preselectedClubName;
-    document.getElementById('inp-create-league-name').focus();
-  } else {
-    document.getElementById('create-step-club').style.display = 'block';
-    document.getElementById('create-step-details').style.display = 'none';
-    document.getElementById('inp-create-club-search').value = '';
-    document.getElementById('create-club-results').innerHTML = '';
-    document.getElementById('create-club-create-option').style.display = 'none';
-    selectedClubId = null;
-    selectedClubName = '';
-    document.getElementById('inp-create-club-search').focus();
-  }
+  document.getElementById('inp-create-club-search').value = '';
+  document.getElementById('create-club-results').innerHTML = '';
+  document.getElementById('create-club-create-option').style.display = 'none';
+  selectedClubId = null;
+  selectedClubName = '';
+  document.getElementById('inp-create-club-search').focus();
 }
 
 function hideCreateFlow() {
@@ -2394,7 +2200,7 @@ function copyCreateInviteLink() {
 function shareCreateWhatsApp() {
   const link = document.getElementById('create-share-link').textContent;
   const leagueName = document.getElementById('create-share-league-name').textContent;
-  const msg = encodeURIComponent('Join our box league!\n\n' + leagueName + '\n\n' + link);
+  const msg = encodeURIComponent('Join our box league "' + leagueName + '" on BoxLeague Pro!\n\nSign up and fill in your availability here:\n' + link + '\n\nhttps://boxleaguepro.com\n\nTakes 1 minute 🎾');
   window.open('https://wa.me/?text=' + msg, '_blank');
 }
 
@@ -2478,13 +2284,8 @@ function selectClub(clubId, clubName) {
 function renderClubLeagues(leagues) {
   const el = document.getElementById('league-results');
   const ids = Object.keys(leagues);
-  const cid = selectedClubId;
-  const cname = selectedClubName;
-
   if (ids.length === 0) {
-    el.innerHTML = '<div class="txt-muted" style="padding:8px 0;margin-bottom:8px">No leagues yet at this club. Create the first one!</div>' +
-      '<button class="btn btn-primary" id="btn-create-from-join" style="width:100%;padding:14px;font-size:15px;font-weight:700">+ Create a League Here</button>';
-    document.getElementById('btn-create-from-join').onclick = function() { hideJoinFlow(); showCreateFlow(cid, cname); };
+    el.innerHTML = '<div class="txt-muted" style="padding:8px 0;margin-bottom:8px">No leagues yet at this club. Create the first one!</div>';
     return;
   }
   el.innerHTML = ids.map(id => {
@@ -2493,9 +2294,7 @@ function renderClubLeagues(leagues) {
       <div class="league-card-name">${esc(lg.name)}</div>
       <div class="league-card-meta">${esc(lg.sport || 'Tennis')}</div>
     </div>`;
-  }).join('') +
-    '<div style="margin-top:12px"><button class="btn btn-secondary" id="btn-create-from-join" style="width:100%;padding:12px;font-size:14px;font-weight:700">+ Create a New League</button></div>';
-  document.getElementById('btn-create-from-join').onclick = function() { hideJoinFlow(); showCreateFlow(cid, cname); };
+  }).join('');
 }
 
 function clearClubSelection() {
@@ -2773,15 +2572,13 @@ function wizWeekDates() {
 
 function renderWizAvailGrid() {
   const dates = wizWeekDates();
-  const slots = ['morning','afternoon','evening'];
-  const slotIcons = { morning:'\u{1F305}', afternoon:'\u2600\uFE0F', evening:'\u{1F319}' };
   const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   const playerName = val('wiz-name') || 'You';
 
   document.getElementById('wiz-wk-label').textContent = `${fmtShort(dates[0])} \u2013 ${fmtShort(dates[6])}`;
 
   const now = new Date(); now.setHours(0,0,0,0);
-  let h = `<table class="avail-tbl"><thead><tr><th style="text-align:left;min-width:90px">Slot</th>`;
+  let h = `<table class="avail-tbl"><thead><tr><th style="text-align:left;min-width:56px">Slot</th>`;
   dates.forEach((d,i) => {
     const td = isTd(d);
     const isPast = d < now;
@@ -2789,8 +2586,8 @@ function renderWizAvailGrid() {
       ${days[i]}<br><span style="font-size:11px;font-weight:400">${d.getDate()}</span></th>`;
   });
   h += '</tr></thead><tbody>';
-  slots.forEach(slot => {
-    h += `<tr><td class="slot-lbl">${slotIcons[slot]} ${cap(slot)}</td>`;
+  SLOTS.forEach(slot => {
+    h += `<tr><td class="slot-lbl" style="font-size:11px">${SLOT_SHORT[slot]}</td>`;
     dates.forEach(d => {
       const isPast = d < now;
       const key = avk(playerName, d, slot);
@@ -3133,12 +2930,11 @@ function renderProgress() {
   if (players.length === 0) { wrap.style.display = 'none'; return; }
 
   const today = new Date(); today.setHours(0,0,0,0);
-  const slots = ['morning','afternoon','evening'];
   let submitted = 0;
   players.forEach(p => {
     for (let i = 0; i < 14; i++) {
       const d = new Date(today); d.setDate(today.getDate()+i);
-      for (const slot of slots) {
+      for (const slot of SLOTS) {
         if (L.availability[avk(p, d, slot)]) { submitted++; return; }
       }
     }
@@ -3329,14 +3125,12 @@ function renderAvailGrid() {
   const player = getMyPlayerName();
   if (!player) return;
   const dates = weekDates();
-  const slots = ['morning','afternoon','evening'];
-  const slotIcons = { morning:'\u{1F305}', afternoon:'\u2600\uFE0F', evening:'\u{1F319}' };
   const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
   document.getElementById('wk-label').textContent = `${fmtShort(dates[0])} \u2013 ${fmtShort(dates[6])}`;
 
   const now = new Date(); now.setHours(0,0,0,0);
-  let h = `<table class="avail-tbl"><thead><tr><th style="text-align:left;min-width:90px">Slot</th>`;
+  let h = `<table class="avail-tbl"><thead><tr><th style="text-align:left;min-width:56px">Slot</th>`;
   dates.forEach((d,i) => {
     const td = isTd(d);
     const isPast = d < now;
@@ -3344,8 +3138,8 @@ function renderAvailGrid() {
       ${days[i]}<br><span style="font-size:11px;font-weight:400">${d.getDate()}</span></th>`;
   });
   h += '</tr></thead><tbody>';
-  slots.forEach(slot => {
-    h += `<tr><td class="slot-lbl">${slotIcons[slot]} ${cap(slot)}</td>`;
+  SLOTS.forEach(slot => {
+    h += `<tr><td class="slot-lbl" style="font-size:11px">${SLOT_SHORT[slot]}</td>`;
     dates.forEach(d => {
       const isPast = d < now;
       const on = L.availability[avk(player, d, slot)] ? 'on' : '';
@@ -3379,12 +3173,11 @@ function copyLastWeek() {
   const player = getMyPlayerName();
   if (!player) return;
   const dates = weekDates();
-  const slots = ['morning','afternoon','evening'];
   const updates = {};
   let copied = 0;
   dates.forEach(d => {
     const prevWeek = new Date(d); prevWeek.setDate(prevWeek.getDate() - 7);
-    slots.forEach(slot => {
+    SLOTS.forEach(slot => {
       const prevKey = avk(player, prevWeek, slot);
       const thisKey = avk(player, d, slot);
       if (L.availability[prevKey] && !L.availability[thisKey]) {
@@ -3405,10 +3198,9 @@ function clearMyWeek() {
   if (!player) return;
   if (!confirm('Clear all your availability for this week?')) return;
   const dates = weekDates();
-  const slots = ['morning','afternoon','evening'];
   const updates = {};
   dates.forEach(d => {
-    slots.forEach(slot => {
+    SLOTS.forEach(slot => {
       const key = avk(player, d, slot);
       if (L.availability[key]) { updates[key] = null; delete L.availability[key]; }
     });
@@ -3435,9 +3227,17 @@ function renderMyMatches() {
     const matchKey = [myGroup.id, opp.id].sort().join('_');
     const booked = L.booked[matchKey];
     if (booked) {
+      const allPlayers = [...(myGroup.players || []), ...(opp.players || [])];
+      const agreed = booked.agreed || {};
+      const agreedCount = allPlayers.filter(p => agreed[p]).length;
+      const myAgreed = player && agreed[player];
       return `<div class="my-match ready">
         <div style="font-size:15px;font-weight:700">vs ${esc(opp.name)}</div>
-        <div style="font-size:14px;color:#059669;font-weight:600;margin-top:4px">&#9989; Booked: ${fmtFull(booked.date)} &middot; ${cap(booked.slot)}</div>
+        <div style="font-size:14px;color:#059669;font-weight:600;margin-top:4px">&#9989; Booked: ${fmtFull(booked.date)} &middot; ${SLOT_LABELS[booked.slot] || booked.slot}</div>
+        ${booked.courtBooked ? '<div style="font-size:12px;color:#059669;margin-top:2px">✅ Court booked</div>' : '<div style="font-size:12px;color:var(--amber);margin-top:2px">⚠️ Court not yet booked</div>'}
+        ${booked.notes ? `<div style="font-size:12px;color:var(--muted);margin-top:2px">📝 ${esc(booked.notes)}</div>` : ''}
+        <div style="font-size:12px;margin-top:4px;color:${agreedCount === allPlayers.length ? '#059669' : 'var(--amber)'}">${agreedCount}/${allPlayers.length} confirmed${myAgreed ? ' (you ✓)' : ''}</div>
+        ${!myAgreed ? `<button class="btn btn-sm btn-primary mt8" onclick="toggleAgreed('${esc(matchKey)}')" style="font-size:12px;padding:4px 10px">Confirm date</button>` : ''}
       </div>`;
     }
     const slots = findSlots(myGroup, opp);
@@ -3449,7 +3249,7 @@ function renderMyMatches() {
           ? `<span style="font-size:12px;font-weight:700;color:#059669">&#128994; ${slots.length} time${slots.length!==1?'s':''}</span>`
           : `<span style="font-size:12px;color:var(--amber);font-weight:600">&#128993; No overlap yet</span>`}
       </div>
-      ${slots.length > 0 ? `<div class="sug-slots" style="margin-top:6px">${slots.slice(0,3).map(s => `<span class="sug-slot">${fmtFull(s.date)} &middot; ${cap(s.slot)}</span>`).join('')}</div>` : ''}
+      ${slots.length > 0 ? `<div class="sug-slots" style="margin-top:6px">${slots.slice(0,3).map(s => `<span class="sug-slot">${fmtFull(s.date)} &middot; ${SLOT_LABELS[s.slot] || s.slot}</span>`).join('')}</div>` : ''}
     </div>`;
   }).join('');
 }
@@ -3460,13 +3260,11 @@ function renderMySummary() {
   const body = document.getElementById('my-summary-body');
   if (!player) { card.style.display = 'none'; return; }
   const today = new Date(); today.setHours(0,0,0,0);
-  const slots = ['morning','afternoon','evening'];
-  const slotLabels = { morning:'Morning', afternoon:'Afternoon', evening:'Evening' };
   let items = [];
   for (let i = 0; i < 14; i++) {
     const d = new Date(today); d.setDate(today.getDate()+i);
-    for (const slot of slots) {
-      if (L.availability[avk(player, d, slot)]) items.push(`${fmtFull(ds(d))} \u2014 ${slotLabels[slot]}`);
+    for (const slot of SLOTS) {
+      if (L.availability[avk(player, d, slot)]) items.push(`${fmtFull(ds(d))} \u2014 ${SLOT_LABELS[slot]}`);
     }
   }
   if (items.length === 0) { card.style.display = 'none'; return; }
@@ -3492,8 +3290,6 @@ function renderAllAvail() {
 
   const today = new Date(); today.setHours(0,0,0,0);
   const dates = Array.from({length:14}, (_, i) => { const d = new Date(today); d.setDate(today.getDate()+i); return d; });
-  const slots = ['morning','afternoon','evening'];
-  const slotIcons = { morning:'\u{1F305} Morn', afternoon:'\u2600\uFE0F Aft', evening:'\u{1F319} Eve' };
   const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
   let h = `<table class="avail-cal"><thead><tr><th class="slot-col">Slot</th>`;
@@ -3504,8 +3300,8 @@ function renderAllAvail() {
     </th>`;
   });
   h += '</tr></thead><tbody>';
-  slots.forEach(slot => {
-    h += `<tr><td class="slot-col">${slotIcons[slot]}</td>`;
+  SLOTS.forEach(slot => {
+    h += `<tr><td class="slot-col" style="font-size:11px">${SLOT_SHORT[slot]}</td>`;
     dates.forEach(d => {
       const isToday = ds(d) === ds(today);
       const available = players.filter(p => L.availability[avk(p, d, slot)]);
@@ -3522,11 +3318,10 @@ function renderAllAvail() {
 function getMissingPlayers() {
   const players = getAllPlayers();
   const today = new Date(); today.setHours(0,0,0,0);
-  const slots = ['morning','afternoon','evening'];
   return players.filter(p => {
     for (let i = 0; i < 14; i++) {
       const d = new Date(today); d.setDate(today.getDate()+i);
-      for (const slot of slots) {
+      for (const slot of SLOTS) {
         if (L.availability[avk(p, d, slot)]) return false;
       }
     }
@@ -3555,7 +3350,7 @@ function chaseWhatsApp() {
   const deadlineStr = L.settings.deadline ? ` by ${new Date(L.settings.deadline).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}` : '';
   const names = missing.join(', ');
   const code = userLeagues[activeLeagueId] ? userLeagues[activeLeagueId].code : '';
-  const msg = `Hi all! Still waiting on availability for ${league} from: ${names}\n\nPlease sign in and fill yours in${deadlineStr}.\nLeague code: ${code}\n\nTakes 30 seconds \u2014 just tap when you're free \ud83c\udfbe`;
+  const msg = `Hi all! Still waiting on availability for ${league} from: ${names}\n\nPlease sign in and fill yours in${deadlineStr}.\nLeague code: ${code}\n\nhttps://boxleaguepro.com\n\nTakes 30 seconds \u2014 just tap when you're free \ud83c\udfbe`;
   copyText(msg);
 }
 
@@ -3568,7 +3363,7 @@ function findSlots(groupA, groupB) {
   const today = new Date(); today.setHours(0,0,0,0);
   for (let i = 0; i < 42; i++) {
     const d = new Date(today); d.setDate(today.getDate()+i);
-    for (const slot of ['morning','afternoon','evening']) {
+    for (const slot of SLOTS) {
       if (players.every(p => L.availability[avk(p, d, slot)])) {
         result.push({ date: ds(d), slot });
       }
@@ -3613,14 +3408,27 @@ function renderMatchFinder() {
   let html = '';
 
   if (bookedMatches.length > 0) {
-    html += bookedMatches.map(m => `<div class="match-card is-booked">
+    html += bookedMatches.map(m => {
+      const safeKey = m.matchKey.replace(/[^a-zA-Z0-9]/g,'');
+      return `<div class="match-card is-booked">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
         <div class="match-players">${esc(m.gA.name)} <span style="color:#9ca3af;font-weight:400">vs</span> ${esc(m.gB.name)}</div>
         <span class="badge badge-booked">Booked</span>
       </div>
-      <div style="font-size:14px;font-weight:600;color:#059669">\u{1F4C5} ${fmtFull(m.booked.date)} &middot; ${cap(m.booked.slot)}</div>
+      <div style="font-size:14px;font-weight:600;color:#059669">\u{1F4C5} ${fmtFull(m.booked.date)} &middot; ${SLOT_LABELS[m.booked.slot] || m.booked.slot}</div>
+      <div style="margin-top:8px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;color:var(--text)">
+          <input type="checkbox" ${m.booked.courtBooked ? 'checked' : ''} onchange="toggleCourtBooked('${esc(m.matchKey)}')" style="width:16px;height:16px;accent-color:var(--green)">
+          <span style="font-weight:600">${m.booked.courtBooked ? '✅ Court booked' : 'Court booked?'}</span>
+        </label>
+      </div>
+      <div style="margin-top:8px">
+        <input type="text" id="notes-${safeKey}" placeholder="Add notes (e.g. court number, meeting point)..." value="${esc(m.booked.notes || '')}" onblur="updateBookingNotes('${esc(m.matchKey)}')" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg)">
+      </div>
+      ${getAgreedHtml(m.matchKey, m.booked)}
       <button class="btn btn-secondary btn-sm mt8" onclick="unbookMatch('${esc(m.matchKey)}')" style="font-size:12px">Cancel booking</button>
-    </div>`).join('');
+    </div>`;
+    }).join('');
     html += '<div class="divider" style="margin:16px 0"></div>';
   }
 
@@ -3636,7 +3444,7 @@ function renderMatchFinder() {
         <div style="font-size:13px;color:var(--muted);margin-bottom:8px">${allP.map(p => esc(p)).join(', ')}</div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:4px;font-weight:600">Tap a slot to book it:</div>
         <div class="sug-slots">
-          ${topSlots.map(s => `<span class="sug-slot" onclick="bookMatch('${esc(m.matchKey)}','${s.date}','${s.slot}')">\u{1F4C5} ${fmtFull(s.date)} &middot; ${cap(s.slot)}</span>`).join('')}
+          ${topSlots.map(s => `<span class="sug-slot" onclick="bookMatch('${esc(m.matchKey)}','${s.date}','${s.slot}')">\u{1F4C5} ${fmtFull(s.date)} &middot; ${SLOT_LABELS[s.slot] || s.slot}</span>`).join('')}
           ${m.slots.length > 5 ? `<span class="sug-slot" style="background:#f3f4f6;color:var(--muted);border-color:#e5e7eb;cursor:default">+${m.slots.length - 5} more</span>` : ''}
         </div>
       </div>`;
@@ -3660,7 +3468,7 @@ function renderMatchFinder() {
 }
 
 function bookMatch(matchKey, date, slot) {
-  fbSetBooked(matchKey, { date, slot });
+  fbSetBooked(matchKey, { date, slot, notes: '', courtBooked: false, agreed: {} });
   notifyBooking(matchKey, date, slot);
   renderMatchFinder(); renderMyMatches();
   toast('Match booked! Players will be notified.');
@@ -3673,6 +3481,62 @@ function unbookMatch(matchKey) {
   toast('Booking cancelled');
 }
 
+function updateBookingNotes(matchKey) {
+  const input = document.getElementById('notes-' + matchKey.replace(/[^a-zA-Z0-9]/g,''));
+  if (!input) return;
+  const booked = L.booked[matchKey];
+  if (!booked) return;
+  booked.notes = input.value;
+  fbSetBooked(matchKey, booked);
+  toast('Notes saved');
+}
+
+function toggleCourtBooked(matchKey) {
+  const booked = L.booked[matchKey];
+  if (!booked) return;
+  booked.courtBooked = !booked.courtBooked;
+  fbSetBooked(matchKey, booked);
+  renderMatchFinder(); renderMyMatches();
+  toast(booked.courtBooked ? 'Court marked as booked' : 'Court booking removed');
+}
+
+function toggleAgreed(matchKey) {
+  const player = getMyPlayerName();
+  if (!player) { toast('Sign in to confirm'); return; }
+  const booked = L.booked[matchKey];
+  if (!booked) return;
+  if (!booked.agreed) booked.agreed = {};
+  if (booked.agreed[player]) { delete booked.agreed[player]; } else { booked.agreed[player] = true; }
+  fbSetBooked(matchKey, booked);
+  renderMatchFinder(); renderMyMatches();
+}
+
+function getAgreedHtml(matchKey, booked) {
+  const parts = matchKey.split('_');
+  const teamA = L.groups.find(g => g.id === parts[0]);
+  const teamB = L.groups.find(g => g.id === parts[1]);
+  if (!teamA || !teamB) return '';
+  const allPlayers = [...(teamA.players || []), ...(teamB.players || [])];
+  const agreed = booked.agreed || {};
+  const agreedCount = allPlayers.filter(p => agreed[p]).length;
+  const myPlayer = getMyPlayerName();
+  const iAgreed = myPlayer && agreed[myPlayer];
+  let h = `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">`;
+  h += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">`;
+  h += `<span style="font-size:13px;font-weight:600;color:var(--text)">Date confirmed: ${agreedCount}/${allPlayers.length}</span>`;
+  if (myPlayer && allPlayers.includes(myPlayer)) {
+    h += `<button class="btn btn-sm ${iAgreed ? 'btn-primary' : 'btn-secondary'}" onclick="toggleAgreed('${esc(matchKey)}')" style="font-size:12px;padding:4px 10px">${iAgreed ? '✓ Confirmed' : 'Confirm date'}</button>`;
+  }
+  h += `</div>`;
+  h += `<div style="display:flex;flex-wrap:wrap;gap:4px">`;
+  allPlayers.forEach(p => {
+    const yes = agreed[p];
+    h += `<span style="font-size:11px;padding:2px 8px;border-radius:10px;${yes ? 'background:#ecfdf5;color:#059669;border:1px solid #a7f3d0' : 'background:#f3f4f6;color:#9ca3af;border:1px solid #e5e7eb'}">${esc(p)} ${yes ? '✓' : '?'}</span>`;
+  });
+  h += `</div></div>`;
+  return h;
+}
+
 function shareResults() {
   const league = L.settings.leagueName || 'Match Finder';
   let msg = `\u{1F3BE} ${league} \u2014 Match Schedule\n\n`;
@@ -3681,7 +3545,7 @@ function shareResults() {
       const gB = L.groups[j];
       const matchKey = [gA.id, gB.id].sort().join('_');
       const booked = L.booked[matchKey];
-      if (booked) msg += `\u2705 ${gA.name} vs ${gB.name} \u2014 ${fmtFull(booked.date)}, ${cap(booked.slot)}\n`;
+      if (booked) msg += `\u2705 ${gA.name} vs ${gB.name} \u2014 ${fmtFull(booked.date)}, ${SLOT_LABELS[booked.slot] || booked.slot}\n`;
     }
   });
   let readyCount = 0;
@@ -3701,7 +3565,7 @@ function shareResults() {
   const missing = getMissingPlayers();
   if (missing.length > 0) msg += `\nStill waiting on: ${missing.join(', ')}\n`;
   const code = userLeagues[activeLeagueId] ? userLeagues[activeLeagueId].code : '';
-  msg += `\nLeague code: ${code}`;
+  msg += `\nLeague code: ${code}\nJoin at: https://boxleaguepro.com`;
   copyText(msg);
 }
 
