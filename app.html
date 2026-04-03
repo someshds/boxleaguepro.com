@@ -4449,7 +4449,8 @@ function renderOpenMatches() {
     } else if (isFull && !iJoined) {
       actionsHtml += `<span style="font-size:13px;color:var(--muted);font-weight:600">Game is full</span>`;
     }
-    actionsHtml += `<button class="btn btn-sm" onclick="shareOpenMatch('${esc(m.id)}')" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700" title="Copy invite link">&#128279; Share</button>`;
+    actionsHtml += `<button class="btn btn-sm btn-whatsapp" onclick="whatsAppShareMatch('${esc(m.id)}')" style="font-weight:700;padding:6px 10px" title="Share on WhatsApp">&#128172;</button>`;
+    actionsHtml += `<button class="btn btn-sm" onclick="shareOpenMatch('${esc(m.id)}')" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700" title="Copy invite link">&#128279;</button>`;
     if (isCreator) {
       actionsHtml += `<button class="btn btn-secondary btn-sm" onclick="deleteOpenMatch('${esc(m.id)}')" style="margin-left:auto">Delete</button>`;
     }
@@ -4519,6 +4520,27 @@ function shareOpenMatch(matchId) {
     // Fallback: open WhatsApp share
     window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
   });
+}
+
+function whatsAppShareMatch(matchId) {
+  const m = L.openMatches[matchId];
+  if (!m) { toast('Match not found'); return; }
+  const players = m.players || [];
+  const maxP = m.maxPlayers || 4;
+  const spotsLeft = maxP - players.length;
+  const mDate = new Date(m.date + 'T00:00:00');
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dateStr = `${dayNames[mDate.getDay()]} ${mDate.getDate()} ${monthNames[mDate.getMonth()]}`;
+  const slotLabel = SLOT_LABELS[m.slot] || m.slot || '';
+  const link = mixInMode
+    ? window.location.origin + window.location.pathname + '?mixin=1' + (userHomeClub ? '&club=' + userHomeClub.id : '')
+    : window.location.origin + window.location.pathname + '?league=' + activeLeagueId;
+  const sportIcon = { tennis:'🎾', padel:'🥎', squash:'🏸', racketball:'🏸', badminton:'🏸' }[m.sport] || '🏅';
+
+  const msg = `${sportIcon} ${m.title || 'Open Game'}\n📅 ${dateStr} · ${slotLabel}\n${m.venue ? '📍 ' + m.venue + '\n' : ''}${m.level ? '⭐ ' + m.level.charAt(0).toUpperCase() + m.level.slice(1) + '\n' : ''}👥 ${players.length}/${maxP} players${spotsLeft > 0 ? ' — ' + spotsLeft + ' spot' + (spotsLeft !== 1 ? 's' : '') + ' left!' : ' — FULL'}\n\nJoin here: ${link}`;
+
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
 
 function showCreateOpenMatch() {
