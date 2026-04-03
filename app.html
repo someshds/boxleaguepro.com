@@ -3046,15 +3046,27 @@ function selectClub(clubId, clubName) {
   });
 }
 
+function isSinglesLeague(sport) {
+  if (!sport) return false;
+  const s = sport.toLowerCase();
+  return s === 'singles' || s === 'squash';
+}
+
 function renderClubLeagues(leagues) {
   const el = document.getElementById('league-results');
-  const ids = Object.keys(leagues);
-  if (ids.length === 0) {
-    el.innerHTML = '<div class="txt-muted" style="padding:8px 0;margin-bottom:8px">No leagues yet at this club. Create the first one!</div>';
+  // Filter by selectedGameType if set
+  const filtered = Object.entries(leagues).filter(([id, lg]) => {
+    if (!selectedGameType || selectedGameType === 'mixin') return true;
+    if (selectedGameType === 'singles') return isSinglesLeague(lg.sport);
+    if (selectedGameType === 'doubles') return !isSinglesLeague(lg.sport);
+    return true;
+  });
+  if (filtered.length === 0) {
+    const typeLabel = selectedGameType === 'singles' ? 'singles' : selectedGameType === 'doubles' ? 'doubles' : '';
+    el.innerHTML = `<div class="txt-muted" style="padding:8px 0;margin-bottom:8px">No ${typeLabel} leagues yet at this club. Create the first one!</div>`;
     return;
   }
-  el.innerHTML = ids.map(id => {
-    const lg = leagues[id];
+  el.innerHTML = filtered.map(([id, lg]) => {
     return `<div class="league-card" onclick="joinAndEnterLeague('${esc(id)}')">
       <div class="league-card-name">${esc(lg.name)}</div>
       <div class="league-card-meta">${esc(lg.sport || 'Tennis')}</div>
