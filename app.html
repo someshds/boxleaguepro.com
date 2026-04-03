@@ -1143,7 +1143,7 @@
     <div id="league-comments" style="display:none;margin-top:24px">
       <div class="divider"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <div class="card-title">League Chat</div>
+        <div class="card-title" id="comments-title">League Chat</div>
         <span id="comments-count" style="font-size:13px;color:var(--muted);font-weight:600"></span>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:14px">
@@ -2487,7 +2487,7 @@ function enterMixInMode() {
 
   showScreen('app');
 
-  // Listen to club-scoped mix-in matches
+  // Listen to club-scoped mix-in matches and comments
   if (FIREBASE_READY) {
     detachListeners();
     const ref = db.ref(mixInPath());
@@ -2496,6 +2496,13 @@ function enterMixInMode() {
       if (currentTab === 'open') renderOpenMatches();
     });
     listeners.push({ ref, event: 'value', fn: l1 });
+
+    const commentsRef = db.ref(mixInPath().replace('/mixInGames', '/mixInComments'));
+    const l2 = commentsRef.on('value', snap => {
+      L.comments = snap.val() || {};
+      renderComments();
+    });
+    listeners.push({ ref: commentsRef, event: 'value', fn: l2 });
   }
 
   showTab('open');
@@ -4895,27 +4902,41 @@ function avatarWithPhoto(name) {
 /* ══════════════════════════════════════
    COMMENTS / LEAGUE CHAT
    ══════════════════════════════════════ */
+function commentsPath() {
+  if (mixInMode && userHomeClub) return mixInPath().replace('/mixInGames', '/mixInComments');
+  if (activeLeagueId) return '/leagues/' + activeLeagueId + '/comments';
+  return null;
+}
+
 function renderComments() {
   const container = document.getElementById('league-comments');
   const list = document.getElementById('comments-list');
   const countEl = document.getElementById('comments-count');
   if (!container || !list) return;
 
-  if (!activeLeagueId) { container.style.display = 'none'; return; }
+  if (!activeLeagueId && !mixInMode) { container.style.display = 'none'; return; }
   container.style.display = 'block';
+
+  // Update title
+  const titleEl = document.getElementById('comments-title');
+  if (titleEl) titleEl.textContent = mixInMode ? 'Club Chat' : 'League Chat';
 
   const comments = Object.entries(L.comments || {})
     .map(([id, c]) => ({ id, ...c }))
     .sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
 
-  countEl.textContent = comments.length > 0 ? comments.length + ' message' + (comments.length !== 1 ? 's' : '') : '';
+  const isAdmin = currentUser && ADMIN_EMAILS.includes(currentUser.email);
+
+  let countText = comments.length > 0 ? comments.length + ' message' + (comments.length !== 1 ? 's' : '') : '';
+  if (isAdmin && comments.length > 0) {
+    countText += ` <button onclick="clearAllComments()" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;margin-left:6px">Clear All</button>`;
+  }
+  countEl.innerHTML = countText;
 
   if (comments.length === 0) {
     list.innerHTML = `<div style="text-align:center;padding:16px;color:var(--muted);font-size:14px">No messages yet. Be the first to say something!</div>`;
     return;
   }
-
-  const isAdmin = currentUser && ADMIN_EMAILS.includes(currentUser.email);
 
   list.innerHTML = comments.map(c => {
     const canDelete = isAdmin || (currentUser && c.email === currentUser.email);
@@ -4932,7 +4953,7 @@ function renderComments() {
       <div class="comment-avatar">${avatarEl}</div>
       <div class="comment-body">
         <div class="comment-header">
-          <span class="comment-name">${esc(c.name || 'Unknown')}</span>
+          <span class="comment-name">${esc(c.name || 'Unknown')}${isAdmin && c.email ? '<span style="font-size:10px;color:var(--muted);margin-left:4px">(' + esc(c.email) + ')</span>' : ''}</span>
           <span class="comment-time">${timeAgo}</span>
           ${canDelete ? `<button class="comment-delete" onclick="deleteComment('${esc(c.id)}')" title="Delete">&#128465;</button>` : ''}
         </div>
@@ -4944,6 +4965,8 @@ function renderComments() {
 
 function postComment() {
   if (!currentUser) { toast('Sign in to comment'); return; }
+  const path = commentsPath();
+  if (!path) { toast('No chat available'); return; }
   const input = document.getElementById('comment-input');
   const text = input.value.trim();
   if (!text) return;
@@ -4962,7 +4985,7 @@ function postComment() {
   };
 
   if (FIREBASE_READY) {
-    db.ref('/leagues/' + activeLeagueId + '/comments').push().set(comment);
+    db.ref(path).push().set(comment);
   } else {
     const id = 'c_' + Date.now();
     L.comments[id] = comment;
@@ -4973,12 +4996,27 @@ function postComment() {
 }
 
 function deleteComment(commentId) {
+  const path = commentsPath();
+  if (!path) return;
   if (FIREBASE_READY) {
-    db.ref('/leagues/' + activeLeagueId + '/comments/' + commentId).remove();
+    db.ref(path + '/' + commentId).remove();
   } else {
     delete L.comments[commentId];
     renderComments();
   }
+}
+
+function clearAllComments() {
+  if (!confirm('Delete ALL messages? This cannot be undone.')) return;
+  const path = commentsPath();
+  if (!path) return;
+  if (FIREBASE_READY) {
+    db.ref(path).remove();
+  } else {
+    L.comments = {};
+    renderComments();
+  }
+  toast('All messages cleared');
 }
 
 function getTimeAgo(isoStr) {
