@@ -187,6 +187,30 @@
     .edu-tip-body { font-size: 16px; color: #1e3a8a; line-height: 1.65; }
     .edu-tip-body strong { color: #1e40af; }
 
+    /* ── Explainer Modal ── */
+    .explainer-overlay { position: fixed; inset: 0; z-index: 99990; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; padding: 16px; opacity: 0; transition: opacity 0.25s ease; pointer-events: none; }
+    .explainer-overlay.active { opacity: 1; pointer-events: auto; }
+    .explainer-modal { background: #fff; border-radius: 20px; max-width: 440px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 32px 28px 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); transform: translateY(20px) scale(0.97); transition: transform 0.3s ease; }
+    .explainer-overlay.active .explainer-modal { transform: translateY(0) scale(1); }
+    .explainer-icon { font-size: 44px; text-align: center; margin-bottom: 8px; }
+    .explainer-title { font-size: 22px; font-weight: 800; color: #1a1a1a; text-align: center; margin-bottom: 6px; }
+    .explainer-subtitle { font-size: 14px; color: #6b7280; text-align: center; margin-bottom: 20px; }
+    .explainer-steps { list-style: none; padding: 0; margin: 0 0 24px; }
+    .explainer-step { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
+    .explainer-step:last-child { border-bottom: none; }
+    .explainer-step-num { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #3884F4, #2563eb); color: #fff; font-size: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .explainer-step-text { font-size: 15px; color: #374151; line-height: 1.5; padding-top: 4px; }
+    .explainer-step-text strong { color: #1e40af; }
+    .explainer-btn { display: block; width: 100%; padding: 14px; border-radius: 12px; background: linear-gradient(135deg, #3884F4, #2563eb); color: #fff; font-size: 17px; font-weight: 700; border: none; cursor: pointer; text-align: center; transition: transform 0.15s, box-shadow 0.15s; }
+    .explainer-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(56,132,244,0.4); }
+    .explainer-dont-show { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 12px; font-size: 13px; color: #9ca3af; cursor: pointer; }
+    .explainer-dont-show input { cursor: pointer; }
+    @media (max-width: 480px) {
+      .explainer-modal { padding: 24px 20px 20px; border-radius: 16px; }
+      .explainer-title { font-size: 20px; }
+      .explainer-step-text { font-size: 14px; }
+    }
+
     /* ── Badges ── */
     .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
     .badge-booked { background: #dcfce7; color: #166534; }
@@ -1271,7 +1295,8 @@
     </div>
     <div style="padding:20px">
       <!-- Take a Tour button -->
-      <button onclick="closeHelp();setTimeout(startTour,300)" style="width:100%;padding:12px;border-radius:10px;border:2px solid #3884F4;background:#eff6ff;color:#3884F4;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px">&#127934; Take a Guided Tour</button>
+      <button onclick="closeHelp();setTimeout(startTour,300)" style="width:100%;padding:12px;border-radius:10px;border:2px solid #3884F4;background:#eff6ff;color:#3884F4;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px">&#127934; Take a Guided Tour</button>
+      <button onclick="closeHelp();resetExplainers()" style="width:100%;padding:12px;border-radius:10px;border:2px solid #059669;background:#f0fdf4;color:#059669;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px">&#128218; Show Screen Guides Again</button>
 
       <!-- How it works -->
       <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:12px">How it works</div>
@@ -1320,6 +1345,18 @@
     </div>
   </div>
 </div>
+<!-- Explainer Modal -->
+<div id="explainer-overlay" class="explainer-overlay" onclick="if(event.target===this)closeExplainer()">
+  <div class="explainer-modal">
+    <div class="explainer-icon" id="explainer-icon"></div>
+    <div class="explainer-title" id="explainer-title"></div>
+    <div class="explainer-subtitle" id="explainer-subtitle"></div>
+    <ol class="explainer-steps" id="explainer-steps"></ol>
+    <button class="explainer-btn" onclick="closeExplainer()">Got it — let's go!</button>
+    <label class="explainer-dont-show"><input type="checkbox" id="explainer-dont-show" checked> Don't show this again</label>
+  </div>
+</div>
+
 <!-- Tour Overlay -->
 <div id="tour-overlay" class="tour-overlay">
   <div class="tour-backdrop" id="tour-backdrop"></div>
@@ -1932,6 +1969,10 @@ function showScreen(id) {
       }
     }
   }
+  // Trigger screen explainers (slight delay so screen renders first)
+  if (id === 'welcome' || id === 'browse') {
+    setTimeout(() => showExplainer(id), 400);
+  }
 }
 
 
@@ -2494,6 +2535,9 @@ function enterMixInMode() {
   currentTab = 'open';
 
   showScreen('app');
+
+  // Show mix-in explainer
+  setTimeout(() => showExplainer('mixin'), 400);
 
   // Listen to club-scoped mix-in matches and comments
   if (FIREBASE_READY) {
@@ -3634,6 +3678,10 @@ function showTab(t) {
   if (t === 'matches') { renderMatchFinder(); }
   if (t === 'open') { renderOpenMatches(); }
   if (t === 'setup') { renderGroups(); renderMembers(); }
+
+  // Trigger tab explainer (use 'mixin' explainer for open tab in mix-in mode)
+  const explainerId = (t === 'open' && mixInMode) ? 'mixin' : t;
+  setTimeout(() => showExplainer(explainerId), 300);
 }
 
 /* ══════════════════════════════════════
@@ -5077,6 +5125,140 @@ function openHelp() {
 
 function closeHelp() {
   document.getElementById('help-modal').style.display = 'none';
+}
+
+/* ── Screen Explainers ── */
+const EXPLAINERS = {
+  welcome: {
+    icon: '&#127934;',
+    title: 'Welcome to BoxLeague Pro',
+    subtitle: 'Choose how you want to play',
+    steps: [
+      '<strong>Singles Box League</strong> — compete 1v1 against everyone in your group',
+      '<strong>Doubles Box League</strong> — team up with a partner and take on other pairs',
+      '<strong>Mix-In Games</strong> — post a game and let anyone at your club join',
+      'Already have a league? Scroll down to <strong>"Your Leagues"</strong> or tap <strong>"Join directly"</strong> at the bottom'
+    ]
+  },
+  browse: {
+    icon: '&#128269;',
+    title: 'Find or Start a League',
+    subtitle: 'Get set up in under a minute',
+    steps: [
+      '<strong>Join a League</strong> — search for your club, then pick an existing league to join',
+      '<strong>Start a League</strong> — create a new league and invite your players with a share link',
+      '<strong>Mix-In Games</strong> — skip the league and go straight to casual games at your club',
+      'Got a <strong>league code</strong>? Enter it in the "Join by code" box to jump straight in'
+    ]
+  },
+  availability: {
+    icon: '&#128197;',
+    title: 'My Availability',
+    subtitle: 'Tell everyone when you can play',
+    steps: [
+      '<strong>Tap the boxes</strong> on the grid to mark your free 2-hour time slots',
+      'Use the <strong>arrow buttons</strong> to see the next week',
+      'Your booked matches and open games appear further down the page',
+      'Once you are done, tap <strong>"Everyone"</strong> to see when all players are free'
+    ]
+  },
+  everyone: {
+    icon: '&#128101;',
+    title: "Everyone's Availability",
+    subtitle: 'See who is free and when',
+    steps: [
+      'The grid shows <strong>all players</strong> and their available time slots',
+      'Green boxes = that player is free to play in that slot',
+      'If someone hasn\'t filled in yet, tap <strong>"Chase via WhatsApp"</strong> to nudge them',
+      'When ready, go to <strong>"Match Finder"</strong> to find times that work for everyone'
+    ]
+  },
+  matches: {
+    icon: '&#127934;',
+    title: 'Match Finder',
+    subtitle: 'Find the perfect time to play',
+    steps: [
+      'The app compares <strong>everyone\'s availability</strong> and finds overlapping slots',
+      'Each card shows a potential match and when <strong>all players</strong> are free',
+      'Tap a time slot to <strong>book it</strong> — all players will be notified',
+      'Use <strong>"Share via WhatsApp"</strong> to send match details to the group'
+    ]
+  },
+  open: {
+    icon: '&#127881;',
+    title: 'Friendly Matches',
+    subtitle: 'Create or join open games',
+    steps: [
+      'Tap <strong>"Create a Game"</strong> to post a new game — set the date, time, sport, and level',
+      'Other players at your club can <strong>join your game</strong> by tapping the Join button',
+      'Mark the <strong>court as booked</strong> once you have reserved one',
+      '<strong>Share on WhatsApp</strong> to let friends know about your game'
+    ]
+  },
+  mixin: {
+    icon: '&#127881;',
+    title: 'Mix-In Games',
+    subtitle: 'Casual games at your club — no league needed',
+    steps: [
+      'Tap <strong>"Create a Game"</strong> to post a game — pick your sport, date, time, and level',
+      'Other club members see your game and can <strong>join with one tap</strong>',
+      'Tap <strong>"Book a Court"</strong> to go to your club\'s court booking site',
+      'Use the <strong>chat</strong> at the bottom to coordinate with other players',
+      '<strong>Share on WhatsApp</strong> to invite friends outside the app'
+    ]
+  },
+  setup: {
+    icon: '&#9881;&#65039;',
+    title: 'League Setup',
+    subtitle: 'Configure your league as the organiser',
+    steps: [
+      'Add <strong>groups and teams</strong> — these are the doubles pairs or singles players in your league',
+      'Set a <strong>deadline</strong> for availability submissions',
+      'Share the <strong>invite link</strong> so players can join and fill in their own availability',
+      'Set the <strong>court booking URL</strong> so players can easily book courts'
+    ]
+  }
+};
+
+let explainerActive = false;
+let currentExplainerId = null;
+
+function showExplainer(id) {
+  const data = EXPLAINERS[id];
+  if (!data) return;
+  // Check if user has dismissed this explainer before
+  if (localStorage.getItem('blp_explainer_' + id) === 'dismissed') return;
+  // Don't show during tour or consent
+  if (tourActive || consentModalActive) return;
+
+  currentExplainerId = id;
+  explainerActive = true;
+  document.getElementById('explainer-icon').innerHTML = data.icon;
+  document.getElementById('explainer-title').textContent = data.title;
+  document.getElementById('explainer-subtitle').textContent = data.subtitle;
+  document.getElementById('explainer-steps').innerHTML = data.steps.map((text, i) =>
+    '<li class="explainer-step"><div class="explainer-step-num">' + (i + 1) + '</div><div class="explainer-step-text">' + text + '</div></li>'
+  ).join('');
+  document.getElementById('explainer-dont-show').checked = true;
+  const overlay = document.getElementById('explainer-overlay');
+  overlay.style.display = 'flex';
+  requestAnimationFrame(() => overlay.classList.add('active'));
+}
+
+function closeExplainer() {
+  const overlay = document.getElementById('explainer-overlay');
+  overlay.classList.remove('active');
+  if (currentExplainerId && document.getElementById('explainer-dont-show').checked) {
+    localStorage.setItem('blp_explainer_' + currentExplainerId, 'dismissed');
+  }
+  setTimeout(() => { overlay.style.display = 'none'; }, 250);
+  explainerActive = false;
+  currentExplainerId = null;
+}
+
+function resetExplainers() {
+  Object.keys(EXPLAINERS).forEach(id => localStorage.removeItem('blp_explainer_' + id));
+  toast('Explainers reset — they will show again on each screen');
 }
 
 /* ── Guided Tour ── */
