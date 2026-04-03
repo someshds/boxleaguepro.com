@@ -4516,9 +4516,9 @@ function shareOpenMatch(matchId) {
   const link = mixInMode
     ? window.location.origin + window.location.pathname + '?mixin=1' + (userHomeClub ? '&club=' + userHomeClub.id : '')
     : window.location.origin + window.location.pathname + '?league=' + activeLeagueId;
-  const sportIcon = { tennis:'🎾', padel:'🥎', squash:'🏸', racketball:'🏸', badminton:'🏸' }[m.sport] || '🏅';
+  const sportLabel = (m.sport || 'tennis').charAt(0).toUpperCase() + (m.sport || 'tennis').slice(1);
 
-  const msg = `${sportIcon} ${m.title || 'Open Game'}\n📅 ${dateStr} · ${slotLabel}\n${m.venue ? '📍 ' + m.venue + '\n' : ''}${m.level ? '⭐ ' + m.level.charAt(0).toUpperCase() + m.level.slice(1) + '\n' : ''}👥 ${players.length}/${maxP} players${spotsLeft > 0 ? ' — ' + spotsLeft + ' spot' + (spotsLeft !== 1 ? 's' : '') + ' left!' : ' — FULL'}\n\nJoin here: ${link}`;
+  const msg = `${sportLabel} - ${m.title || 'Open Game'}\n${dateStr} | ${slotLabel}\n${m.venue ? 'Venue: ' + m.venue + '\n' : ''}${m.level ? 'Level: ' + m.level.charAt(0).toUpperCase() + m.level.slice(1) + '\n' : ''}Players: ${players.length}/${maxP}${spotsLeft > 0 ? ' - ' + spotsLeft + ' spot' + (spotsLeft !== 1 ? 's' : '') + ' left!' : ' - FULL'}\n\nJoin here: ${link}`;
 
   navigator.clipboard.writeText(msg).then(() => {
     toast('Game link copied! Paste it in WhatsApp or any chat.');
@@ -4542,9 +4542,9 @@ function whatsAppShareMatch(matchId) {
   const link = mixInMode
     ? window.location.origin + window.location.pathname + '?mixin=1' + (userHomeClub ? '&club=' + userHomeClub.id : '')
     : window.location.origin + window.location.pathname + '?league=' + activeLeagueId;
-  const sportIcon = { tennis:'🎾', padel:'🥎', squash:'🏸', racketball:'🏸', badminton:'🏸' }[m.sport] || '🏅';
+  const sportLabel = (m.sport || 'tennis').charAt(0).toUpperCase() + (m.sport || 'tennis').slice(1);
 
-  const msg = `${sportIcon} ${m.title || 'Open Game'}\n📅 ${dateStr} · ${slotLabel}\n${m.venue ? '📍 ' + m.venue + '\n' : ''}${m.level ? '⭐ ' + m.level.charAt(0).toUpperCase() + m.level.slice(1) + '\n' : ''}👥 ${players.length}/${maxP} players${spotsLeft > 0 ? ' — ' + spotsLeft + ' spot' + (spotsLeft !== 1 ? 's' : '') + ' left!' : ' — FULL'}\n\nJoin here: ${link}`;
+  const msg = `${sportLabel} - ${m.title || 'Open Game'}\n${dateStr} | ${slotLabel}\n${m.venue ? 'Venue: ' + m.venue + '\n' : ''}${m.level ? 'Level: ' + m.level.charAt(0).toUpperCase() + m.level.slice(1) + '\n' : ''}Players: ${players.length}/${maxP}${spotsLeft > 0 ? ' - ' + spotsLeft + ' spot' + (spotsLeft !== 1 ? 's' : '') + ' left!' : ' - FULL'}\n\nJoin here: ${link}`;
 
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
