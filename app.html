@@ -4736,6 +4736,8 @@ function toggleOmCourtBooked(matchId) {
   const match = L.openMatches[matchId];
   if (!match) return;
   const newVal = !match.courtBooked;
+  const msg = newVal ? 'Mark this court as booked?' : 'Remove court booking?';
+  if (!confirm(msg)) return;
   if (FIREBASE_READY) {
     db.ref(omPath() + '/' + matchId + '/courtBooked').set(newVal);
   } else {
