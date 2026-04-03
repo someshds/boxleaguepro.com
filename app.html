@@ -256,7 +256,7 @@
     .my-match.ready { border-left-color: var(--green); }
     .my-match.blocked { border-left-color: var(--amber); }
 
-    /* ── Open Matches ── */
+    /* ── Friendly Matches ── */
     .om-filters { display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 4px; margin-bottom: 16px; }
     .om-filters::-webkit-scrollbar { display: none; }
     .om-chip { padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; border: 1.5px solid var(--border); background: var(--card); color: var(--muted); transition: all 0.15s; }
@@ -1112,13 +1112,13 @@
       </div>
     </div>
 
-    <!-- ── Open Matches Tab ── -->
+    <!-- ── Friendly Matches Tab ── -->
     <div id="tab-open" class="section">
       <div class="edu-tip" id="tip-open">
         <button class="edu-tip-close" onclick="closeTip('open')">&times;</button>
         <div class="edu-tip-header">
           <div class="edu-tip-icon">&#127934;</div>
-          <div class="edu-tip-title">Open Matches</div>
+          <div class="edu-tip-title">Friendly Matches</div>
         </div>
         <div class="edu-tip-body">
           Need players for a game? <strong>Create an open match</strong> and other players can join. Book a court, set the date and time, and watch the spots fill up!
@@ -1126,8 +1126,12 @@
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <h2 class="section-title" style="margin-bottom:0">Open Matches</h2>
-        <button class="btn btn-primary btn-sm" onclick="showCreateOpenMatch()">+ New Game</button>
+        <h2 class="section-title" style="margin-bottom:0">Friendly Matches</h2>
+        <button class="btn btn-primary" onclick="showCreateOpenMatch()" style="font-size:16px;padding:10px 20px;border-radius:12px;box-shadow:0 4px 12px rgba(37,99,235,0.3)">+ Create a Game</button>
+      </div>
+      <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:12px;padding:12px 16px;margin-bottom:14px;font-size:14px;color:#1e40af;display:flex;align-items:center;gap:8px">
+        <span style="font-size:20px">&#128161;</span>
+        <span><strong>Create</strong> a game to find players, or <strong>Join</strong> an existing game below.</span>
       </div>
 
       <div id="om-booking-link"></div>
@@ -2478,8 +2482,8 @@ function enterMixInMode() {
   document.getElementById('app-user-photo').src = photoUrl;
   document.getElementById('app-user-first').textContent = (currentUser.displayName || 'You').split(' ')[0];
 
-  // Only Open Matches tab
-  document.getElementById('app-nav').innerHTML = '<div class="nav-tab active" onclick="showTab(\'open\')">Open Matches</div>';
+  // Only Friendly Matches tab
+  document.getElementById('app-nav').innerHTML = '<div class="nav-tab active" onclick="showTab(\'open\')">Friendly Matches</div>';
   currentTab = 'open';
 
   showScreen('app');
@@ -3355,11 +3359,11 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   // Build nav tabs
   let tabs;
   if (mixInMode) {
-    tabs = [['open','Open Matches']];
+    tabs = [['open','Friendly Matches']];
   } else if (isOrganiser) {
-    tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['open','Open Matches'],['setup','Setup']];
+    tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['open','Friendly Matches'],['setup','Setup']];
   } else {
-    tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['open','Open Matches']];
+    tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['open','Friendly Matches']];
   }
 
   document.getElementById('app-nav').innerHTML = tabs.map(([id, label], i) =>
@@ -3601,7 +3605,7 @@ function showTab(t) {
 
   document.querySelectorAll('#app-nav .nav-tab').forEach(el => {
     const text = el.textContent.trim();
-    const map = { 'My Availability':'availability', 'Everyone':'everyone', 'Match Finder':'matches', 'Open Matches':'open', 'Setup':'setup' };
+    const map = { 'My Availability':'availability', 'Everyone':'everyone', 'Match Finder':'matches', 'Friendly Matches':'open', 'Setup':'setup' };
     el.classList.toggle('active', map[text] === t);
   });
 
@@ -4415,8 +4419,9 @@ function renderOpenMatches() {
   if (filtered.length === 0) {
     list.innerHTML = `<div class="om-empty">
       <div class="om-empty-icon">&#127934;</div>
-      <div class="om-empty-title">No open matches${omFilter !== 'upcoming' ? ' on this day' : ''}</div>
-      <div class="om-empty-text">Be the first to create a game! Tap <strong>+ New Game</strong> above to book a court and find players.</div>
+      <div class="om-empty-title">No games yet${omFilter !== 'upcoming' ? ' on this day' : ''}</div>
+      <div class="om-empty-text">Be the first to organise a game! Create one and invite your players.</div>
+      <button class="btn btn-primary" onclick="showCreateOpenMatch()" style="margin-top:12px;font-size:16px;padding:12px 24px;border-radius:12px;font-weight:800">+ Create a Game</button>
     </div>`;
     return;
   }
@@ -4443,11 +4448,11 @@ function renderOpenMatches() {
 
     let actionsHtml = '';
     if (!isFull && !iJoined && myName) {
-      actionsHtml += `<button class="btn btn-success btn-sm" onclick="joinOpenMatch('${esc(m.id)}')">Join Game</button>`;
+      actionsHtml += `<button class="btn btn-success" onclick="joinOpenMatch('${esc(m.id)}')" style="font-size:15px;padding:10px 20px;border-radius:10px;font-weight:800;box-shadow:0 3px 10px rgba(34,197,94,0.3)">&#127934; Join This Game</button>`;
     } else if (iJoined) {
-      actionsHtml += `<button class="btn btn-danger btn-sm" onclick="leaveOpenMatch('${esc(m.id)}')">Leave</button>`;
+      actionsHtml += `<button class="btn btn-danger btn-sm" onclick="leaveOpenMatch('${esc(m.id)}')">Leave Game</button>`;
     } else if (isFull && !iJoined) {
-      actionsHtml += `<span style="font-size:13px;color:var(--muted);font-weight:600">Game is full</span>`;
+      actionsHtml += `<span style="font-size:14px;color:var(--muted);font-weight:700;background:#f1f5f9;padding:8px 14px;border-radius:8px">Game is full</span>`;
     }
     actionsHtml += `<button class="btn btn-sm btn-whatsapp" onclick="whatsAppShareMatch('${esc(m.id)}')" style="font-weight:700;padding:6px 10px" title="Share on WhatsApp">&#128172;</button>`;
     actionsHtml += `<button class="btn btn-sm" onclick="shareOpenMatch('${esc(m.id)}')" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700" title="Copy invite link">&#128279;</button>`;
