@@ -1350,7 +1350,7 @@
  *  1. Go to https://console.firebase.google.com/
  *  2. Create project -> name it "boxleague-pro" -> Continue
  *  3. Authentication -> Get started -> Google (enable it)
- *  4. Realtime Database -> Create database -> test mode
+ *  4. Realtime Database -> Create database -> locked mode (configure security rules)
  *  5. Click the Web icon "</>" -> Register app -> copy config below
  *  6. Done!
  * ═══════════════════════════════════════════════════════════════ */
@@ -1830,7 +1830,7 @@ function adminDeleteAllLeagues() {
   });
 }
 
-function esc(s) { if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function esc(s) { if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/\\/g,'&#92;'); }
 function val(id) { return document.getElementById(id).value.trim(); }
 function toast(msg) {
   const el = document.getElementById('toast');
@@ -2081,6 +2081,13 @@ function signOut() {
   userHomeClub = null;
   userPreferredSport = '';
   mixInMode = false;
+  activeLeagueId = null;
+  selectedClubId = '';
+  selectedClubName = '';
+  clubBookingUrl = '';
+  userLeagues = {};
+  allClubs = {};
+  L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {} };
   if (FIREBASE_READY) {
     auth.signOut();
   } else {
@@ -2498,7 +2505,7 @@ function enterMixInMode() {
     });
     listeners.push({ ref, event: 'value', fn: l1 });
 
-    const commentsRef = db.ref(mixInPath().replace('/mixInGames', '/mixInComments'));
+    const commentsRef = db.ref(mixInCommentsPath());
     const l2 = commentsRef.on('value', snap => {
       L.comments = snap.val() || {};
       renderComments();
@@ -3106,22 +3113,26 @@ function startWizard(leagueId, leagueName) {
     wizIsSingles = lg.sport.toLowerCase() === 'squash' || lg.sport.toLowerCase() === 'singles';
   }
   // Also check from Firebase if not in userLeagues yet
+  function initWizardUI() {
+    document.getElementById('wizard-league-name').textContent = leagueName;
+    const displayName = currentUser.displayName || '';
+    document.getElementById('wiz-name').value = displayName.split(' ')[0];
+    document.getElementById('wiz-partner').value = '';
+    showScreen('wizard');
+    renderWizStep();
+    renderWizAvailGrid();
+  }
   if (!lg && FIREBASE_READY) {
-    db.ref('/leagues/' + leagueId + '/info/sport').once('value', snap => {
+    db.ref('/leagues/' + leagueId + '/info/sport').once('value').then(snap => {
       const sport = snap.val();
       if (sport && (sport.toLowerCase() === 'squash' || sport.toLowerCase() === 'singles')) {
         wizIsSingles = true;
       }
+      initWizardUI();
     });
+  } else {
+    initWizardUI();
   }
-  document.getElementById('wizard-league-name').textContent = leagueName;
-  // Pre-fill name from Google account
-  const displayName = currentUser.displayName || '';
-  document.getElementById('wiz-name').value = displayName.split(' ')[0];
-  document.getElementById('wiz-partner').value = '';
-  showScreen('wizard');
-  renderWizStep();
-  renderWizAvailGrid();
 }
 
 function renderWizStep() {
@@ -3526,10 +3537,10 @@ function fbSetGroups() {
   if (ref) ref.set(obj); else localSave();
 }
 
-function fbSetAvail(key, val) {
+function fbSetAvail(key, isAvailable) {
   const ref = leagueRef('availability');
-  if (ref) { if (val) ref.child(key).set(true); else ref.child(key).remove(); }
-  else { if(val) L.availability[key]=true; else delete L.availability[key]; localSave(); }
+  if (ref) { if (isAvailable) ref.child(key).set(true); else ref.child(key).remove(); }
+  else { if(isAvailable) L.availability[key]=true; else delete L.availability[key]; localSave(); }
 }
 
 function fbSetAvailBatch(updates) {
@@ -4530,12 +4541,8 @@ function shareOpenMatch(matchId) {
 
   const msg = `${sportLabel} - ${m.title || 'Open Game'}\n${dateStr} | ${slotLabel}\n${m.venue ? 'Venue: ' + m.venue + '\n' : ''}${m.level ? 'Level: ' + m.level.charAt(0).toUpperCase() + m.level.slice(1) + '\n' : ''}Players: ${players.length}/${maxP}${spotsLeft > 0 ? ' - ' + spotsLeft + ' slot' + (spotsLeft !== 1 ? 's' : '') + ' left!' : ' - FULL'}\n\nJoin here: ${link}`;
 
-  navigator.clipboard.writeText(msg).then(() => {
-    toast('Game link copied! Paste it in WhatsApp or any chat.');
-  }).catch(() => {
-    // Fallback: open WhatsApp share
-    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
-  });
+  copyText(msg);
+  toast('Game link copied! Paste it in WhatsApp or any chat.');
 }
 
 function whatsAppShareMatch(matchId) {
@@ -4715,15 +4722,26 @@ function joinOpenMatch(matchId) {
   const players = match.players || [];
   if (players.includes(myName)) { toast('Already joined'); return; }
   if (players.length >= (match.maxPlayers || 4)) { toast('Game is full'); return; }
-  players.push(myName);
 
   if (FIREBASE_READY) {
-    db.ref(omPath() + '/' + matchId + '/players').set(players);
+    const ref = db.ref(omPath() + '/' + matchId + '/players');
+    ref.transaction(current => {
+      const arr = current || [];
+      if (arr.includes(myName)) return; // abort — already joined
+      if (arr.length >= (match.maxPlayers || 4)) return; // abort — full
+      arr.push(myName);
+      return arr;
+    }, (err, committed) => {
+      if (err) { toast('Error joining — try again'); return; }
+      if (!committed) { toast('Could not join — game may be full'); return; }
+      toast('You joined the game!');
+    });
   } else {
+    players.push(myName);
     match.players = players;
     renderOpenMatches();
+    toast('You joined the game!');
   }
-  toast('You joined the game!');
 }
 
 function leaveOpenMatch(matchId) {
@@ -4894,10 +4912,10 @@ function getMemberPhoto(playerName) {
 
 function avatarWithPhoto(name) {
   const photo = getMemberPhoto(name);
-  if (photo) {
+  if (photo && (photo.startsWith('data:image/') || photo.startsWith('https://'))) {
     const safeInitials = esc(getInitials(name)).replace(/'/g, '&#39;');
     const safeColor = getPlayerColor(name).replace(/'/g, '');
-    return `<span class="avatar" style="padding:0;overflow:hidden" title="${esc(name)}"><img src="${photo}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='${safeInitials}';this.parentElement.style.background='${safeColor}'"></span>`;
+    return `<span class="avatar" style="padding:0;overflow:hidden" title="${esc(name)}"><img src="${esc(photo)}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='${safeInitials}';this.parentElement.style.background='${safeColor}'"></span>`;
   }
   return avatarHtml(name);
 }
@@ -4905,8 +4923,13 @@ function avatarWithPhoto(name) {
 /* ══════════════════════════════════════
    COMMENTS / LEAGUE CHAT
    ══════════════════════════════════════ */
+function mixInCommentsPath() {
+  if (userHomeClub && userHomeClub.id) return '/clubs/' + userHomeClub.id + '/mixInComments';
+  return '/clubs/__unscoped__/mixInComments';
+}
+
 function commentsPath() {
-  if (mixInMode && userHomeClub) return mixInPath().replace('/mixInGames', '/mixInComments');
+  if (mixInMode) return mixInCommentsPath();
   if (activeLeagueId) return '/leagues/' + activeLeagueId + '/comments';
   return null;
 }
@@ -4928,10 +4951,10 @@ function renderComments() {
     .map(([id, c]) => ({ id, ...c }))
     .sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
 
-  const isAdmin = currentUser && ADMIN_EMAILS.includes(currentUser.email);
+  const adminUser = isAdmin();
 
   let countText = comments.length > 0 ? comments.length + ' message' + (comments.length !== 1 ? 's' : '') : '';
-  if (isAdmin && comments.length > 0) {
+  if (adminUser && comments.length > 0) {
     countText += ` <button onclick="clearAllComments()" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;margin-left:6px">Clear All</button>`;
   }
   countEl.innerHTML = countText;
@@ -4942,7 +4965,7 @@ function renderComments() {
   }
 
   list.innerHTML = comments.map(c => {
-    const canDelete = isAdmin || (currentUser && c.email === currentUser.email);
+    const canDelete = adminUser || (currentUser && c.email === currentUser.email);
     const timeAgo = getTimeAgo(c.timestamp);
     const photo = c.photo;
     let avatarEl;
@@ -4956,7 +4979,7 @@ function renderComments() {
       <div class="comment-avatar">${avatarEl}</div>
       <div class="comment-body">
         <div class="comment-header">
-          <span class="comment-name">${esc(c.name || 'Unknown')}${isAdmin && c.email ? '<span style="font-size:10px;color:var(--muted);margin-left:4px">(' + esc(c.email) + ')</span>' : ''}</span>
+          <span class="comment-name">${esc(c.name || 'Unknown')}${adminUser && c.email ? '<span style="font-size:10px;color:var(--muted);margin-left:4px">(' + esc(c.email) + ')</span>' : ''}</span>
           <span class="comment-time">${timeAgo}</span>
           ${canDelete ? `<button class="comment-delete" onclick="deleteComment('${esc(c.id)}')" title="Delete">&#128465;</button>` : ''}
         </div>
