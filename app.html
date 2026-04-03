@@ -1827,7 +1827,7 @@ function adminDeleteAllLeagues() {
   });
 }
 
-function esc(s) { if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function esc(s) { if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function val(id) { return document.getElementById(id).value.trim(); }
 function toast(msg) {
   const el = document.getElementById('toast');
@@ -2073,6 +2073,11 @@ function resetPassword() {
 }
 
 function signOut() {
+  detachListeners();
+  detachGlobalListeners();
+  userHomeClub = null;
+  userPreferredSport = '';
+  mixInMode = false;
   if (FIREBASE_READY) {
     auth.signOut();
   } else {
@@ -2359,8 +2364,9 @@ function onAuthSuccess() {
         setTimeout(() => { goToMixIn(); }, 500);
       }
     } else if (!userHomeClub) {
-      // First time — show onboarding
+      // First time — show onboarding (wait for clubs to load first)
       showScreen('onboarding');
+      waitForClubsThenEnableSearch();
     } else {
       showScreen('welcome');
     }
@@ -2452,8 +2458,13 @@ function goToMixIn() {
 }
 
 function enterMixInMode() {
+  if (!userHomeClub) {
+    showScreen('onboarding');
+    toast('Please select your home club first');
+    return;
+  }
   activeLeagueId = null;
-  clubBookingUrl = userHomeClub ? userHomeClub.bookingUrl || '' : '';
+  clubBookingUrl = userHomeClub.bookingUrl || '';
   L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {} };
 
   // Set header — show club name under Mix-In Games
@@ -2506,6 +2517,31 @@ function skipWelcome() {
 let onboardClubId = null;
 let onboardClubName = '';
 let onboardSport = '';
+
+function waitForClubsThenEnableSearch() {
+  const inp = document.getElementById('inp-onboard-club');
+  if (Object.keys(allClubs).length > 0) {
+    inp.placeholder = 'Search for your club...';
+    inp.disabled = false;
+    return;
+  }
+  inp.placeholder = 'Loading clubs...';
+  inp.disabled = true;
+  // Poll until clubs arrive (they load via the /clubs listener in loadUserLeagues)
+  const check = setInterval(() => {
+    if (Object.keys(allClubs).length > 0) {
+      clearInterval(check);
+      inp.placeholder = 'Search for your club...';
+      inp.disabled = false;
+    }
+  }, 200);
+  // Safety timeout — enable after 3s even if no clubs found (user can create)
+  setTimeout(() => {
+    clearInterval(check);
+    inp.placeholder = 'Search or create your club...';
+    inp.disabled = false;
+  }, 3000);
+}
 
 function searchOnboardClubs() {
   const q = document.getElementById('inp-onboard-club').value.toLowerCase().trim();
@@ -2679,18 +2715,32 @@ function renderWelcomeLeagues() {
   }).join('');
 }
 
+let globalListenerRefs = []; // Track userLeagues + clubs listeners separately from league listeners
+
+function detachGlobalListeners() {
+  globalListenerRefs.forEach(({ ref, event, fn }) => ref.off(event, fn));
+  globalListenerRefs = [];
+}
+
 function loadUserLeagues() {
   if (!FIREBASE_READY) {
     try { const s = localStorage.getItem('blp_leagues'); if (s) userLeagues = JSON.parse(s); } catch(e) {}
     renderMyLeagues();
     return;
   }
-  db.ref('/userLeagues/' + currentUser.uid).on('value', snap => {
+  // Detach any previous global listeners to prevent duplicates
+  detachGlobalListeners();
+
+  const ulRef = db.ref('/userLeagues/' + currentUser.uid);
+  const ulFn = ulRef.on('value', snap => {
     userLeagues = snap.val() || {};
     renderMyLeagues();
   });
+  globalListenerRefs.push({ ref: ulRef, event: 'value', fn: ulFn });
+
   // Load all clubs for search
-  db.ref('/clubs').on('value', snap => {
+  const clubsRef = db.ref('/clubs');
+  const clubsFn = clubsRef.on('value', snap => {
     allClubs = snap.val() || {};
     // Auto-set East Grinstead booking URL if missing
     Object.entries(allClubs).forEach(([id, c]) => {
@@ -2700,6 +2750,7 @@ function loadUserLeagues() {
       }
     });
   });
+  globalListenerRefs.push({ ref: clubsRef, event: 'value', fn: clubsFn });
 }
 
 let createdLeagueId = null; // Track league just created for the share flow
@@ -3090,8 +3141,13 @@ function wizNext(step) {
     if (!partner) { toast('Please enter your partner\'s name'); return; }
   }
   if (step === 2) {
-    // Save everything to Firebase
-    wizSaveData();
+    // Save everything to Firebase, then advance
+    wizSaveData().then(() => {
+      wizStep = step + 1;
+      renderWizStep();
+      if (wizStep === 3) renderWizDone();
+    });
+    return;
   }
   wizStep = step + 1;
   renderWizStep();
@@ -3115,14 +3171,14 @@ function wizSaveData() {
 
   if (!FIREBASE_READY || !wizLeagueId) {
     // Demo mode
-    return;
+    return Promise.resolve();
   }
 
   const leagueRef = db.ref('/leagues/' + wizLeagueId);
   const emailKey = sanitizeEmail(currentUser.email);
 
   // Check if a team with either player already exists
-  leagueRef.child('groups').once('value', snap => {
+  return leagueRef.child('groups').once('value').then(snap => {
     const groups = snap.val() || {};
     let existingTeamId = null;
 
@@ -3152,11 +3208,11 @@ function wizSaveData() {
     updates['/leagues/' + wizLeagueId + '/members/' + emailKey + '/partnerName'] = partnerName;
 
     // Save availability
-    Object.entries(wizAvailability).forEach(([key, val]) => {
-      if (val) updates['/leagues/' + wizLeagueId + '/availability/' + key] = true;
+    Object.entries(wizAvailability).forEach(([key, avail]) => {
+      if (avail) updates['/leagues/' + wizLeagueId + '/availability/' + key] = true;
     });
 
-    db.ref().update(updates).then(() => {
+    return db.ref().update(updates).then(() => {
       console.log('Wizard data saved');
     }).catch(err => {
       console.error('Wizard save error:', err);
@@ -3313,7 +3369,7 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   currentTab = mixInMode ? 'open' : 'availability';
 
   // Hide league-specific header elements in mix-in mode
-  document.getElementById('app-league-code-wrap').style.display = mixInMode ? 'none' : '';
+  document.getElementById('app-league-code-wrap').style.display = mixInMode ? 'none' : 'flex';
   document.getElementById('progress-wrap').style.display = mixInMode ? 'none' : '';
   document.getElementById('deadline-banner').style.display = mixInMode ? 'none' : '';
   document.getElementById('app-league-name').textContent = mixInMode ? 'Mix-In Games' : (leagueInfo.name || 'League');
@@ -3504,9 +3560,9 @@ function saveBookingUrl() {
 }
 
 function saveDeadline() {
-  const val = document.getElementById('inp-deadline').value;
-  if (!val) { toast('Please pick a date and time first'); return; }
-  L.settings.deadline = val;
+  const dlVal = document.getElementById('inp-deadline').value;
+  if (!dlVal) { toast('Please pick a date and time first'); return; }
+  L.settings.deadline = dlVal;
   const ref = leagueRef('settings');
   if (ref) ref.set(L.settings); else localSave();
   renderDeadline();
