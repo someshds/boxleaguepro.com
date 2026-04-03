@@ -219,7 +219,7 @@
     /* ── Availability Grid ── */
     .avail-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .avail-tbl { border-collapse: collapse; font-size: 14px; min-width: 100%; }
-    .avail-tbl th { padding: 6px 4px; text-align: center; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--border); min-width: 44px; }
+    .avail-tbl th { padding: 6px 3px; text-align: center; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--border); min-width: 38px; }
     .avail-tbl td { padding: 4px; border-bottom: 1px solid var(--border); }
     .slot-lbl { font-size: 14px; font-weight: 600; color: var(--muted); text-align: left !important; padding: 5px 8px !important; white-space: nowrap; }
     .cell { width: 40px; height: 40px; border-radius: 8px; cursor: pointer; background: #f0f0f0; display: flex; align-items: center; justify-content: center; margin: auto; transition: background 0.12s; border: 2px solid transparent; }
@@ -239,7 +239,7 @@
     .avail-cal-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .avail-cal { border-collapse: collapse; font-size: 13px; min-width: 100%; }
     .avail-cal th { padding: 5px 3px; text-align: center; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--border); min-width: 52px; }
-    .avail-cal th.slot-col { text-align: left; min-width: 72px; }
+    .avail-cal th.slot-col { text-align: left; min-width: 66px; }
     .avail-cal td { padding: 4px 3px; border-bottom: 1px solid var(--border); vertical-align: top; }
     .avail-cal td.slot-col { font-size: 13px; font-weight: 600; color: var(--muted); padding: 6px 8px; white-space: nowrap; }
     .avail-cell { display: flex; flex-wrap: wrap; gap: 2px; justify-content: center; min-height: 28px; padding: 2px; }
@@ -1035,7 +1035,7 @@
           <div class="edu-tip-title">Mark Your Availability</div>
         </div>
         <div class="edu-tip-body">
-          Tap the boxes below to mark when you're <strong>free to play</strong> &mdash; pick your available 2-hour slots for each day.
+          Tap the boxes below to mark when you're <strong>free to play</strong> &mdash; pick your available 1.5-hour slots for each day.
           <br><br>
           Once you've marked your slots, click <strong>"Everyone"</strong> to see when all players are available, then <strong>"Match Finder"</strong> to find the best times to play.
         </div>
@@ -1928,10 +1928,10 @@ function avatarHtml(name) {
 }
 function getAllPlayers() { return L.groups.flatMap(g => g.players); }
 
-/* ── Time slots (2-hour blocks) ── */
-const SLOTS = ['9-11','11-1','1-3','3-5','5-7','7-9'];
-const SLOT_LABELS = { '9-11':'9–11am', '11-1':'11am–1pm', '1-3':'1–3pm', '3-5':'3–5pm', '5-7':'5–7pm', '7-9':'7–9pm' };
-const SLOT_SHORT = { '9-11':'9-11', '11-1':'11-1', '1-3':'1-3', '3-5':'3-5', '5-7':'5-7', '7-9':'7-9' };
+/* ── Time slots (1.5-hour blocks) ── */
+const SLOTS = ['9-1030','1030-12','12-130','130-3','3-430','430-6','6-730','730-9'];
+const SLOT_LABELS = { '9-1030':'9–10:30am', '1030-12':'10:30–12pm', '12-130':'12–1:30pm', '130-3':'1:30–3pm', '3-430':'3–4:30pm', '430-6':'4:30–6pm', '6-730':'6–7:30pm', '730-9':'7:30–9pm' };
+const SLOT_SHORT = { '9-1030':'9-10:30', '1030-12':'10:30-12', '12-130':'12-1:30', '130-3':'1:30-3', '3-430':'3-4:30', '430-6':'4:30-6', '6-730':'6-7:30', '730-9':'7:30-9' };
 
 /* ── Educational tips ── */
 function closeTip(id) {
@@ -5156,7 +5156,7 @@ const EXPLAINERS = {
     title: 'My Availability',
     subtitle: 'Tell everyone when you can play',
     steps: [
-      '<strong>Tap the boxes</strong> on the grid to mark your free 2-hour time slots',
+      '<strong>Tap the boxes</strong> on the grid to mark your free 1.5-hour time slots',
       'Use the <strong>arrow buttons</strong> to see the next week',
       'Your booked matches and open games appear further down the page',
       'Once you are done, tap <strong>"Everyone"</strong> to see when all players are free'
