@@ -994,6 +994,7 @@
 
       <button class="btn btn-primary btn-full" id="btn-add-group" onclick="showGroupForm()" style="margin-bottom:16px">+ Add Team</button>
 
+      <div id="setup-quick-add-wrap">
       <div class="divider"></div>
 
       <div class="card-title" style="margin-bottom:10px">Quick Add All Teams</div>
@@ -1014,6 +1015,7 @@
             <button class="btn btn-secondary" onclick="document.getElementById('template-form').style.display='none'">Cancel</button>
           </div>
         </div>
+      </div>
       </div>
 
       <!-- Members list -->
@@ -3462,6 +3464,12 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   document.getElementById('app-league-code-wrap').style.display = mixInMode ? 'none' : 'flex';
   document.getElementById('progress-wrap').style.display = mixInMode ? 'none' : '';
   document.getElementById('deadline-banner').style.display = mixInMode ? 'none' : '';
+  // Hide "Quick Add All Teams" in singles leagues
+  const quickAddWrap = document.getElementById('setup-quick-add-wrap');
+  if (quickAddWrap) {
+    const leagueSport = (leagueInfo.sport || '').toLowerCase();
+    quickAddWrap.style.display = (leagueSport === 'singles' || leagueSport === 'squash') ? 'none' : '';
+  }
   document.getElementById('app-league-name').textContent = mixInMode ? 'Mix-In Games' : (leagueInfo.name || 'League');
 
   showScreen('app');
@@ -3816,7 +3824,9 @@ function renderGroups() {
   const el = document.getElementById('groups-list');
   if (!el) return;
   if (L.groups.length === 0) {
-    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted)"><div style="font-size:46px;margin-bottom:10px">&#128101;</div><h3 style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px">No teams yet</h3><p style="font-size:15px">Add your doubles pairs to get started</p></div>`;
+    const singlesLeague = activeLeagueId && userLeagues[activeLeagueId] && isSinglesLeague(userLeagues[activeLeagueId].sport);
+    const emptyMsg = singlesLeague ? 'Add your players to get started' : 'Add your doubles pairs to get started';
+    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted)"><div style="font-size:46px;margin-bottom:10px">&#128101;</div><h3 style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px">No teams yet</h3><p style="font-size:15px">${emptyMsg}</p></div>`;
     return;
   }
   el.innerHTML = L.groups.map((g, gi) => {
