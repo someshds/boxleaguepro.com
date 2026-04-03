@@ -130,6 +130,61 @@ footer a:hover{text-decoration:underline}
 .footer-links{display:flex;gap:24px;justify-content:center;margin-bottom:16px;flex-wrap:wrap}
 .footer-brand{margin-top:16px;padding-top:16px;border-top:1px solid #1e293b}
 
+/* PHONE MOCKUPS */
+.phone-showcase{display:flex;gap:32px;justify-content:center;align-items:flex-end;margin-top:56px;perspective:1000px}
+.phone-frame{width:220px;background:#0f172a;border-radius:28px;padding:8px;box-shadow:0 20px 60px rgba(0,0,0,0.3),0 0 0 1px rgba(255,255,255,0.1);position:relative;transition:transform .3s}
+.phone-frame:hover{transform:translateY(-8px)}
+.phone-frame.center{width:240px;z-index:2}
+.phone-notch{width:80px;height:6px;background:#0f172a;border-radius:0 0 10px 10px;position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:5}
+.phone-screen{background:#f8fafc;border-radius:20px;overflow:hidden;aspect-ratio:9/18;position:relative}
+.phone-label{text-align:center;margin-top:12px;font-size:13px;font-weight:600;color:rgba(255,255,255,0.8)}
+
+/* Mini app header inside phone */
+.mini-header{background:linear-gradient(135deg,#1e40af,#2563eb);padding:14px 12px 10px;text-align:center;color:#fff}
+.mini-header h4{font-size:10px;font-weight:800;letter-spacing:.5px}
+.mini-header p{font-size:7px;opacity:.8;margin-top:2px}
+.mini-nav{display:flex;background:#fff;border-bottom:2px solid #e2e8f0}
+.mini-nav span{flex:1;text-align:center;font-size:7px;font-weight:700;padding:5px 2px;color:#64748b;border-bottom:2px solid transparent;margin-bottom:-2px}
+.mini-nav span.active{color:#2563eb;border-bottom-color:#2563eb}
+
+/* Welcome screen mockup */
+.mini-welcome-header{background:linear-gradient(135deg,#1e40af,#2563eb);padding:16px 12px 20px;text-align:center;color:#fff;border-radius:0 0 0 0}
+.mini-welcome-header .tennis-ball{font-size:22px}
+.mini-welcome-header h4{font-size:12px;font-weight:800;margin:4px 0 2px}
+.mini-welcome-header p{font-size:7px;opacity:.8}
+.mini-card{background:#fff;border-radius:10px;margin:8px 8px 0;padding:10px;box-shadow:0 1px 4px rgba(0,0,0,.06);border:1px solid #e2e8f0}
+.mini-card .card-badge{display:inline-block;background:#dbeafe;color:#2563eb;font-size:6px;font-weight:700;padding:1px 5px;border-radius:8px;margin-bottom:4px}
+.mini-card .card-badge.open{background:#fef3c7;color:#d97706}
+.mini-card h5{font-size:9px;font-weight:800;margin-bottom:2px}
+.mini-card p{font-size:6px;color:#64748b;line-height:1.3}
+.mini-card .sport-tags{display:flex;gap:3px;margin-top:4px}
+.mini-card .sport-tags span{font-size:5px;background:#f1f5f9;padding:1px 4px;border-radius:6px;color:#475569}
+
+/* Availability grid mockup */
+.mini-grid{padding:8px}
+.mini-grid-header{display:flex;gap:2px;margin-bottom:3px}
+.mini-grid-header span{flex:1;text-align:center;font-size:5px;font-weight:700;color:#64748b}
+.mini-grid-header span:first-child{flex:0 0 28px;text-align:left}
+.mini-grid-row{display:flex;gap:2px;margin-bottom:2px}
+.mini-grid-row span:first-child{flex:0 0 28px;font-size:5px;color:#64748b;display:flex;align-items:center}
+.mini-grid-cell{flex:1;aspect-ratio:1;border-radius:3px;background:#f1f5f9;border:1px solid #e2e8f0}
+.mini-grid-cell.on{background:#dcfce7;border-color:#86efac}
+.mini-grid-cell.off{background:#f1f5f9;border-color:#e2e8f0}
+.mini-grid-cell.past{background:#f9fafb;border-color:#f1f5f9;opacity:.4}
+.mini-copy-btn{background:#2563eb;color:#fff;border:none;border-radius:6px;padding:4px 8px;font-size:6px;font-weight:700;margin-top:6px;display:block;width:100%;text-align:center}
+
+/* Match finder mockup */
+.mini-match{background:#fff;border-radius:8px;margin:6px 8px;padding:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid #e2e8f0}
+.mini-match-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.mini-match-header .teams{font-size:8px;font-weight:700}
+.mini-match-header .badge{font-size:5px;font-weight:700;padding:1px 5px;border-radius:6px}
+.mini-match-header .badge.booked{background:#dcfce7;color:#059669}
+.mini-match-header .badge.slots{background:#dbeafe;color:#2563eb}
+.mini-slot{display:inline-block;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:4px;padding:2px 5px;font-size:5px;color:#475569;margin:1px}
+.mini-slot.selected{background:#2563eb;color:#fff;border-color:#2563eb}
+.mini-avatars{display:flex;gap:-2px;margin-bottom:4px}
+.mini-avatar{width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:5px;font-weight:700;color:#fff;margin-right:-3px;border:1.5px solid #fff}
+
 /* RESPONSIVE */
 @media(max-width:768px){
   .nav-links{display:none}
@@ -139,10 +194,19 @@ footer a:hover{text-decoration:underline}
   .hero-stats{gap:24px}
   .sports-row{gap:10px}
   .sport-pill{padding:12px 20px;font-size:14px}
+  .phone-showcase{gap:16px}
+  .phone-frame{width:160px}
+  .phone-frame.center{width:175px}
 }
 @media(max-width:480px){
   .steps{grid-template-columns:1fr}
   .hero-ctas{flex-direction:column;align-items:center}
+  .phone-showcase{gap:8px}
+  .phone-frame{width:110px;border-radius:18px;padding:5px}
+  .phone-frame.center{width:125px}
+  .phone-screen{border-radius:14px}
+  .phone-notch{width:50px;height:4px;top:5px}
+  .phone-label{font-size:10px}
 }
 </style>
 </head>
@@ -177,6 +241,171 @@ footer a:hover{text-decoration:underline}
     <span class="hero-sport">&#127992; Squash</span>
     <span class="hero-sport">&#127992; Racketball</span>
     <span class="hero-sport">&#127992; Badminton</span>
+  </div>
+
+  <!-- Phone mockups -->
+  <div class="phone-showcase">
+    <!-- Left phone: Welcome / Choose game type -->
+    <div class="phone-frame">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+        <div class="mini-welcome-header">
+          <div class="tennis-ball">&#127934;</div>
+          <h4>BoxLeague Pro</h4>
+          <p>What would you like to play?</p>
+        </div>
+        <div style="padding:4px 0 8px;background:#f8fafc">
+          <div style="text-align:center;font-size:7px;font-weight:700;color:#64748b;padding:6px 0 2px">Choose your game type</div>
+          <div class="mini-card">
+            <span class="card-badge">1V1</span>
+            <h5>&#127942; Singles Box League</h5>
+            <p>Compete individually in a box of 4-6 players.</p>
+            <div class="sport-tags"><span>&#127934; Tennis</span><span>&#127992; Squash</span></div>
+          </div>
+          <div class="mini-card">
+            <span class="card-badge">2V2</span>
+            <h5>&#129309; Doubles Box League</h5>
+            <p>Team up with a partner and take on other pairs.</p>
+            <div class="sport-tags"><span>&#127934; Tennis</span><span>&#129358; Padel</span></div>
+          </div>
+          <div class="mini-card">
+            <span class="card-badge open">OPEN</span>
+            <h5>&#127881; Mix-In Games</h5>
+            <p>Post a game and let players join. No league required!</p>
+            <div class="sport-tags"><span>&#9889; Instant join</span><span>&#127968; Book a court</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Welcome Screen</div>
+    </div>
+
+    <!-- Center phone: Availability Grid -->
+    <div class="phone-frame center">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+        <div class="mini-header">
+          <h4>East Grinstead Tennis</h4>
+          <p>Doubles League &middot; EGRTC</p>
+        </div>
+        <div class="mini-nav">
+          <span class="active">My Availability</span>
+          <span>Everyone</span>
+          <span>Match Finder</span>
+        </div>
+        <div class="mini-grid">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:7px;font-weight:700;color:#1e293b">This Week</span>
+            <span style="font-size:5px;color:#2563eb;font-weight:600">Apr 7 – 13</span>
+          </div>
+          <div class="mini-grid-header">
+            <span></span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+          </div>
+          <div class="mini-grid-row">
+            <span>8–10am</span>
+            <div class="mini-grid-cell off"></div><div class="mini-grid-cell off"></div><div class="mini-grid-cell on"></div><div class="mini-grid-cell off"></div><div class="mini-grid-cell off"></div><div class="mini-grid-cell on"></div><div class="mini-grid-cell on"></div>
+          </div>
+          <div class="mini-grid-row">
+            <span>10–12</span>
+            <div class="mini-grid-cell off"></div><div class="mini-grid-cell on"></div><div class="mini-grid-cell on"></div><div class="mini-grid-cell off"></div><div class="mini-grid-cell off"></div><div class="mini-grid-cell on"></div><div class="mini-grid-cell on"></div>
+          </div>
+          <div class="mini-grid-row">
+            <span>12–2pm</span>
+            <div class="mini-grid-cell off"></div><div class="mini-grid-cell off"></div><div class="mini-grid-cell off"></div><div class="mini-grid-cell on"></div><div class="mini-grid-cell off"></div><div class="mini-grid-cell on"></div><div class="mini-grid-cell off"></div>
+          </div>
+          <div class="mini-grid-row">
+            <span>2–4pm</span>
+            <div class="mini-grid-cell off"></div><div class="mini-grid-cell off"></div><div class="mini-grid-cell on"></div><div class="mini-grid-cell on"></div><div class="mini-grid-cell on"></div><div class="mini-grid-cell off"></div><div class="mini-grid-cell off"></div>
+          </div>
+          <div class="mini-grid-row">
+            <span>4–6pm</span>
+            <div class="mini-grid-cell on"></div><div class="mini-grid-cell off"></div><div class="mini-grid-cell off"></div><div class="mini-grid-cell off"></div><div class="mini-grid-cell on"></div><div class="mini-grid-cell on"></div><div class="mini-grid-cell off"></div>
+          </div>
+          <div class="mini-grid-row">
+            <span>6–8pm</span>
+            <div class="mini-grid-cell on"></div><div class="mini-grid-cell on"></div><div class="mini-grid-cell off"></div><div class="mini-grid-cell on"></div><div class="mini-grid-cell on"></div><div class="mini-grid-cell off"></div><div class="mini-grid-cell off"></div>
+          </div>
+          <div class="mini-copy-btn">&#128197; Copy Last Week</div>
+        </div>
+      </div>
+      <div class="phone-label">Availability Grid</div>
+    </div>
+
+    <!-- Right phone: Match Finder -->
+    <div class="phone-frame">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+        <div class="mini-header">
+          <h4>East Grinstead Tennis</h4>
+          <p>Doubles League &middot; EGRTC</p>
+        </div>
+        <div class="mini-nav">
+          <span>My Availability</span>
+          <span>Everyone</span>
+          <span class="active">Match Finder</span>
+        </div>
+        <div style="padding:2px 0">
+          <div class="mini-match">
+            <div class="mini-match-header">
+              <div>
+                <div class="mini-avatars">
+                  <div class="mini-avatar" style="background:#2563eb">GJ</div>
+                  <div class="mini-avatar" style="background:#059669">vs</div>
+                  <div class="mini-avatar" style="background:#d97706">TM</div>
+                </div>
+                <span class="teams">Grant & James vs Tom & Mike</span>
+              </div>
+              <span class="badge booked">&#9989; BOOKED</span>
+            </div>
+            <div><span class="mini-slot selected">Sat 12 Apr, 10-12</span></div>
+          </div>
+          <div class="mini-match">
+            <div class="mini-match-header">
+              <div>
+                <div class="mini-avatars">
+                  <div class="mini-avatar" style="background:#7c3aed">SL</div>
+                  <div class="mini-avatar" style="background:#059669">vs</div>
+                  <div class="mini-avatar" style="background:#dc2626">GJ</div>
+                </div>
+                <span class="teams">Sarah & Lucy vs Grant & James</span>
+              </div>
+              <span class="badge slots">5 slots</span>
+            </div>
+            <div>
+              <span class="mini-slot">Wed 9, 2-4pm</span>
+              <span class="mini-slot">Thu 10, 6-8pm</span>
+              <span class="mini-slot">Sat 12, 4-6pm</span>
+            </div>
+          </div>
+          <div class="mini-match">
+            <div class="mini-match-header">
+              <div>
+                <div class="mini-avatars">
+                  <div class="mini-avatar" style="background:#0891b2">RA</div>
+                  <div class="mini-avatar" style="background:#059669">vs</div>
+                  <div class="mini-avatar" style="background:#d97706">TM</div>
+                </div>
+                <span class="teams">Rob & Anna vs Tom & Mike</span>
+              </div>
+              <span class="badge slots">3 slots</span>
+            </div>
+            <div>
+              <span class="mini-slot">Fri 11, 4-6pm</span>
+              <span class="mini-slot">Sun 13, 10-12</span>
+            </div>
+          </div>
+          <div class="mini-match" style="opacity:.5">
+            <div class="mini-match-header">
+              <div>
+                <span class="teams" style="color:#94a3b8">Dave & Phil vs Rob & Anna</span>
+              </div>
+              <span class="badge" style="background:#fef2f2;color:#dc2626;font-size:5px">Waiting</span>
+            </div>
+            <div style="font-size:5px;color:#94a3b8">Waiting for Dave & Phil to fill in availability</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Match Finder</div>
+    </div>
   </div>
 </section>
 
