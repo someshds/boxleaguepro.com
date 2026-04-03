@@ -637,6 +637,7 @@
         <span>Sign out</span>
       </button>
     </div>
+    <div id="browse-game-type-label" style="display:none;margin-top:10px;font-size:14px;font-weight:700;color:rgba(255,255,255,0.85);background:rgba(255,255,255,0.15);display:inline-block;padding:4px 14px;border-radius:20px"></div>
   </div>
   <div class="browse-body">
     <!-- Returning user: Your Leagues -->
@@ -2758,6 +2759,13 @@ function goToBrowse() {
   document.getElementById('browse-user-name').textContent = firstName;
   const photoUrl = currentUser.photoURL || getDefaultAvatar();
   document.getElementById('browse-user-photo').src = photoUrl;
+  // Show game type subtitle
+  const label = document.getElementById('browse-game-type-label');
+  if (selectedGameType === 'singles') { label.textContent = 'Singles Box League'; label.style.display = 'inline-block'; }
+  else if (selectedGameType === 'doubles') { label.textContent = 'Doubles Box League'; label.style.display = 'inline-block'; }
+  else { label.style.display = 'none'; }
+  // Re-render leagues with filter applied
+  renderMyLeagues();
   showScreen('browse');
 }
 
