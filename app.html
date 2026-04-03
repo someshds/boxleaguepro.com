@@ -1170,11 +1170,11 @@
     <div id="league-comments" style="display:none;margin-top:24px">
       <div class="divider"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <div class="card-title" id="comments-title">League Chat</div>
+        <div class="card-title" id="comments-title">Comments & Feedback</div>
         <span id="comments-count" style="font-size:13px;color:var(--muted);font-weight:600"></span>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:14px">
-        <input class="fi" id="comment-input" placeholder="Write a message..." style="flex:1;margin:0" onkeydown="if(event.key==='Enter')postComment()">
+        <input class="fi" id="comment-input" placeholder="Leave a comment..." style="flex:1;margin:0" onkeydown="if(event.key==='Enter')postComment()">
         <button class="btn btn-primary btn-sm" onclick="postComment()" style="flex-shrink:0">Send</button>
       </div>
       <div id="comments-list"></div>
@@ -5001,7 +5001,7 @@ function avatarWithPhoto(name) {
 }
 
 /* ══════════════════════════════════════
-   COMMENTS / LEAGUE CHAT
+   COMMENTS & FEEDBACK
    ══════════════════════════════════════ */
 function mixInCommentsPath() {
   if (userHomeClub && userHomeClub.id) return '/clubs/' + userHomeClub.id + '/mixInComments';
@@ -5025,7 +5025,7 @@ function renderComments() {
 
   // Update title
   const titleEl = document.getElementById('comments-title');
-  if (titleEl) titleEl.textContent = mixInMode ? 'Club Chat' : 'League Chat';
+  if (titleEl) titleEl.textContent = 'Comments & Feedback';
 
   const comments = Object.entries(L.comments || {})
     .map(([id, c]) => ({ id, ...c }))
@@ -5033,14 +5033,14 @@ function renderComments() {
 
   const adminUser = isAdmin();
 
-  let countText = comments.length > 0 ? comments.length + ' message' + (comments.length !== 1 ? 's' : '') : '';
+  let countText = comments.length > 0 ? comments.length + ' comment' + (comments.length !== 1 ? 's' : '') : '';
   if (adminUser && comments.length > 0) {
     countText += ` <button onclick="clearAllComments()" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;margin-left:6px">Clear All</button>`;
   }
   countEl.innerHTML = countText;
 
   if (comments.length === 0) {
-    list.innerHTML = `<div style="text-align:center;padding:16px;color:var(--muted);font-size:14px">No messages yet. Be the first to say something!</div>`;
+    list.innerHTML = `<div style="text-align:center;padding:16px;color:var(--muted);font-size:14px">No comments yet. Be the first to leave feedback!</div>`;
     return;
   }
 
@@ -5235,7 +5235,7 @@ const EXPLAINERS = {
       'Tap <strong>"Create a Game"</strong> to post a game — pick your sport, date, time, and level',
       'Other club members see your game and can <strong>join with one tap</strong>',
       'Tap <strong>"Book a Court"</strong> to go to your club\'s court booking site',
-      'Use the <strong>chat</strong> at the bottom to coordinate with other players',
+      'Use <strong>Comments & Feedback</strong> at the bottom to coordinate with other players',
       '<strong>Share on WhatsApp</strong> to invite friends outside the app'
     ]
   },
