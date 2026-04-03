@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1e3a8a">
 <title>BoxLeague Pro — Free Box League & Mix-In App for Tennis, Padel, Squash & More</title>
 <meta name="description" content="Organise your box league in minutes. Free forever — schedule matches, coordinate availability, post open games, and find players for tennis, padel, squash, racketball and badminton.">
 <meta property="og:title" content="BoxLeague Pro — Free Box League App">
@@ -30,13 +31,13 @@ html{scroll-behavior:smooth}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--text);line-height:1.6;background:var(--bg);overflow-x:hidden}
 
 /* NAV */
-.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(255,255,255,0.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:12px 0}
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 100%);border-bottom:none;padding:14px 0;box-shadow:0 2px 12px rgba(30,58,138,0.3)}
 .nav-inner{max-width:1100px;margin:0 auto;padding:0 20px;display:flex;justify-content:space-between;align-items:center}
-.nav-logo{font-size:26px;font-weight:800;color:var(--text);text-decoration:none;display:flex;align-items:center;gap:8px}
-.nav-logo span{color:var(--blue)}
+.nav-logo{font-size:26px;font-weight:800;color:#fff;text-decoration:none;display:flex;align-items:center;gap:8px}
+.nav-logo span{color:#93c5fd}
 .nav-links{display:flex;gap:24px;list-style:none;align-items:center}
-.nav-links a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:600;transition:color .2s}
-.nav-links a:hover{color:var(--text)}
+.nav-links a{color:rgba(255,255,255,0.8);text-decoration:none;font-size:14px;font-weight:600;transition:color .2s}
+.nav-links a:hover{color:#fff}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;transition:all .2s;border:none;cursor:pointer}
 .btn-primary{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,0.3)}
 .btn-primary:hover{background:var(--blue-dark);transform:translateY(-1px);box-shadow:0 4px 16px rgba(37,99,235,0.35)}
