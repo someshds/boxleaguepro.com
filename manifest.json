@@ -2,7 +2,7 @@
   "name": "BoxLeague Pro",
   "short_name": "BoxLeague",
   "description": "Free app for organising box league matches. Find times, book matches, share with your club.",
-  "start_url": "/",
+  "start_url": "/app.html",
   "display": "standalone",
   "background_color": "#1e3a8a",
   "theme_color": "#1e3a8a",
