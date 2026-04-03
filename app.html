@@ -1127,14 +1127,15 @@
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <h2 class="section-title" style="margin-bottom:0">Friendly Matches</h2>
-        <button class="btn btn-primary" onclick="showCreateOpenMatch()" style="font-size:16px;padding:10px 20px;border-radius:12px;box-shadow:0 4px 12px rgba(37,99,235,0.3)">+ Create a Game</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span id="om-booking-link"></span>
+          <button class="btn btn-primary" onclick="showCreateOpenMatch()" style="font-size:16px;padding:10px 20px;border-radius:12px;box-shadow:0 4px 12px rgba(37,99,235,0.3)">+ Create a Game</button>
+        </div>
       </div>
       <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:12px;padding:12px 16px;margin-bottom:14px;font-size:14px;color:#1e40af;display:flex;align-items:center;gap:8px">
         <span style="font-size:20px">&#128161;</span>
         <span><strong>Create</strong> a game to find players, or <strong>Join</strong> an existing game below.</span>
       </div>
-
-      <div id="om-booking-link"></div>
       <div id="om-summary" style="margin-bottom:14px"></div>
       <div id="om-filters" class="om-filters"></div>
       <div id="om-list"></div>
@@ -3544,7 +3545,7 @@ function saveSettings() {
 
 function bookCourtHtml() {
   if (!clubBookingUrl) return '';
-  return `<a href="${esc(clubBookingUrl)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#ecfdf5;color:#059669;border:1px solid #bbf7d0;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;margin-top:8px;transition:background 0.2s" onmouseover="this.style.background='#d1fae5'" onmouseout="this.style.background='#ecfdf5'">&#127934; Book a Court &rarr;</a>`;
+  return `<a href="${esc(clubBookingUrl)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:#059669;color:#fff;border-radius:12px;font-size:16px;font-weight:700;text-decoration:none;transition:background 0.2s;box-shadow:0 4px 12px rgba(5,150,105,0.3)" onmouseover="this.style.background='#047857'" onmouseout="this.style.background='#059669'">&#127934; Book a Court</a>`;
 }
 
 function saveBookingUrl() {
