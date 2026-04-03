@@ -2817,22 +2817,30 @@ function loadUserLeagues() {
 
 let createdLeagueId = null; // Track league just created for the share flow
 
+function filterLeaguesByGameType(leagueEntries) {
+  if (!selectedGameType || selectedGameType === 'mixin') return leagueEntries;
+  return leagueEntries.filter(([id, lg]) => {
+    if (selectedGameType === 'singles') return isSinglesLeague(lg.sport);
+    if (selectedGameType === 'doubles') return !isSinglesLeague(lg.sport);
+    return true;
+  });
+}
+
 function renderMyLeagues() {
   renderWelcomeLeagues();
   const el = document.getElementById('browse-my-leagues-list');
   const wrap = document.getElementById('browse-my-leagues');
-  const ids = Object.keys(userLeagues);
-  const hasLeagues = ids.length > 0;
 
   // Admin tools — always update visibility
   const admin = isAdmin();
   const adminEl = document.getElementById('admin-tools');
   if (adminEl) adminEl.style.display = admin ? 'block' : 'none';
 
-  if (!hasLeagues) { wrap.style.display = 'none'; return; }
+  // Filter by selected game type
+  const filtered = filterLeaguesByGameType(Object.entries(userLeagues));
+  if (filtered.length === 0) { wrap.style.display = 'none'; return; }
   wrap.style.display = 'block';
-  el.innerHTML = ids.map(id => {
-    const lg = userLeagues[id];
+  el.innerHTML = filtered.map(([id, lg]) => {
     const deleteBtn = admin ? `<button onclick="deleteLeague('${esc(id)}', event)" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap" title="Delete league">&#128465; Delete</button>` : '';
     return `<div class="league-card" onclick="enterLeague('${esc(id)}')" style="display:flex;justify-content:space-between;align-items:center">
       <div>
@@ -3054,13 +3062,7 @@ function isSinglesLeague(sport) {
 
 function renderClubLeagues(leagues) {
   const el = document.getElementById('league-results');
-  // Filter by selectedGameType if set
-  const filtered = Object.entries(leagues).filter(([id, lg]) => {
-    if (!selectedGameType || selectedGameType === 'mixin') return true;
-    if (selectedGameType === 'singles') return isSinglesLeague(lg.sport);
-    if (selectedGameType === 'doubles') return !isSinglesLeague(lg.sport);
-    return true;
-  });
+  const filtered = filterLeaguesByGameType(Object.entries(leagues));
   if (filtered.length === 0) {
     const typeLabel = selectedGameType === 'singles' ? 'singles' : selectedGameType === 'doubles' ? 'doubles' : '';
     el.innerHTML = `<div class="txt-muted" style="padding:8px 0;margin-bottom:8px">No ${typeLabel} leagues yet at this club. Create the first one!</div>`;
