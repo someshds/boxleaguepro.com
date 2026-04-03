@@ -4375,7 +4375,7 @@ function renderOpenMatches() {
       const full = upcoming.length - available;
       let sh = `<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 16px">`;
       sh += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:15px;font-weight:800">All Games</div><div style="display:flex;gap:8px">`;
-      if (available > 0) sh += `<span style="background:#ecfdf5;color:#059669;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">${available} available</span>`;
+      if (available > 0) sh += `<span style="background:#ecfdf5;color:#059669;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">${available} spots available</span>`;
       if (full > 0) sh += `<span style="background:#fef2f2;color:#dc2626;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">${full} full</span>`;
       sh += `</div></div>`;
       sh += upcoming.map(m => {
@@ -4483,7 +4483,7 @@ function renderOpenMatches() {
       <div class="om-card-footer">
         <span class="om-meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>${slotLabel}</span>
         <span class="om-meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>${dateStr}</span>
-        <span class="om-spots ${isFull ? 'full' : 'available'}">${isFull ? 'Full' : spotsLeft + '/' + maxP + ' Available'}</span>
+        <span class="om-spots ${isFull ? 'full' : 'available'}">${isFull ? 'Full' : spotsLeft + '/' + maxP + ' Spots Available'}</span>
       </div>
       ${m.notes ? `<div style="margin-top:8px;font-size:13px;color:var(--muted);font-style:italic">${esc(m.notes)}</div>` : ''}
       <div onclick="${iJoined || isCreator ? `toggleOmCourtBooked('${esc(m.id)}')` : ''}" style="margin-top:8px;padding:8px 12px;border-radius:10px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;${iJoined || isCreator ? 'cursor:pointer;' : ''}${m.courtBooked ? 'background:#f0fdf4;border:1.5px solid #86efac;color:#059669' : 'background:#fef9c3;border:1.5px solid #fde047;color:#a16207'}">
