@@ -463,6 +463,7 @@
     <div style="font-size:36px;margin-bottom:8px">&#127934;</div>
     <div class="welcome-title">BoxLeague Pro</div>
     <div class="welcome-subtitle">What would you like to play?</div>
+    <div id="welcome-home-club" style="display:none;margin-top:8px;font-size:13px;color:rgba(255,255,255,0.8)">&#127968; <span id="welcome-home-club-name"></span> &middot; <a onclick="showScreen('onboarding')" style="color:#93c5fd;cursor:pointer;text-decoration:underline">change</a></div>
   </div>
   <div class="welcome-body">
     <div class="welcome-heading">Choose your game type</div>
@@ -529,6 +530,67 @@
 
     <div class="welcome-existing">
       <a onclick="skipWelcome()">Already have a league code? Join directly &rarr;</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SCREEN 1.75: ONBOARDING (Home Club + Sport — first login only)
+     ══════════════════════════════════════════════════════ -->
+<div id="screen-onboarding" class="screen welcome-screen">
+  <div class="welcome-header" style="padding-bottom:20px">
+    <div style="font-size:36px;margin-bottom:8px">&#127968;</div>
+    <div class="welcome-title" style="font-size:22px">Quick Setup</div>
+    <div class="welcome-subtitle">Let's get you set up in 30 seconds</div>
+  </div>
+  <div class="welcome-body" style="max-width:440px">
+    <!-- Step 1: Find your club -->
+    <div id="onboard-step-club">
+      <div class="welcome-heading" style="margin-bottom:4px">Which club do you play at?</div>
+      <div style="font-size:13px;color:#6b7280;margin-bottom:14px">This connects you with other players at your club.</div>
+      <input class="fi" id="inp-onboard-club" placeholder="Search for your club..." oninput="searchOnboardClubs()" style="font-size:16px;margin-bottom:8px">
+      <div id="onboard-club-results" style="max-height:180px;overflow-y:auto"></div>
+      <div id="onboard-club-create" style="display:none;margin-top:8px">
+        <div class="club-list-item" onclick="createOnboardClub()" style="cursor:pointer;background:#f0fdf4;border:1px dashed #059669">
+          <span class="club-list-item-name" id="onboard-club-create-name" style="color:#059669">+ Create club</span>
+          <span class="club-list-item-count">&rarr;</span>
+        </div>
+        <div style="margin-top:8px">
+          <div style="font-size:12px;color:#6b7280;margin-bottom:4px">Court booking URL (optional)</div>
+          <input class="fi" id="inp-onboard-booking-url" placeholder="e.g. mycourts.co.uk/yourclub" style="font-size:14px">
+        </div>
+      </div>
+      <div id="onboard-selected-club" style="display:none;margin-top:12px;padding:14px 16px;background:#eff6ff;border:2px solid #2563eb;border-radius:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#2563eb;font-weight:700;margin-bottom:2px">Your Home Club</div>
+            <div id="onboard-club-name-display" style="font-size:16px;font-weight:700"></div>
+          </div>
+          <button onclick="resetOnboardClub()" style="background:none;border:none;font-size:13px;color:#2563eb;cursor:pointer;font-weight:600;text-decoration:underline">Change</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Preferred sport (shows after club selected) -->
+    <div id="onboard-step-sport" style="display:none;margin-top:20px">
+      <div class="welcome-heading" style="margin-bottom:4px">What do you play?</div>
+      <div style="font-size:13px;color:#6b7280;margin-bottom:14px">We'll default this for new games. You can always change it.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px" id="onboard-sport-grid">
+        <button onclick="selectOnboardSport(this,'tennis')" class="sport-chip" data-sport="tennis" style="display:flex;align-items:center;gap:6px;padding:10px 18px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s">&#127934; Tennis</button>
+        <button onclick="selectOnboardSport(this,'padel')" class="sport-chip" data-sport="padel" style="display:flex;align-items:center;gap:6px;padding:10px 18px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s">&#129358; Padel</button>
+        <button onclick="selectOnboardSport(this,'squash')" class="sport-chip" data-sport="squash" style="display:flex;align-items:center;gap:6px;padding:10px 18px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s">&#127955; Squash</button>
+        <button onclick="selectOnboardSport(this,'racketball')" class="sport-chip" data-sport="racketball" style="display:flex;align-items:center;gap:6px;padding:10px 18px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s">&#127955; Racketball</button>
+        <button onclick="selectOnboardSport(this,'badminton')" class="sport-chip" data-sport="badminton" style="display:flex;align-items:center;gap:6px;padding:10px 18px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s">&#127992; Badminton</button>
+      </div>
+    </div>
+
+    <!-- Done button -->
+    <div id="onboard-done" style="display:none;margin-top:24px">
+      <button class="btn btn-primary" onclick="completeOnboarding()" style="width:100%;font-size:16px;padding:14px">Let's Go! &#127881;</button>
+    </div>
+
+    <div style="text-align:center;margin-top:16px">
+      <a onclick="skipOnboarding()" style="color:#6b7280;font-size:13px;cursor:pointer;text-decoration:underline">Skip for now</a>
     </div>
   </div>
 </div>
@@ -1156,6 +1218,18 @@
       <div id="profile-partner-wrap">
         <div style="font-size:13px;font-weight:600;color:#6b7280;margin-bottom:4px">Partner Name</div>
         <input class="fi" id="profile-partner" placeholder="Your partner's name" style="margin-bottom:12px">
+      </div>
+      <!-- Home Club -->
+      <div id="profile-home-club-wrap" style="margin-bottom:12px;padding:12px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0">
+        <div style="font-size:13px;font-weight:600;color:#6b7280;margin-bottom:4px">&#127968; Home Club</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span id="profile-home-club-name" style="font-size:14px;font-weight:600"></span>
+          <button onclick="changeHomeClub()" style="background:none;border:none;color:#2563eb;font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline">Change</button>
+        </div>
+        <div id="profile-home-club-search" style="display:none;margin-top:8px">
+          <input class="fi" id="inp-profile-club" placeholder="Search for a club..." oninput="searchProfileClubs()" style="font-size:14px;margin-bottom:6px">
+          <div id="profile-club-results" style="max-height:120px;overflow-y:auto"></div>
+        </div>
       </div>
       <div style="font-size:12px;color:#9ca3af;margin-bottom:16px">Changes will update your team in this league.</div>
       <div id="profile-error" style="display:none;color:#ef4444;font-size:13px;margin-bottom:12px"></div>
@@ -1842,6 +1916,19 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById('screen-' + id);
   if (el) el.classList.add('active');
+  // Update welcome screen home club display
+  if (id === 'welcome') {
+    const hcWrap = document.getElementById('welcome-home-club');
+    const hcName = document.getElementById('welcome-home-club-name');
+    if (hcWrap && hcName) {
+      if (userHomeClub) {
+        hcName.textContent = userHomeClub.name;
+        hcWrap.style.display = 'block';
+      } else {
+        hcWrap.style.display = 'none';
+      }
+    }
+  }
 }
 
 
@@ -2005,6 +2092,10 @@ function openProfile() {
   const lg = activeLeagueId ? userLeagues[activeLeagueId] : null;
   const isSingles = mixInMode || (lg && lg.sport && (lg.sport.toLowerCase() === 'squash' || lg.sport.toLowerCase() === 'singles'));
   document.getElementById('profile-partner-wrap').style.display = isSingles ? 'none' : 'block';
+  // Show home club
+  const clubNameEl = document.getElementById('profile-home-club-name');
+  clubNameEl.textContent = userHomeClub ? userHomeClub.name : 'Not set';
+  document.getElementById('profile-home-club-search').style.display = 'none';
   loadProfilePhoto();
   document.getElementById('profile-modal').style.display = 'flex';
 }
@@ -2237,26 +2328,60 @@ function getDefaultAvatar() {
 }
 
 function onAuthSuccess() {
-  showScreen('welcome');
   loadUserLeagues();
-  // Only auto-start tour if consent modal isn't showing (consent modal triggers tour after dismiss)
-  if (!consentModalActive) {
-    setTimeout(checkAndStartTour, 600);
-  }
+  loadUserHomeClub(() => {
+    // Check URL params for shared league link
+    const params = new URLSearchParams(window.location.search);
+    const sharedLeagueId = params.get('league');
+    const sharedMixin = params.get('mixin');
+    const sharedClub = params.get('club');
+    if (sharedLeagueId) {
+      window.history.replaceState({}, '', window.location.pathname);
+      setTimeout(() => { joinAndEnterLeague(sharedLeagueId); }, 500);
+    } else if (sharedMixin) {
+      window.history.replaceState({}, '', window.location.pathname);
+      // If club ID in URL, use it for mix-in scope
+      if (sharedClub && !userHomeClub) {
+        // Look up club name and set as home club
+        if (FIREBASE_READY) {
+          db.ref('/clubs/' + sharedClub).once('value', snap => {
+            const c = snap.val();
+            if (c) {
+              userHomeClub = { id: sharedClub, name: c.name, bookingUrl: c.bookingUrl || '' };
+              db.ref('/users/' + currentUser.uid + '/homeClub').set(userHomeClub);
+            }
+            setTimeout(() => { goToMixIn(); }, 300);
+          });
+        } else {
+          setTimeout(() => { goToMixIn(); }, 500);
+        }
+      } else {
+        setTimeout(() => { goToMixIn(); }, 500);
+      }
+    } else if (!userHomeClub) {
+      // First time — show onboarding
+      showScreen('onboarding');
+    } else {
+      showScreen('welcome');
+    }
 
-  // Check URL params for shared league link
-  const params = new URLSearchParams(window.location.search);
-  const sharedLeagueId = params.get('league');
-  const sharedMixin = params.get('mixin');
-  if (sharedLeagueId) {
-    // Clear the URL param so it doesn't re-trigger on refresh
-    window.history.replaceState({}, '', window.location.pathname);
-    // Wait for userLeagues to load, then join/enter
-    setTimeout(() => { joinAndEnterLeague(sharedLeagueId); }, 500);
-  } else if (sharedMixin) {
-    window.history.replaceState({}, '', window.location.pathname);
-    setTimeout(() => { goToMixIn(); }, 500);
-  }
+    // Only auto-start tour if consent modal isn't showing
+    if (!consentModalActive) {
+      setTimeout(checkAndStartTour, 600);
+    }
+  });
+}
+
+function loadUserHomeClub(callback) {
+  if (!FIREBASE_READY) { if (callback) callback(); return; }
+  db.ref('/users/' + currentUser.uid + '/homeClub').once('value', snap => {
+    userHomeClub = snap.val() || null;
+    // Also load preferred sport
+    db.ref('/users/' + currentUser.uid + '/preferredSport').once('value', ssnap => {
+      userPreferredSport = ssnap.val() || '';
+      if (callback) callback();
+    });
+  });
 }
 
 // Auth state listener
@@ -2304,27 +2429,38 @@ let selectedClubName = '';
 let clubBookingUrl = '';   // Current league's club court booking URL
 let wizWeekOff = 0;
 let wizAvailability = {};  // Temporary availability during wizard
+let userHomeClub = null;     // { id, name, bookingUrl } — user's home club for mix-in games
+let userPreferredSport = ''; // tennis, padel, squash, etc.
 
-const MIXIN_LEAGUE_ID = '__global_mixin__';
+function mixInPath() {
+  if (userHomeClub && userHomeClub.id) return '/clubs/' + userHomeClub.id + '/mixInGames';
+  return '/clubs/__unscoped__/mixInGames';
+}
 
 function omPath() {
-  return mixInMode ? '/leagues/' + MIXIN_LEAGUE_ID + '/openMatches' : '/leagues/' + activeLeagueId + '/openMatches';
+  return mixInMode ? mixInPath() : '/leagues/' + activeLeagueId + '/openMatches';
 }
 
 function goToMixIn() {
+  if (!userHomeClub) {
+    showScreen('onboarding');
+    toast('Please select your home club first');
+    return;
+  }
   mixInMode = true;
   enterMixInMode();
 }
 
 function enterMixInMode() {
   activeLeagueId = null;
-  clubBookingUrl = '';
+  clubBookingUrl = userHomeClub ? userHomeClub.bookingUrl || '' : '';
   L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {} };
 
-  // Set header
+  // Set header — show club name under Mix-In Games
+  const clubLabel = userHomeClub ? userHomeClub.name : '';
   document.getElementById('app-league-name').textContent = 'Mix-In Games';
-  document.getElementById('app-league-code').textContent = '';
-  document.getElementById('app-league-code-wrap').style.display = 'none';
+  document.getElementById('app-league-code').textContent = clubLabel;
+  document.getElementById('app-league-code-wrap').style.display = clubLabel ? 'flex' : 'none';
   document.getElementById('progress-wrap').style.display = 'none';
   document.getElementById('deadline-banner').style.display = 'none';
   const photoUrl = currentUser.photoURL || getDefaultAvatar();
@@ -2337,10 +2473,10 @@ function enterMixInMode() {
 
   showScreen('app');
 
-  // Listen to global mix-in matches
+  // Listen to club-scoped mix-in matches
   if (FIREBASE_READY) {
     detachListeners();
-    const ref = db.ref('/leagues/' + MIXIN_LEAGUE_ID + '/openMatches');
+    const ref = db.ref(mixInPath());
     const l1 = ref.on('value', snap => {
       L.openMatches = snap.val() || {};
       if (currentTab === 'open') renderOpenMatches();
@@ -2364,6 +2500,153 @@ function selectGameType(type) {
 function skipWelcome() {
   goToBrowse();
   setTimeout(() => showJoinFlow(), 100);
+}
+
+/* ── ONBOARDING (Home Club + Sport) ── */
+let onboardClubId = null;
+let onboardClubName = '';
+let onboardSport = '';
+
+function searchOnboardClubs() {
+  const q = document.getElementById('inp-onboard-club').value.toLowerCase().trim();
+  const results = document.getElementById('onboard-club-results');
+  const createOpt = document.getElementById('onboard-club-create');
+  if (!q) { results.innerHTML = ''; createOpt.style.display = 'none'; return; }
+  const matches = Object.entries(allClubs).filter(([id, c]) => c.name.toLowerCase().includes(q));
+  if (matches.length > 0) {
+    results.innerHTML = matches.map(([id, c]) =>
+      `<div class="club-list-item" onclick="selectOnboardClub('${esc(id)}','${esc(c.name)}','${esc(c.bookingUrl || '')}')">
+        <span class="club-list-item-name">${esc(c.name)}</span>
+        <span class="club-list-item-count">&rarr;</span>
+      </div>`
+    ).join('');
+  } else {
+    results.innerHTML = '';
+  }
+  document.getElementById('onboard-club-create-name').textContent = '+ Create "' + document.getElementById('inp-onboard-club').value + '"';
+  createOpt.style.display = 'block';
+}
+
+function selectOnboardClub(clubId, clubName, bookingUrl) {
+  onboardClubId = clubId;
+  onboardClubName = clubName;
+  document.getElementById('inp-onboard-club').style.display = 'none';
+  document.getElementById('onboard-club-results').innerHTML = '';
+  document.getElementById('onboard-club-create').style.display = 'none';
+  document.getElementById('onboard-selected-club').style.display = 'block';
+  document.getElementById('onboard-club-name-display').textContent = clubName;
+  // Store booking URL for later
+  document.getElementById('onboard-selected-club').dataset.bookingUrl = bookingUrl || '';
+  // Show sport step
+  document.getElementById('onboard-step-sport').style.display = 'block';
+  document.getElementById('onboard-done').style.display = 'block';
+}
+
+function createOnboardClub() {
+  const name = document.getElementById('inp-onboard-club').value.trim();
+  if (!name) { toast('Enter a club name'); return; }
+  const bookingUrl = (document.getElementById('inp-onboard-booking-url').value || '').trim();
+  if (!FIREBASE_READY) {
+    const id = 'C' + Date.now();
+    allClubs[id] = { name, bookingUrl };
+    selectOnboardClub(id, name, bookingUrl);
+    return;
+  }
+  const clubData = { name, createdBy: currentUser.uid, createdAt: Date.now() };
+  if (bookingUrl) clubData.bookingUrl = bookingUrl;
+  const ref = db.ref('/clubs').push();
+  ref.set(clubData).then(() => {
+    allClubs[ref.key] = clubData;
+    selectOnboardClub(ref.key, name, bookingUrl);
+    toast('Club created!');
+  });
+}
+
+function resetOnboardClub() {
+  onboardClubId = null;
+  onboardClubName = '';
+  document.getElementById('inp-onboard-club').style.display = 'block';
+  document.getElementById('inp-onboard-club').value = '';
+  document.getElementById('onboard-selected-club').style.display = 'none';
+  document.getElementById('onboard-step-sport').style.display = 'none';
+  document.getElementById('onboard-done').style.display = 'none';
+  // Reset sport selection
+  document.querySelectorAll('#onboard-sport-grid .sport-chip').forEach(b => {
+    b.style.borderColor = '#e2e8f0';
+    b.style.background = '#fff';
+  });
+  onboardSport = '';
+}
+
+function selectOnboardSport(btn, sport) {
+  onboardSport = sport;
+  // Highlight selected
+  document.querySelectorAll('#onboard-sport-grid .sport-chip').forEach(b => {
+    b.style.borderColor = '#e2e8f0';
+    b.style.background = '#fff';
+    b.style.color = '#1e293b';
+  });
+  btn.style.borderColor = '#2563eb';
+  btn.style.background = '#eff6ff';
+  btn.style.color = '#1d4ed8';
+}
+
+function completeOnboarding() {
+  if (!onboardClubId) { toast('Please select a club'); return; }
+  const bookingUrl = document.getElementById('onboard-selected-club').dataset.bookingUrl || '';
+  userHomeClub = { id: onboardClubId, name: onboardClubName, bookingUrl };
+  userPreferredSport = onboardSport || '';
+  // Save to Firebase
+  if (FIREBASE_READY && currentUser) {
+    db.ref('/users/' + currentUser.uid + '/homeClub').set(userHomeClub);
+    if (userPreferredSport) {
+      db.ref('/users/' + currentUser.uid + '/preferredSport').set(userPreferredSport);
+    }
+  }
+  toast('You\'re all set!');
+  showScreen('welcome');
+}
+
+function skipOnboarding() {
+  showScreen('welcome');
+}
+
+/* ── Profile: Home Club ── */
+function changeHomeClub() {
+  const searchWrap = document.getElementById('profile-home-club-search');
+  searchWrap.style.display = searchWrap.style.display === 'none' ? 'block' : 'none';
+  if (searchWrap.style.display === 'block') {
+    document.getElementById('inp-profile-club').value = '';
+    document.getElementById('profile-club-results').innerHTML = '';
+    document.getElementById('inp-profile-club').focus();
+  }
+}
+
+function searchProfileClubs() {
+  const q = document.getElementById('inp-profile-club').value.toLowerCase().trim();
+  const results = document.getElementById('profile-club-results');
+  if (!q) { results.innerHTML = ''; return; }
+  const matches = Object.entries(allClubs).filter(([id, c]) => c.name.toLowerCase().includes(q));
+  results.innerHTML = matches.map(([id, c]) =>
+    `<div class="club-list-item" onclick="selectProfileClub('${esc(id)}','${esc(c.name)}','${esc(c.bookingUrl || '')}')" style="cursor:pointer">
+      <span class="club-list-item-name">${esc(c.name)}</span>
+      <span class="club-list-item-count">&rarr;</span>
+    </div>`
+  ).join('');
+  if (matches.length === 0) {
+    results.innerHTML = '<div style="padding:8px;font-size:13px;color:#6b7280">No clubs found. Search or create in Browse.</div>';
+  }
+}
+
+function selectProfileClub(clubId, clubName, bookingUrl) {
+  userHomeClub = { id: clubId, name: clubName, bookingUrl: bookingUrl || '' };
+  if (FIREBASE_READY && currentUser) {
+    db.ref('/users/' + currentUser.uid + '/homeClub').set(userHomeClub);
+  }
+  document.getElementById('profile-home-club-name').textContent = clubName;
+  document.getElementById('profile-home-club-search').style.display = 'none';
+  document.getElementById('profile-club-results').innerHTML = '';
+  toast('Home club updated to ' + clubName);
 }
 
 function goToBrowse() {
@@ -2996,6 +3279,14 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
     db.ref('/clubs/' + cid + '/bookingUrl').once('value', snap => {
       clubBookingUrl = snap.val() || '';
     });
+  }
+  // Auto-set home club from league if not yet set
+  if (!userHomeClub && cid && FIREBASE_READY) {
+    const clubName = leagueInfo.clubName || (allClubs[cid] ? allClubs[cid].name : '');
+    if (clubName) {
+      userHomeClub = { id: cid, name: clubName, bookingUrl: clubBookingUrl };
+      db.ref('/users/' + currentUser.uid + '/homeClub').set(userHomeClub);
+    }
   }
 
   // Set header
@@ -4160,7 +4451,7 @@ function shareOpenMatch(matchId) {
   const dateStr = `${dayNames[mDate.getDay()]} ${mDate.getDate()} ${monthNames[mDate.getMonth()]}`;
   const slotLabel = SLOT_LABELS[m.slot] || m.slot || '';
   const link = mixInMode
-    ? window.location.origin + window.location.pathname + '?mixin=1'
+    ? window.location.origin + window.location.pathname + '?mixin=1' + (userHomeClub ? '&club=' + userHomeClub.id : '')
     : window.location.origin + window.location.pathname + '?league=' + activeLeagueId;
   const sportIcon = { tennis:'🎾', padel:'🥎', squash:'🏸', racketball:'🏸', badminton:'🏸' }[m.sport] || '🏅';
 
@@ -4270,6 +4561,11 @@ function showCreateOpenMatch() {
   }
   modal.innerHTML = `<div style="background:#fff;border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">${html}</div>`;
   modal.style.display = 'flex';
+  // Pre-select preferred sport
+  if (userPreferredSport) {
+    const sel = document.getElementById('om-sport');
+    if (sel) sel.value = userPreferredSport;
+  }
 }
 
 function closeCreateOpenMatch() {
