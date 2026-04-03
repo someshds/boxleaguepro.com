@@ -4481,7 +4481,9 @@ function renderOpenMatches() {
         <span class="om-spots ${isFull ? 'full' : 'available'}">${isFull ? 'Full' : spotsLeft + '/' + maxP + ' Available'}</span>
       </div>
       ${m.notes ? `<div style="margin-top:8px;font-size:13px;color:var(--muted);font-style:italic">${esc(m.notes)}</div>` : ''}
-      ${m.courtBooked ? `<div style="margin-top:6px;font-size:12px;color:#059669;font-weight:600">&#9989; Court booked</div>` : ''}
+      <div style="margin-top:8px;padding:8px 12px;border-radius:10px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;${m.courtBooked ? 'background:#f0fdf4;border:1.5px solid #86efac;color:#059669' : 'background:#fef9c3;border:1.5px solid #fde047;color:#a16207'}">
+        ${m.courtBooked ? '&#9989; Court Booked' : '&#9888;&#65039; Court Not Booked'}
+      </div>
       <div class="om-actions">${actionsHtml}</div>
     </div>`;
   }).join('');
@@ -4782,7 +4784,9 @@ function renderMyOpenGames() {
       </div>
       <div style="font-size:13px;color:var(--muted);margin-bottom:6px">${dateStr} &middot; ${slotLabel}</div>
       <div style="display:flex;gap:2px;align-items:center">${avatars}</div>
-      ${m.courtBooked ? '<div style="font-size:12px;color:#059669;font-weight:600;margin-top:4px">&#9989; Court booked</div>' : '<div style="font-size:12px;color:var(--amber);font-weight:600;margin-top:4px">&#9888; Court not yet booked</div>'}
+      <div style="margin-top:6px;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px;${m.courtBooked ? 'background:#f0fdf4;border:1.5px solid #86efac;color:#059669' : 'background:#fef9c3;border:1.5px solid #fde047;color:#a16207'}">
+        ${m.courtBooked ? '&#9989; Court Booked' : '&#9888;&#65039; Court Not Booked'}
+      </div>
     </div>`;
   }).join('');
 }
