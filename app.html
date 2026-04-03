@@ -4481,8 +4481,8 @@ function renderOpenMatches() {
         <span class="om-spots ${isFull ? 'full' : 'available'}">${isFull ? 'Full' : spotsLeft + '/' + maxP + ' Available'}</span>
       </div>
       ${m.notes ? `<div style="margin-top:8px;font-size:13px;color:var(--muted);font-style:italic">${esc(m.notes)}</div>` : ''}
-      <div style="margin-top:8px;padding:8px 12px;border-radius:10px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;${m.courtBooked ? 'background:#f0fdf4;border:1.5px solid #86efac;color:#059669' : 'background:#fef9c3;border:1.5px solid #fde047;color:#a16207'}">
-        ${m.courtBooked ? '&#9989; Court Booked' : '&#9888;&#65039; Court Not Booked'}
+      <div onclick="${iJoined || isCreator ? `toggleOmCourtBooked('${esc(m.id)}')` : ''}" style="margin-top:8px;padding:8px 12px;border-radius:10px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;${iJoined || isCreator ? 'cursor:pointer;' : ''}${m.courtBooked ? 'background:#f0fdf4;border:1.5px solid #86efac;color:#059669' : 'background:#fef9c3;border:1.5px solid #fde047;color:#a16207'}">
+        ${m.courtBooked ? '&#9989; Court Booked' : '&#9888;&#65039; Court Not Booked'}${iJoined || isCreator ? '<span style="margin-left:auto;font-size:11px;font-weight:600;opacity:0.7">tap to change</span>' : ''}
       </div>
       <div class="om-actions">${actionsHtml}</div>
     </div>`;
@@ -4726,6 +4726,19 @@ function leaveOpenMatch(matchId) {
     renderOpenMatches();
   }
   toast('You left the game');
+}
+
+function toggleOmCourtBooked(matchId) {
+  const match = L.openMatches[matchId];
+  if (!match) return;
+  const newVal = !match.courtBooked;
+  if (FIREBASE_READY) {
+    db.ref(omPath() + '/' + matchId + '/courtBooked').set(newVal);
+  } else {
+    match.courtBooked = newVal;
+    renderOpenMatches();
+  }
+  toast(newVal ? 'Court marked as booked' : 'Court booking removed');
 }
 
 function deleteOpenMatch(matchId) {
