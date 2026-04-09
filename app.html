@@ -211,6 +211,45 @@
       .explainer-step-text { font-size: 14px; }
     }
 
+    /* ── Guided Setup Questionnaire ── */
+    .q-screen { background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%); min-height: 100vh; display: flex; flex-direction: column; }
+    .q-header { text-align: center; padding: 32px 20px 16px; color: #fff; }
+    .q-header-title { font-size: 28px; font-weight: 800; }
+    .q-header-sub { font-size: 15px; opacity: 0.8; margin-top: 4px; }
+    .q-progress { display: flex; gap: 6px; justify-content: center; margin-top: 16px; }
+    .q-progress-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.3); transition: all 0.3s; }
+    .q-progress-dot.active { background: #fff; transform: scale(1.2); }
+    .q-progress-dot.done { background: #22c55e; }
+    .q-body { flex: 1; padding: 0 16px 24px; display: flex; flex-direction: column; align-items: center; }
+    .q-card { background: #fff; border-radius: 20px; padding: 32px 24px; max-width: 480px; width: 100%; box-shadow: 0 12px 48px rgba(0,0,0,0.2); }
+    .q-question { font-size: 22px; font-weight: 800; color: #1a1a1a; text-align: center; margin-bottom: 8px; line-height: 1.3; }
+    .q-hint { font-size: 15px; color: #6b7280; text-align: center; margin-bottom: 24px; line-height: 1.5; }
+    .q-option { display: block; width: 100%; padding: 18px 20px; margin-bottom: 12px; border-radius: 14px; border: 2px solid #e5e7eb; background: #fff; text-align: left; cursor: pointer; transition: all 0.15s; font-size: 18px; font-weight: 600; color: #1a1a1a; }
+    .q-option:hover { border-color: #3884F4; background: #eff6ff; }
+    .q-option:active { transform: scale(0.98); }
+    .q-option-desc { font-size: 14px; font-weight: 400; color: #6b7280; margin-top: 4px; line-height: 1.4; }
+    .q-input { width: 100%; padding: 16px 18px; border: 2px solid #e5e7eb; border-radius: 14px; font-size: 20px; font-weight: 600; text-align: center; background: #fff; color: #1a1a1a; -webkit-appearance: none; }
+    .q-input:focus { outline: none; border-color: #3884F4; box-shadow: 0 0 0 4px rgba(56,132,244,0.15); }
+    .q-input::placeholder { color: #9ca3af; font-weight: 400; }
+    .q-btn { display: block; width: 100%; padding: 16px; border-radius: 14px; background: linear-gradient(135deg, #3884F4, #2563eb); color: #fff; font-size: 18px; font-weight: 700; border: none; cursor: pointer; margin-top: 8px; transition: all 0.15s; }
+    .q-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(56,132,244,0.4); }
+    .q-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+    .q-btn-back { display: block; width: 100%; padding: 12px; border-radius: 14px; background: none; color: #6b7280; font-size: 16px; font-weight: 600; border: none; cursor: pointer; margin-top: 8px; }
+    .q-btn-back:hover { color: #1a1a1a; }
+    .q-skip { text-align: center; margin-top: 16px; }
+    .q-skip a { color: rgba(255,255,255,0.6); font-size: 14px; cursor: pointer; text-decoration: underline; }
+    .q-skip a:hover { color: rgba(255,255,255,0.9); }
+    .q-search-results { max-height: 200px; overflow-y: auto; margin-top: 8px; }
+    .q-search-item { padding: 14px 16px; border-radius: 10px; border: 1px solid #e5e7eb; margin-bottom: 6px; cursor: pointer; font-size: 16px; font-weight: 600; transition: all 0.15s; }
+    .q-search-item:hover { background: #eff6ff; border-color: #3884F4; }
+    .q-create-item { background: #f0fdf4; border: 2px dashed #059669; color: #059669; }
+    @media (max-width: 480px) {
+      .q-card { padding: 24px 18px; border-radius: 16px; }
+      .q-question { font-size: 20px; }
+      .q-option { font-size: 16px; padding: 16px 18px; }
+      .q-input { font-size: 18px; }
+    }
+
     /* ── Badges ── */
     .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
     .badge-booked { background: #dcfce7; color: #166534; }
@@ -476,6 +515,22 @@
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
     <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.5</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SCREEN 1.25: GUIDED SETUP QUESTIONNAIRE
+     ══════════════════════════════════════════════════════ -->
+<div id="screen-guided" class="screen q-screen">
+  <div class="q-header">
+    <div style="font-size:36px;margin-bottom:4px">&#127934;</div>
+    <div class="q-header-title">BoxLeague Pro</div>
+    <div class="q-header-sub">Let's get you set up — it only takes a minute</div>
+    <div class="q-progress" id="q-progress"></div>
+  </div>
+  <div class="q-body">
+    <div class="q-card" id="q-card"></div>
+    <div class="q-skip"><a onclick="skipGuided()">I know what I'm doing — skip to full app</a></div>
   </div>
 </div>
 
@@ -2417,8 +2472,11 @@ function onAuthSuccess() {
       } else {
         setTimeout(() => { goToMixIn(); }, 500);
       }
+    } else if (!userHomeClub && !localStorage.getItem('blp_guided_done')) {
+      // First time — show guided questionnaire
+      showGuidedSetup();
     } else if (!userHomeClub) {
-      // First time — show onboarding (wait for clubs to load first)
+      // Has skipped guided before but no club — show onboarding
       showScreen('onboarding');
       waitForClubsThenEnableSearch();
     } else {
@@ -5157,6 +5215,266 @@ function openHelp() {
 
 function closeHelp() {
   document.getElementById('help-modal').style.display = 'none';
+}
+
+/* ── Guided Setup Questionnaire ── */
+let qStep = 0;
+let qData = { goal: '', hasCode: '', code: '', sport: '', format: '', club: '', clubId: '', leagueName: '', playerName: '', partner: '' };
+
+const Q_STEPS = [
+  { id: 'goal', question: 'What would you like to do?', hint: 'Pick the option that best describes what you need.', type: 'options', options: [
+    { value: 'join', label: 'Join an existing league', desc: 'Someone has already set up a league and invited me' },
+    { value: 'create', label: 'Start a new league', desc: 'I want to create a league and invite my players' },
+    { value: 'mixin', label: 'Find a casual game', desc: 'I just want to play — no league needed' },
+  ]},
+  { id: 'hasCode', question: 'Do you have a league code?', hint: 'Your league organiser may have sent you a code or link to join.', type: 'options', show: () => qData.goal === 'join', options: [
+    { value: 'yes', label: 'Yes, I have a code', desc: '' },
+    { value: 'no', label: 'No, I\'ll search for my club', desc: '' },
+  ]},
+  { id: 'code', question: 'Enter your league code', hint: 'Type or paste the code your organiser sent you.', type: 'input', placeholder: 'e.g. ABC123', show: () => qData.goal === 'join' && qData.hasCode === 'yes' },
+  { id: 'sport', question: 'What sport do you play?', hint: 'This helps us set up your league correctly.', type: 'options', show: () => qData.goal === 'create', options: [
+    { value: 'tennis', label: 'Tennis', desc: '' },
+    { value: 'padel', label: 'Padel', desc: '' },
+    { value: 'squash', label: 'Squash', desc: '' },
+    { value: 'badminton', label: 'Badminton', desc: '' },
+    { value: 'racketball', label: 'Racketball', desc: '' },
+    { value: 'other', label: 'Other', desc: '' },
+  ]},
+  { id: 'format', question: 'Singles or doubles?', hint: 'In singles you play alone. In doubles you play with a partner.', type: 'options', show: () => qData.goal === 'create', options: [
+    { value: 'singles', label: 'Singles', desc: 'I play on my own' },
+    { value: 'doubles', label: 'Doubles', desc: 'I play with a partner' },
+  ]},
+  { id: 'club', question: 'What club do you play at?', hint: 'Search for your club below, or create a new one.', type: 'clubSearch', show: () => (qData.goal === 'create') || (qData.goal === 'join' && qData.hasCode === 'no') || qData.goal === 'mixin' },
+  { id: 'leagueName', question: 'What would you like to call your league?', hint: 'Give it a name your players will recognise.', type: 'input', placeholder: 'e.g. Mens Doubles 1, Tuesday Night Tennis', show: () => qData.goal === 'create' },
+  { id: 'playerName', question: 'What is your first name?', hint: 'This is how other players will see you.', type: 'input', placeholder: 'e.g. Grant' },
+  { id: 'partner', question: 'Who is your doubles partner?', hint: 'Enter their first name. They can join later with the link you\'ll get.', type: 'input', placeholder: 'e.g. James', show: () => qData.goal === 'create' && qData.format === 'doubles' },
+];
+
+function getVisibleSteps() {
+  return Q_STEPS.filter(s => !s.show || s.show());
+}
+
+function renderQProgress() {
+  const steps = getVisibleSteps();
+  const el = document.getElementById('q-progress');
+  if (!el) return;
+  el.innerHTML = steps.map((_, i) =>
+    `<div class="q-progress-dot${i === qStep ? ' active' : i < qStep ? ' done' : ''}"></div>`
+  ).join('');
+}
+
+function renderQStep() {
+  const steps = getVisibleSteps();
+  if (qStep >= steps.length) { finishGuided(); return; }
+  const step = steps[qStep];
+  const card = document.getElementById('q-card');
+  renderQProgress();
+
+  let html = `<div class="q-question">${esc(step.question)}</div>`;
+  html += `<div class="q-hint">${esc(step.hint)}</div>`;
+
+  if (step.type === 'options') {
+    html += step.options.map(o =>
+      `<button class="q-option" onclick="qSelectOption('${step.id}','${esc(o.value)}')">
+        ${esc(o.label)}
+        ${o.desc ? '<div class="q-option-desc">' + esc(o.desc) + '</div>' : ''}
+      </button>`
+    ).join('');
+  } else if (step.type === 'input') {
+    const val = qData[step.id] || '';
+    html += `<input class="q-input" id="q-input" placeholder="${esc(step.placeholder || '')}" value="${esc(val)}" onkeydown="if(event.key==='Enter')qSubmitInput('${step.id}')">`;
+    html += `<button class="q-btn" onclick="qSubmitInput('${step.id}')">Next</button>`;
+  } else if (step.type === 'clubSearch') {
+    html += `<input class="q-input" id="q-club-input" placeholder="Search for your club..." oninput="qSearchClubs()" style="text-align:left;font-size:16px;font-weight:400">`;
+    html += `<div class="q-search-results" id="q-club-results"></div>`;
+    html += `<div id="q-club-create" style="display:none;margin-top:8px">
+      <div class="q-search-item q-create-item" onclick="qCreateClub()">
+        + Create "<span id="q-club-create-name"></span>"
+      </div>
+    </div>`;
+  }
+
+  if (qStep > 0) {
+    html += `<button class="q-btn-back" onclick="qBack()">Go back</button>`;
+  }
+
+  card.innerHTML = html;
+
+  // Focus input
+  const inp = document.getElementById('q-input') || document.getElementById('q-club-input');
+  if (inp) setTimeout(() => inp.focus(), 100);
+}
+
+function qSelectOption(field, value) {
+  qData[field] = value;
+  qStep++;
+  renderQStep();
+}
+
+function qSubmitInput(field) {
+  const inp = document.getElementById('q-input');
+  if (!inp) return;
+  const val = inp.value.trim();
+  if (!val) { inp.style.borderColor = '#ef4444'; inp.focus(); return; }
+  qData[field] = val;
+  qStep++;
+  renderQStep();
+}
+
+function qBack() {
+  if (qStep > 0) { qStep--; renderQStep(); }
+}
+
+function qSearchClubs() {
+  const q = (document.getElementById('q-club-input').value || '').toLowerCase().trim();
+  const results = document.getElementById('q-club-results');
+  const createOpt = document.getElementById('q-club-create');
+  if (!q) { results.innerHTML = ''; createOpt.style.display = 'none'; return; }
+  const matches = Object.entries(allClubs).filter(([id, c]) => c.name.toLowerCase().includes(q));
+  if (matches.length > 0) {
+    results.innerHTML = matches.slice(0, 5).map(([id, c]) =>
+      `<div class="q-search-item" onclick="qSelectClub('${esc(id)}','${esc(c.name)}','${esc(c.bookingUrl || '')}')">${esc(c.name)}</div>`
+    ).join('');
+  } else {
+    results.innerHTML = '<div style="padding:10px;color:#6b7280;font-size:14px;text-align:center">No clubs found</div>';
+  }
+  const createName = document.getElementById('q-club-create-name');
+  if (createName) createName.textContent = document.getElementById('q-club-input').value.trim();
+  createOpt.style.display = 'block';
+}
+
+function qSelectClub(id, name, bookingUrl) {
+  qData.club = name;
+  qData.clubId = id;
+  // Set as home club
+  userHomeClub = { id, name, bookingUrl: bookingUrl || '' };
+  if (FIREBASE_READY && currentUser) {
+    db.ref('/users/' + currentUser.uid + '/homeClub').set(userHomeClub);
+  }
+  qStep++;
+  renderQStep();
+}
+
+function qCreateClub() {
+  const name = (document.getElementById('q-club-input').value || '').trim();
+  if (!name) return;
+  if (FIREBASE_READY) {
+    const ref = db.ref('/clubs').push();
+    const clubData = { name, createdBy: currentUser.uid, createdAt: Date.now() };
+    ref.set(clubData);
+    qSelectClub(ref.key, name, '');
+  } else {
+    const fakeId = 'club_' + Date.now();
+    allClubs[fakeId] = { name };
+    qSelectClub(fakeId, name, '');
+  }
+}
+
+function skipGuided() {
+  localStorage.setItem('blp_guided_done', '1');
+  showScreen('welcome');
+}
+
+function finishGuided() {
+  localStorage.setItem('blp_guided_done', '1');
+
+  if (qData.goal === 'join' && qData.hasCode === 'yes' && qData.code) {
+    // Join by code
+    if (FIREBASE_READY) {
+      db.ref('/codes/' + qData.code.toUpperCase()).once('value', snap => {
+        const leagueId = snap.val();
+        if (leagueId) {
+          joinAndEnterLeague(leagueId);
+        } else {
+          toast('Code not found — please check and try again');
+          showScreen('welcome');
+        }
+      });
+    } else {
+      toast('Code lookup not available in demo mode');
+      showScreen('welcome');
+    }
+    return;
+  }
+
+  if (qData.goal === 'join' && qData.hasCode === 'no') {
+    // Go to browse with join flow
+    selectedGameType = null;
+    goToBrowse();
+    setTimeout(() => showJoinFlow(), 200);
+    return;
+  }
+
+  if (qData.goal === 'mixin') {
+    // Enter mix-in mode
+    goToMixIn();
+    return;
+  }
+
+  if (qData.goal === 'create') {
+    // Create the league automatically
+    const sport = qData.format === 'singles' ? 'singles' : qData.sport;
+    const name = qData.leagueName || 'My League';
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const clubId = qData.clubId;
+    const clubName = qData.club;
+
+    if (FIREBASE_READY) {
+      const leagueId = db.ref('/leagues').push().key;
+      const updates = {};
+      updates['/leagues/' + leagueId] = {
+        info: { name, sport, code, clubId, clubName, organiserUid: currentUser.uid, createdAt: Date.now() },
+        groups: {}, availability: {}, settings: { leagueName: name }, booked: {}, members: {}, openMatches: {}, comments: {}
+      };
+      updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = { name, sport, code, role: 'organiser', clubId, clubName };
+      updates['/clubLeagues/' + clubId + '/' + leagueId] = { name, sport };
+      updates['/codes/' + code] = leagueId;
+      db.ref().update(updates).then(() => {
+        // Now enter the wizard with pre-filled name/partner
+        selectedGameType = qData.format === 'singles' ? 'singles' : 'doubles';
+        startWizardFromGuided(leagueId, name, qData.playerName, qData.partner, sport);
+      }).catch(err => {
+        toast('Error creating league: ' + err.message);
+        showScreen('welcome');
+      });
+    } else {
+      showScreen('welcome');
+      toast('League creation requires sign-in');
+    }
+    return;
+  }
+
+  showScreen('welcome');
+}
+
+function startWizardFromGuided(leagueId, leagueName, playerName, partner, sport) {
+  activeLeagueId = leagueId;
+  wizIsSingles = sport === 'singles' || sport === 'squash';
+  wizWeekOff = 0;
+  wizAvailability = {};
+
+  document.getElementById('wizard-league-name').textContent = leagueName;
+  document.getElementById('wiz-name').value = playerName || '';
+  document.getElementById('wiz-partner').value = partner || '';
+
+  showScreen('wizard');
+
+  // Skip to availability step (step 2) since we already have name/partner
+  if (playerName) {
+    const startStep = wizIsSingles ? 2 : (partner ? 2 : 1);
+    wizStep = startStep;
+    renderWizStep();
+  } else {
+    renderWizStep();
+  }
+  renderWizAvailGrid();
+}
+
+function showGuidedSetup() {
+  qStep = 0;
+  qData = { goal: '', hasCode: '', code: '', sport: '', format: '', club: '', clubId: '', leagueName: '', playerName: '', partner: '' };
+  showScreen('guided');
+  renderQStep();
 }
 
 /* ── Screen Explainers ── */
