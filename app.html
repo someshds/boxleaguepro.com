@@ -6055,8 +6055,10 @@ function tourPrev() { if (tourStep > 0) { tourStep--; renderTourStep(); } }
 function checkAndStartTour() {
   // Always show the ? help button
   document.getElementById('tour-help-btn').style.display = 'flex';
-  // Never start tour while consent modal is active
+  // Never start tour while consent modal, guided setup, or onboarding is active
   if (consentModalActive) return;
+  const activeScreen = document.querySelector('.screen.active');
+  if (activeScreen && (activeScreen.id === 'screen-guided' || activeScreen.id === 'screen-onboarding')) return;
   // Auto-start tour for new users who haven't completed it
   if (!FIREBASE_READY || !currentUser) return;
   db.ref('/users/' + currentUser.uid + '/tourCompleted').once('value', snap => {
