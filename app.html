@@ -211,6 +211,46 @@
       .explainer-step-text { font-size: 14px; }
     }
 
+    /* ── In-Tab Guides (step-by-step walkthroughs inside each tab) ── */
+    .tab-guide { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #93c5fd; border-radius: 16px; padding: 24px 20px; margin-bottom: 18px; position: relative; }
+    .tab-guide-close { position: absolute; top: 10px; right: 14px; background: none; border: none; font-size: 22px; color: #6b7280; cursor: pointer; line-height: 1; padding: 4px; }
+    .tab-guide-close:hover { color: #1a1a1a; }
+    .tab-guide-icon { font-size: 36px; text-align: center; margin-bottom: 8px; }
+    .tab-guide-title { font-size: 20px; font-weight: 800; color: #1e3a8a; text-align: center; margin-bottom: 4px; }
+    .tab-guide-sub { font-size: 14px; color: #6b7280; text-align: center; margin-bottom: 16px; line-height: 1.4; }
+    .tab-guide-step { display: none; }
+    .tab-guide-step.active { display: block; }
+    .tab-guide-q { font-size: 18px; font-weight: 700; color: #1a1a1a; text-align: center; margin-bottom: 6px; line-height: 1.3; }
+    .tab-guide-hint { font-size: 14px; color: #6b7280; text-align: center; margin-bottom: 16px; line-height: 1.5; }
+    .tab-guide-hint strong { color: #1e40af; }
+    .tab-guide-options { display: flex; flex-direction: column; gap: 8px; }
+    .tab-guide-opt { display: block; width: 100%; padding: 14px 16px; border-radius: 12px; border: 2px solid #bfdbfe; background: #fff; text-align: left; cursor: pointer; transition: all 0.15s; font-size: 16px; font-weight: 600; color: #1a1a1a; }
+    .tab-guide-opt:hover { border-color: #3884F4; background: #eff6ff; transform: translateY(-1px); }
+    .tab-guide-opt:active { transform: scale(0.98); }
+    .tab-guide-opt-icon { display: inline-block; margin-right: 8px; font-size: 18px; }
+    .tab-guide-opt-desc { font-size: 13px; font-weight: 400; color: #6b7280; margin-top: 3px; line-height: 1.3; }
+    .tab-guide-action { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 8px; }
+    .tab-guide-action-img { font-size: 48px; margin-bottom: 4px; }
+    .tab-guide-action-text { font-size: 15px; color: #374151; text-align: center; line-height: 1.5; }
+    .tab-guide-action-text strong { color: #1e40af; }
+    .tab-guide-btn { padding: 12px 28px; border-radius: 12px; background: linear-gradient(135deg, #3884F4, #2563eb); color: #fff; font-size: 16px; font-weight: 700; border: none; cursor: pointer; transition: all 0.15s; }
+    .tab-guide-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(56,132,244,0.3); }
+    .tab-guide-btn-back { padding: 10px 20px; border-radius: 12px; background: none; color: #6b7280; font-size: 14px; font-weight: 600; border: none; cursor: pointer; }
+    .tab-guide-btn-back:hover { color: #1a1a1a; }
+    .tab-guide-nav { display: flex; justify-content: center; gap: 8px; margin-top: 14px; }
+    .tab-guide-dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 12px; }
+    .tab-guide-dot { width: 8px; height: 8px; border-radius: 50%; background: #bfdbfe; transition: all 0.3s; }
+    .tab-guide-dot.active { background: #2563eb; transform: scale(1.3); }
+    .tab-guide-dot.done { background: #22c55e; }
+    .tab-guide-dismiss { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 12px; font-size: 13px; color: #9ca3af; cursor: pointer; }
+    .tab-guide-dismiss:hover { color: #6b7280; }
+    @media (max-width: 480px) {
+      .tab-guide { padding: 20px 16px; }
+      .tab-guide-title { font-size: 18px; }
+      .tab-guide-q { font-size: 16px; }
+      .tab-guide-opt { font-size: 15px; padding: 12px 14px; }
+    }
+
     /* ── Guided Setup Questionnaire ── */
     .q-screen { background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%); min-height: 100vh; display: flex; flex-direction: column; }
     .q-header { text-align: center; padding: 32px 20px 16px; color: #fff; }
@@ -988,6 +1028,8 @@
         </div>
       </div>
 
+      <div id="tab-guide-setup" class="tab-guide" style="display:none"></div>
+
       <!-- League Settings -->
       <div class="card">
         <div class="card-title" style="margin-bottom:12px">League Settings</div>
@@ -1099,6 +1141,8 @@
         </div>
       </div>
 
+      <div id="tab-guide-availability" class="tab-guide" style="display:none"></div>
+
       <div id="avail-not-linked" class="card" style="display:none;text-align:center;padding:28px">
         <div style="font-size:36px;margin-bottom:10px">&#9888;&#65039;</div>
         <div style="font-size:17px;font-weight:700;margin-bottom:6px">You're not linked to a player yet</div>
@@ -1150,6 +1194,8 @@
         </div>
       </div>
 
+      <div id="tab-guide-everyone" class="tab-guide" style="display:none"></div>
+
       <div class="card-title" style="margin-bottom:10px">Next 2 Weeks</div>
       <div class="card" style="padding:12px 8px">
         <div id="avail-legend" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;padding:0 4px"></div>
@@ -1184,6 +1230,8 @@
         </div>
       </div>
 
+      <div id="tab-guide-matches" class="tab-guide" style="display:none"></div>
+
       <div id="mf-booking-link"></div>
       <div id="match-summary" style="margin-bottom:14px"></div>
       <div id="match-results"></div>
@@ -1206,6 +1254,8 @@
           Need players for a game? <strong>Create an open match</strong> and other players can join. Book a court, set the date and time, and watch the slots fill up!
         </div>
       </div>
+
+      <div id="tab-guide-open" class="tab-guide" style="display:none"></div>
 
       <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-bottom:14px">
         <div style="display:flex;gap:8px;align-items:center">
@@ -1354,7 +1404,7 @@
     <div style="padding:20px">
       <!-- Take a Tour button -->
       <button onclick="closeHelp();setTimeout(startTour,300)" style="width:100%;padding:12px;border-radius:10px;border:2px solid #3884F4;background:#eff6ff;color:#3884F4;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px">&#127934; Take a Guided Tour</button>
-      <button onclick="closeHelp();resetExplainers()" style="width:100%;padding:12px;border-radius:10px;border:2px solid #059669;background:#f0fdf4;color:#059669;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px">&#128218; Show Screen Guides Again</button>
+      <button onclick="closeHelp();resetExplainers();resetTabGuides()" style="width:100%;padding:12px;border-radius:10px;border:2px solid #059669;background:#f0fdf4;color:#059669;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px">&#128218; Show All Guides Again</button>
 
       <!-- How it works -->
       <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:12px">How it works</div>
@@ -3767,9 +3817,14 @@ function showTab(t) {
   if (t === 'open') { renderOpenMatches(); }
   if (t === 'setup') { renderGroups(); renderMembers(); }
 
-  // Trigger tab explainer (use 'mixin' explainer for open tab in mix-in mode)
-  const explainerId = (t === 'open' && mixInMode) ? 'mixin' : t;
-  setTimeout(() => showExplainer(explainerId), 300);
+  // Trigger in-tab guide (replaces explainer modals for tabs that have guides)
+  const guideTabId = (t === 'open' && mixInMode) ? 'open' : t;
+  if (TAB_GUIDES[guideTabId]) {
+    setTimeout(() => showTabGuide(guideTabId), 300);
+  } else {
+    const explainerId = (t === 'open' && mixInMode) ? 'mixin' : t;
+    setTimeout(() => showExplainer(explainerId), 300);
+  }
 }
 
 /* ══════════════════════════════════════
@@ -5475,6 +5530,264 @@ function showGuidedSetup() {
   qData = { goal: '', hasCode: '', code: '', sport: '', format: '', club: '', clubId: '', leagueName: '', playerName: '', partner: '' };
   showScreen('guided');
   renderQStep();
+}
+
+/* ── In-Tab Guides (step-by-step walkthroughs) ── */
+const TAB_GUIDES = {
+  availability: {
+    icon: '&#128197;', title: 'Your Availability', sub: 'Let\'s get your free times marked so others can find you.',
+    steps: [
+      { q: 'What would you like to do?', hint: 'Pick what you need help with right now.',
+        options: [
+          { label: 'Mark when I can play', icon: '&#9989;', desc: 'Tap boxes on the grid to show your free time slots', action: 'close', scrollTo: 'avail-grid' },
+          { label: 'See my upcoming matches', icon: '&#127934;', desc: 'View matches you need to arrange or have booked', action: 'close', scrollTo: 'my-matches-card' },
+          { label: 'Copy last week\'s times', icon: '&#128260;', desc: 'Quickly fill in the same availability as last week', action: 'fn', fn: 'copyLastWeek' },
+          { label: 'Show me how the grid works', icon: '&#128161;', desc: 'Step-by-step explanation of the availability grid', action: 'next' },
+        ]},
+      { q: 'The Availability Grid', hint: 'Each column is a <strong>1.5-hour time slot</strong> (9am to 9pm). Each row is a <strong>day of the week</strong>.',
+        visual: '&#128197;', detail: 'Tap a box to turn it <strong>green</strong> — that means you\'re free to play at that time. Tap it again to remove it. It saves automatically.',
+        options: [
+          { label: 'What happens next?', icon: '&#10145;&#65039;', desc: '', action: 'next' },
+        ]},
+      { q: 'After Marking Your Availability', hint: 'Once you\'ve marked your slots, here\'s what to do next.',
+        visual: '&#127881;', detail: 'Go to the <strong>"Everyone"</strong> tab to see when all players are free. Then use <strong>"Match Finder"</strong> to find times that work for everyone and book your matches.',
+        options: [
+          { label: 'Got it — let me fill in my times', icon: '&#9989;', desc: '', action: 'close', scrollTo: 'avail-grid' },
+        ]},
+    ]
+  },
+  everyone: {
+    icon: '&#128101;', title: 'Everyone\'s Availability', sub: 'See at a glance who can play and when.',
+    steps: [
+      { q: 'What would you like to do?', hint: 'Pick what you need help with.',
+        options: [
+          { label: 'See who\'s free this week', icon: '&#128064;', desc: 'The grid below shows everyone\'s availability', action: 'close', scrollTo: 'avail-cal-grid' },
+          { label: 'Chase someone who hasn\'t replied', icon: '&#128172;', desc: 'Send a WhatsApp reminder to players who haven\'t filled in yet', action: 'close', scrollTo: 'missing-card' },
+          { label: 'Show me how to read the grid', icon: '&#128161;', desc: 'Understand what the colours and layout mean', action: 'next' },
+        ]},
+      { q: 'Reading the Grid', hint: 'Each row is a <strong>player or team</strong>. Each column is a <strong>day + time slot</strong>.',
+        visual: '&#128200;', detail: '<strong>Green boxes</strong> = that player is free at that time. <strong>Empty boxes</strong> = they can\'t play or haven\'t filled in yet. Look for columns with lots of green — that\'s a good time for a match!',
+        options: [
+          { label: 'What if someone hasn\'t filled in?', icon: '&#129300;', desc: '', action: 'next' },
+        ]},
+      { q: 'Chasing Players', hint: 'If a player hasn\'t submitted their availability yet, you\'ll see their name in the <strong>"Still waiting on"</strong> section below.',
+        visual: '&#128172;', detail: 'Tap <strong>"Copy WhatsApp chase message"</strong> to get a ready-made reminder you can paste into WhatsApp. It includes the league link so they can fill in right away.',
+        options: [
+          { label: 'Got it — let me check the grid', icon: '&#128064;', desc: '', action: 'close' },
+        ]},
+    ]
+  },
+  matches: {
+    icon: '&#127934;', title: 'Match Finder', sub: 'Find the perfect time for your matches.',
+    steps: [
+      { q: 'What would you like to do?', hint: 'Pick what you need help with.',
+        options: [
+          { label: 'Find a time to play', icon: '&#128269;', desc: 'See which times work for all players in a match', action: 'close', scrollTo: 'match-results' },
+          { label: 'Book a match', icon: '&#9989;', desc: 'Lock in a date and time — both teams get notified', action: 'next' },
+          { label: 'Share match details', icon: '&#128172;', desc: 'Copy the match summary for WhatsApp', action: 'close', scrollTo: 'share-results' },
+          { label: 'Show me how it works', icon: '&#128161;', desc: 'Step-by-step guide to booking matches', action: 'goto', goto: 1 },
+        ]},
+      { q: 'How Match Finder Works', hint: 'The app looks at <strong>everyone\'s availability</strong> and finds time slots where both teams can play.',
+        visual: '&#128200;', detail: 'Each card shows a match between two teams. Under each card you\'ll see the <strong>dates and times</strong> when both teams are free. The more green slots, the more options you have.',
+        options: [
+          { label: 'How do I book a time?', icon: '&#10145;&#65039;', desc: '', action: 'next' },
+        ]},
+      { q: 'Booking a Match', hint: 'Found a good time? Here\'s how to lock it in.',
+        visual: '&#128197;', detail: 'Tap a <strong>green time slot</strong> on any match card to book it. Both teams will be notified. You can then <strong>share via WhatsApp</strong> to confirm with your opponent. To unbook, just tap the slot again.',
+        options: [
+          { label: 'Got it — show me the matches', icon: '&#127934;', desc: '', action: 'close' },
+        ]},
+    ]
+  },
+  open: {
+    icon: '&#127881;', title: 'Friendly Matches', sub: 'Create or join casual games at your club.',
+    steps: [
+      { q: 'What would you like to do?', hint: 'Pick what you\'re looking for.',
+        options: [
+          { label: 'Create a new game', icon: '&#10133;', desc: 'Post a game and let others join', action: 'fn', fn: 'showCreateOpenMatch' },
+          { label: 'Join an existing game', icon: '&#127939;', desc: 'Browse games below and tap Join', action: 'close', scrollTo: 'om-list' },
+          { label: 'Book a court', icon: '&#127934;', desc: 'Go to your club\'s court booking site', action: 'fn', fn: 'openBookingUrl' },
+          { label: 'Show me how it works', icon: '&#128161;', desc: 'Step-by-step guide to friendly matches', action: 'next' },
+        ]},
+      { q: 'How Friendly Matches Work', hint: 'Anyone at your club can create a game. Others can join with one tap.',
+        visual: '&#127881;', detail: 'Tap <strong>"Create a Game"</strong> to post a new game — pick the sport, date, time, and skill level. Your game appears in the list below. Other players see it and can <strong>join</strong> by tapping the Join button.',
+        options: [
+          { label: 'How do I share with friends?', icon: '&#10145;&#65039;', desc: '', action: 'next' },
+        ]},
+      { q: 'Sharing Your Game', hint: 'Invite friends who aren\'t on the app yet.',
+        visual: '&#128172;', detail: 'Each game card has a <strong>Share on WhatsApp</strong> button. It copies a ready-made message with all the details — sport, date, time, venue, and a link to join. Perfect for group chats!',
+        options: [
+          { label: 'Got it — let me browse games', icon: '&#128064;', desc: '', action: 'close' },
+        ]},
+    ]
+  },
+  setup: {
+    icon: '&#9881;&#65039;', title: 'League Setup', sub: 'Set up your league step by step.',
+    steps: [
+      { q: 'What would you like to do?', hint: 'Pick what you need to set up.',
+        options: [
+          { label: 'Add players or teams', icon: '&#128101;', desc: 'Add the people who will play in your league', action: 'next' },
+          { label: 'Invite players to join', icon: '&#128233;', desc: 'Share a link so players can join and fill in availability', action: 'close', scrollTo: 'setup-invite-link' },
+          { label: 'Set a deadline', icon: '&#9200;', desc: 'Set a date by which everyone should submit their availability', action: 'close', scrollTo: 'inp-deadline' },
+          { label: 'Set court booking link', icon: '&#127934;', desc: 'Add your club\'s court booking URL for players', action: 'close', scrollTo: 'inp-booking-url' },
+          { label: 'Show me the full setup process', icon: '&#128161;', desc: 'Step-by-step guide to getting your league running', action: 'goto', goto: 1 },
+        ]},
+      { q: 'Step 1: Add Your Players', hint: 'First, add the players or teams who will be in your league.',
+        visual: '&#128101;', detail: 'Tap <strong>"+ Add Team"</strong> below. For doubles, enter the team name (e.g. "Grant & James") and both player names. For singles, just enter each player\'s name. You can also use <strong>Quick Add</strong> to paste multiple teams at once.',
+        options: [
+          { label: 'What\'s next?', icon: '&#10145;&#65039;', desc: '', action: 'next' },
+        ]},
+      { q: 'Step 2: Share the Invite Link', hint: 'Now invite your players so they can fill in their own availability.',
+        visual: '&#128233;', detail: 'Scroll down to the green <strong>"Invite Players"</strong> card. Copy the link and send it to your players via <strong>WhatsApp</strong> or message. When they click it, they\'ll be taken straight into your league.',
+        options: [
+          { label: 'What\'s next?', icon: '&#10145;&#65039;', desc: '', action: 'next' },
+        ]},
+      { q: 'Step 3: Link Members to Players', hint: 'When players join, they appear in the <strong>"League Members"</strong> list at the bottom.',
+        visual: '&#128279;', detail: 'You need to link each member\'s account to their player name. This lets the app know which availability belongs to which player. Tap a member and select their player name from the list.',
+        options: [
+          { label: 'What\'s next?', icon: '&#10145;&#65039;', desc: '', action: 'next' },
+        ]},
+      { q: 'Step 4: Set a Deadline (Optional)', hint: 'Give players a date to submit their availability by.',
+        visual: '&#9200;', detail: 'Pick a date and time in the <strong>"Availability Deadline"</strong> field, then tap <strong>Save</strong>. Players will see a countdown. This helps make sure everyone fills in on time.',
+        options: [
+          { label: 'All done — let me set up my league', icon: '&#9989;', desc: '', action: 'close' },
+        ]},
+    ]
+  },
+};
+
+let tabGuideStep = {};
+
+function showTabGuide(tabId) {
+  if (!TAB_GUIDES[tabId]) return;
+  const key = 'blp_tabguide_' + tabId;
+  if (localStorage.getItem(key) === 'dismissed') return;
+  if (tourActive || consentModalActive) return;
+  tabGuideStep[tabId] = 0;
+  renderTabGuide(tabId);
+}
+
+function renderTabGuide(tabId) {
+  const guide = TAB_GUIDES[tabId];
+  if (!guide) return;
+  const container = document.getElementById('tab-guide-' + tabId);
+  if (!container) return;
+  const stepIdx = tabGuideStep[tabId] || 0;
+  const step = guide.steps[stepIdx];
+  if (!step) { closeTabGuide(tabId); return; }
+
+  let html = '<button class="tab-guide-close" onclick="closeTabGuide(\'' + tabId + '\')" title="Close guide">&times;</button>';
+
+  // Progress dots
+  if (guide.steps.length > 1) {
+    html += '<div class="tab-guide-dots">';
+    for (let i = 0; i < guide.steps.length; i++) {
+      html += '<div class="tab-guide-dot' + (i === stepIdx ? ' active' : i < stepIdx ? ' done' : '') + '"></div>';
+    }
+    html += '</div>';
+  }
+
+  // Title only on first step
+  if (stepIdx === 0) {
+    html += '<div class="tab-guide-icon">' + guide.icon + '</div>';
+    html += '<div class="tab-guide-title">' + guide.title + '</div>';
+    html += '<div class="tab-guide-sub">' + guide.sub + '</div>';
+  }
+
+  // Question
+  html += '<div class="tab-guide-q">' + step.q + '</div>';
+  if (step.hint) html += '<div class="tab-guide-hint">' + step.hint + '</div>';
+
+  // Visual + detail (for info steps)
+  if (step.visual) {
+    html += '<div class="tab-guide-action">';
+    html += '<div class="tab-guide-action-img">' + step.visual + '</div>';
+    html += '<div class="tab-guide-action-text">' + step.detail + '</div>';
+    html += '</div>';
+  }
+
+  // Options
+  if (step.options) {
+    html += '<div class="tab-guide-options">';
+    step.options.forEach((opt, i) => {
+      html += '<button class="tab-guide-opt" onclick="tabGuideAction(\'' + tabId + '\',' + i + ')">';
+      if (opt.icon) html += '<span class="tab-guide-opt-icon">' + opt.icon + '</span>';
+      html += esc(opt.label);
+      if (opt.desc) html += '<div class="tab-guide-opt-desc">' + opt.desc + '</div>';
+      html += '</button>';
+    });
+    html += '</div>';
+  }
+
+  // Back button (if not first step)
+  if (stepIdx > 0) {
+    html += '<div class="tab-guide-nav"><button class="tab-guide-btn-back" onclick="tabGuideBack(\'' + tabId + '\')">&#9664; Go back</button></div>';
+  }
+
+  // Dismiss link
+  html += '<div class="tab-guide-dismiss" onclick="dismissTabGuide(\'' + tabId + '\')">Don\'t show this guide again</div>';
+
+  container.innerHTML = html;
+  container.style.display = 'block';
+}
+
+function tabGuideAction(tabId, optIdx) {
+  const guide = TAB_GUIDES[tabId];
+  const stepIdx = tabGuideStep[tabId] || 0;
+  const step = guide.steps[stepIdx];
+  const opt = step.options[optIdx];
+  if (!opt) return;
+
+  if (opt.action === 'close') {
+    closeTabGuide(tabId);
+    if (opt.scrollTo) {
+      setTimeout(() => {
+        const el = document.getElementById(opt.scrollTo);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  } else if (opt.action === 'next') {
+    tabGuideStep[tabId] = stepIdx + 1;
+    renderTabGuide(tabId);
+  } else if (opt.action === 'goto') {
+    tabGuideStep[tabId] = opt.goto;
+    renderTabGuide(tabId);
+  } else if (opt.action === 'fn') {
+    closeTabGuide(tabId);
+    if (opt.fn && typeof window[opt.fn] === 'function') {
+      setTimeout(() => window[opt.fn](), 100);
+    }
+  }
+}
+
+function tabGuideBack(tabId) {
+  const stepIdx = tabGuideStep[tabId] || 0;
+  if (stepIdx > 0) {
+    tabGuideStep[tabId] = stepIdx - 1;
+    renderTabGuide(tabId);
+  }
+}
+
+function closeTabGuide(tabId) {
+  const container = document.getElementById('tab-guide-' + tabId);
+  if (container) container.style.display = 'none';
+}
+
+function dismissTabGuide(tabId) {
+  localStorage.setItem('blp_tabguide_' + tabId, 'dismissed');
+  closeTabGuide(tabId);
+}
+
+function resetTabGuides() {
+  Object.keys(TAB_GUIDES).forEach(id => localStorage.removeItem('blp_tabguide_' + id));
+}
+
+function openBookingUrl() {
+  if (clubBookingUrl) {
+    window.open(clubBookingUrl, '_blank', 'noopener');
+  } else {
+    toast('No court booking URL set for this club');
+  }
 }
 
 /* ── Screen Explainers ── */
