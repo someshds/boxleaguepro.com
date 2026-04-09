@@ -5316,7 +5316,7 @@ const Q_STEPS = [
   ]},
   { id: 'hasCode', question: 'Do you have a league code?', hint: 'Your league organiser may have sent you a code or link to join.', type: 'options', show: () => qData.goal === 'join', options: [
     { value: 'yes', label: 'Yes, I have a code', desc: 'A short code like ABC123 — your organiser will have sent it to you. It takes you straight to the correct league.' },
-    { value: 'no', label: 'No, I\'ll search for my club', desc: '' },
+    { value: 'no', label: 'No', desc: 'I\'ll browse the leagues at my club' },
   ]},
   { id: 'code', question: 'Enter your league code', hint: 'Type or paste the code your organiser sent you.', type: 'input', placeholder: 'e.g. ABC123', show: () => qData.goal === 'join' && qData.hasCode === 'yes' },
   { id: 'sport', question: 'What sport do you play?', hint: 'This helps us set up your league correctly.', type: 'options', show: () => qData.goal === 'create', options: [
@@ -5331,7 +5331,15 @@ const Q_STEPS = [
     { value: 'singles', label: 'Singles', desc: 'I play on my own' },
     { value: 'doubles', label: 'Doubles', desc: 'I play with a partner' },
   ]},
-  { id: 'club', question: 'What club do you play at?', hint: 'Search for your club below, or create a new one.', type: 'clubSearch', show: () => (qData.goal === 'create') || (qData.goal === 'join' && qData.hasCode === 'no') || qData.goal === 'mixin' },
+  { id: 'club', question: 'What club do you play at?', hint: 'Search for your club below, or create a new one.', type: 'clubSearch', show: () => {
+    // Skip club search if user already has a home club
+    if (userHomeClub && userHomeClub.id) {
+      qData.club = userHomeClub.name;
+      qData.clubId = userHomeClub.id;
+      return false;
+    }
+    return (qData.goal === 'create') || (qData.goal === 'join' && qData.hasCode === 'no') || qData.goal === 'mixin';
+  }},
   { id: 'leagueName', question: 'What would you like to call your league?', hint: 'Give it a name your players will recognise.', type: 'input', placeholder: 'e.g. Mens Doubles 1, Tuesday Night Tennis', show: () => qData.goal === 'create' },
   { id: 'playerName', question: 'What is your first name?', hint: 'This is how other players will see you.', type: 'input', placeholder: 'e.g. Grant' },
   { id: 'partner', question: 'Who is your doubles partner?', hint: 'Enter their first name. They can join later with the link you\'ll get.', type: 'input', placeholder: 'e.g. James', show: () => qData.goal === 'create' && qData.format === 'doubles' },
