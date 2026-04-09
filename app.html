@@ -5287,7 +5287,7 @@ const Q_STEPS = [
     { value: 'mixin', label: 'Find a casual game', desc: 'I just want to play — no league needed' },
   ]},
   { id: 'hasCode', question: 'Do you have a league code?', hint: 'Your league organiser may have sent you a code or link to join.', type: 'options', show: () => qData.goal === 'join', options: [
-    { value: 'yes', label: 'Yes, I have a code', desc: 'A short code like ABC123 — your organiser will have sent it to you' },
+    { value: 'yes', label: 'Yes, I have a code', desc: 'A short code like ABC123 — your organiser will have sent it to you. It takes you straight to the correct league.' },
     { value: 'no', label: 'No, I\'ll search for my club', desc: '' },
   ]},
   { id: 'code', question: 'Enter your league code', hint: 'Type or paste the code your organiser sent you.', type: 'input', placeholder: 'e.g. ABC123', show: () => qData.goal === 'join' && qData.hasCode === 'yes' },
