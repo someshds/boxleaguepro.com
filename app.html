@@ -4699,8 +4699,8 @@ function renderOpenMatches() {
     } else if (isFull && !iJoined) {
       actionsHtml += `<span style="font-size:14px;color:var(--muted);font-weight:700;background:#f1f5f9;padding:8px 14px;border-radius:8px">Game is full</span>`;
     }
-    actionsHtml += `<button class="btn btn-sm btn-whatsapp" onclick="whatsAppShareMatch('${esc(m.id)}')" style="font-weight:700;padding:6px 10px" title="Share on WhatsApp">&#128172;</button>`;
-    actionsHtml += `<button class="btn btn-sm" onclick="shareOpenMatch('${esc(m.id)}')" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700" title="Copy invite link">&#128279;</button>`;
+    actionsHtml += `<button class="btn btn-sm btn-whatsapp" onclick="whatsAppShareMatch('${esc(m.id)}')" style="font-weight:700;padding:8px 14px;font-size:13px">Share to WhatsApp</button>`;
+    actionsHtml += `<button class="btn btn-sm" onclick="shareOpenMatch('${esc(m.id)}')" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700;padding:8px 14px;font-size:13px">Copy to Share</button>`;
     if (isCreator) {
       actionsHtml += `<button class="btn btn-secondary btn-sm" onclick="deleteOpenMatch('${esc(m.id)}')" style="margin-left:auto">Delete</button>`;
     }
