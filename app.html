@@ -5902,7 +5902,7 @@ function showExplainer(id) {
   document.getElementById('explainer-steps').innerHTML = data.steps.map((text, i) =>
     '<li class="explainer-step"><div class="explainer-step-num">' + (i + 1) + '</div><div class="explainer-step-text">' + text + '</div></li>'
   ).join('');
-  document.getElementById('explainer-dont-show').checked = true;
+  document.getElementById('explainer-dont-show').checked = false;
   const overlay = document.getElementById('explainer-overlay');
   overlay.style.display = 'flex';
   requestAnimationFrame(() => overlay.classList.add('active'));
