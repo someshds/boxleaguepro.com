@@ -1182,6 +1182,32 @@
           <div class="card-title" style="margin-bottom:8px">Your upcoming availability</div>
           <div id="my-summary-body" class="txt-muted"></div>
         </div>
+
+        <div id="avail-next-steps" class="mt12" style="display:none">
+          <div style="background:linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);border:2px solid #86efac;border-radius:16px;padding:20px">
+            <div style="text-align:center;font-size:28px;margin-bottom:6px">&#9989;</div>
+            <div style="text-align:center;font-size:18px;font-weight:800;color:#166534;margin-bottom:4px">Great — your availability is saved!</div>
+            <div style="text-align:center;font-size:14px;color:#15803d;margin-bottom:16px;line-height:1.5">Now follow these two steps to find and book your matches:</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <button onclick="showTab('everyone')" style="display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;border-radius:12px;border:2px solid #bbf7d0;background:#fff;cursor:pointer;text-align:left;transition:all 0.15s;font-size:16px" onmouseover="this.style.borderColor='#059669';this.style.transform='translateY(-1px)'" onmouseout="this.style.borderColor='#bbf7d0';this.style.transform=''">
+                <div style="width:36px;height:36px;border-radius:50%;background:#059669;color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0">1</div>
+                <div>
+                  <div style="font-weight:700;color:#166534">Go to "Everyone"</div>
+                  <div style="font-size:13px;color:#15803d;margin-top:2px">See when all players are free — chase anyone who hasn't filled in yet</div>
+                </div>
+                <div style="margin-left:auto;font-size:18px;color:#059669">&#10145;&#65039;</div>
+              </button>
+              <button onclick="showTab('matches')" style="display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;border-radius:12px;border:2px solid #bbf7d0;background:#fff;cursor:pointer;text-align:left;transition:all 0.15s;font-size:16px" onmouseover="this.style.borderColor='#059669';this.style.transform='translateY(-1px)'" onmouseout="this.style.borderColor='#bbf7d0';this.style.transform=''">
+                <div style="width:36px;height:36px;border-radius:50%;background:#2563eb;color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0">2</div>
+                <div>
+                  <div style="font-weight:700;color:#1e3a8a">Go to "Match Finder"</div>
+                  <div style="font-size:13px;color:#3b82f6;margin-top:2px">Find times that work for everyone and book your matches</div>
+                </div>
+                <div style="margin-left:auto;font-size:18px;color:#2563eb">&#10145;&#65039;</div>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -4242,8 +4268,10 @@ function renderMySummary() {
       if (L.availability[avk(player, d, slot)]) items.push(`${fmtFull(ds(d))} \u2014 ${SLOT_LABELS[slot]}`);
     }
   }
-  if (items.length === 0) { card.style.display = 'none'; return; }
+  const nextSteps = document.getElementById('avail-next-steps');
+  if (items.length === 0) { card.style.display = 'none'; if (nextSteps) nextSteps.style.display = 'none'; return; }
   card.style.display = 'block';
+  if (nextSteps && !mixInMode) nextSteps.style.display = 'block';
   body.innerHTML = `<div style="font-size:13px;color:var(--muted);margin-bottom:4px">${items.length} slot${items.length!==1?'s':''} in the next 2 weeks:</div>` +
     items.slice(0,8).map(i => `<div style="font-size:14px;padding:3px 0">&#9989; ${i}</div>`).join('') +
     (items.length > 8 ? `<div class="txt-muted mt8">+ ${items.length - 8} more</div>` : '');
