@@ -2552,20 +2552,20 @@ function onAuthSuccess() {
       } else {
         setTimeout(() => { goToMixIn(); }, 500);
       }
-    } else if (!userHomeClub && !localStorage.getItem('blp_guided_done')) {
-      // First time — show guided questionnaire
-      showGuidedSetup();
-    } else if (!userHomeClub) {
-      // Has skipped guided before but no club — show onboarding
-      showScreen('onboarding');
-      waitForClubsThenEnableSearch();
     } else {
-      showScreen('welcome');
-    }
-
-    // Only auto-start tour if consent modal isn't showing
-    if (!consentModalActive) {
-      setTimeout(checkAndStartTour, 600);
+      // Check Firebase for guided setup completion (per-user, not localStorage)
+      db.ref('/users/' + currentUser.uid + '/guidedDone').once('value', snap => {
+        if (!snap.val()) {
+          showGuidedSetup();
+        } else if (!userHomeClub) {
+          showScreen('onboarding');
+          waitForClubsThenEnableSearch();
+        } else {
+          showScreen('welcome');
+          if (!consentModalActive) setTimeout(checkAndStartTour, 600);
+        }
+      });
+      return;
     }
   });
 }
@@ -5466,12 +5466,12 @@ function qCreateClub() {
 }
 
 function skipGuided() {
-  localStorage.setItem('blp_guided_done', '1');
+  if (FIREBASE_READY && currentUser) db.ref('/users/' + currentUser.uid + '/guidedDone').set(true);
   showScreen('welcome');
 }
 
 function finishGuided() {
-  localStorage.setItem('blp_guided_done', '1');
+  if (FIREBASE_READY && currentUser) db.ref('/users/' + currentUser.uid + '/guidedDone').set(true);
 
   if (qData.goal === 'join' && qData.hasCode === 'yes' && qData.code) {
     // Join by code
