@@ -364,22 +364,22 @@
     .om-filters::-webkit-scrollbar { display: none; }
     .om-chip { padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; border: 1.5px solid var(--border); background: var(--card); color: var(--muted); transition: all 0.15s; }
     .om-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-    .om-card { background: var(--card); border-radius: var(--radius); padding: 18px; margin-bottom: 12px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
-    .om-card-header { margin-bottom: 12px; }
-    .om-card-title { font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 2px; }
-    .om-card-venue { font-size: 14px; color: var(--muted); font-weight: 600; }
-    .om-card-players { display: flex; align-items: center; gap: -4px; margin: 12px 0; }
-    .om-card-players .avatar { width: 36px; height: 36px; font-size: 13px; border: 2px solid #fff; margin-left: -6px; }
+    .om-card { background: var(--card); border-radius: var(--radius); padding: 24px; margin-bottom: 16px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+    .om-card-header { margin-bottom: 16px; }
+    .om-card-title { font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+    .om-card-venue { font-size: 15px; color: var(--muted); font-weight: 600; margin-top: 8px; }
+    .om-card-players { display: flex; align-items: center; gap: -4px; margin: 18px 0; }
+    .om-card-players .avatar { width: 44px; height: 44px; font-size: 15px; border: 2.5px solid #fff; margin-left: -6px; }
     .om-card-players .avatar:first-child { margin-left: 0; }
-    .om-card-footer { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
-    .om-meta { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; color: var(--muted); }
-    .om-meta svg { width: 16px; height: 16px; }
-    .om-spots { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 700; margin-left: auto; }
+    .om-card-footer { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding-top: 16px; border-top: 1px solid var(--border); }
+    .om-meta { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 600; color: var(--muted); }
+    .om-meta svg { width: 20px; height: 20px; }
+    .om-spots { display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; border-radius: 20px; font-size: 14px; font-weight: 700; margin-left: auto; }
     .om-spots.available { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
     .om-spots.full { background: var(--primary-dark); color: #fff; }
-    .om-player-names { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-    .om-player-name { font-size: 11px; color: var(--muted); text-align: center; }
-    .om-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .om-player-names { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .om-player-name { font-size: 14px; color: var(--muted); text-align: center; }
+    .om-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
     .om-empty { text-align: center; padding: 40px 20px; }
     .om-empty-icon { font-size: 48px; margin-bottom: 12px; }
     .om-empty-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
@@ -4717,9 +4717,9 @@ function renderOpenMatches() {
     return `<div class="om-card">
       <div class="om-card-header">
         <div class="om-card-title">${esc(m.title || 'Open Game')}</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
-          <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:20px;font-size:11px;font-weight:700;color:#059669">${sportIcons[mSport] || '🏅'} ${esc(mSport.charAt(0).toUpperCase() + mSport.slice(1))}</span>
-          ${mLevel ? `<span style="display:inline-flex;align-items:center;padding:2px 8px;background:${levelColors[mLevel] || '#6b7280'}15;border:1px solid ${levelColors[mLevel] || '#6b7280'}40;border-radius:20px;font-size:11px;font-weight:700;color:${levelColors[mLevel] || '#6b7280'}">${levelLabels[mLevel] || mLevel}</span>` : ''}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+          <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:20px;font-size:14px;font-weight:700;color:#059669">${sportIcons[mSport] || '🏅'} ${esc(mSport.charAt(0).toUpperCase() + mSport.slice(1))}</span>
+          ${mLevel ? `<span style="display:inline-flex;align-items:center;padding:4px 12px;background:${levelColors[mLevel] || '#6b7280'}15;border:1px solid ${levelColors[mLevel] || '#6b7280'}40;border-radius:20px;font-size:14px;font-weight:700;color:${levelColors[mLevel] || '#6b7280'}">${levelLabels[mLevel] || mLevel}</span>` : ''}
         </div>
         <div class="om-card-venue">${esc(m.venue || L.settings.leagueName || 'League')}</div>
       </div>
