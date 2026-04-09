@@ -578,7 +578,11 @@
      SCREEN 1.5: WELCOME (Choose your game type)
      ══════════════════════════════════════════════════════ -->
 <div id="screen-welcome" class="screen welcome-screen">
-  <div class="welcome-header">
+  <div style="position:absolute;top:12px;right:14px;display:flex;gap:8px;z-index:10">
+    <button onclick="showGuidedSetup()" style="padding:8px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.4);background:rgba(255,255,255,0.15);color:#fff;font-size:13px;font-weight:600;cursor:pointer;backdrop-filter:blur(4px);transition:all 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">&#128218; Setup Guide</button>
+    <button onclick="signOut()" style="padding:8px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.4);background:rgba(255,255,255,0.15);color:#fff;font-size:13px;font-weight:600;cursor:pointer;backdrop-filter:blur(4px);transition:all 0.2s" onmouseover="this.style.background='rgba(239,68,68,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">Logout</button>
+  </div>
+  <div class="welcome-header" style="position:relative">
     <div style="font-size:36px;margin-bottom:8px">&#127934;</div>
     <div class="welcome-title">BoxLeague Pro</div>
     <div class="welcome-subtitle">What would you like to play?</div>
