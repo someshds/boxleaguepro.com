@@ -630,7 +630,7 @@
     <div class="wc-card" onclick="selectGameType('mixin')">
       <div class="wc-card-badge" style="background:#fef3c7;color:#92400e">Open</div>
       <div class="wc-card-icon">&#127881;</div>
-      <div class="wc-card-title">Friendly Mix-In Games</div>
+      <div class="wc-card-title">Create or Join Friendly Mix-In Games</div>
       <div class="wc-card-desc">Post a game at your club and let others join. No league needed — just pick a time, share it, and play.</div>
       <div class="wc-card-players">
         <span style="background:#059669;color:#fff">&#9899;</span>
@@ -2672,9 +2672,9 @@ function enterMixInMode() {
   clubBookingUrl = userHomeClub.bookingUrl || '';
   L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {} };
 
-  // Set header — show club name under Friendly Mix-In Games
+  // Set header — show club name under Create or Join Friendly Mix-In Games
   const clubLabel = userHomeClub ? userHomeClub.name : '';
-  document.getElementById('app-league-name').textContent = 'Friendly Mix-In Games';
+  document.getElementById('app-league-name').textContent = 'Create or Join Friendly Mix-In Games';
   document.getElementById('app-league-code').textContent = clubLabel;
   document.getElementById('app-league-code-wrap').style.display = clubLabel ? 'flex' : 'none';
   document.getElementById('progress-wrap').style.display = 'none';
@@ -2683,7 +2683,7 @@ function enterMixInMode() {
   document.getElementById('app-user-photo').src = photoUrl;
   document.getElementById('app-user-first').textContent = (currentUser.displayName || 'You').split(' ')[0];
 
-  // Hide tab nav in mix-in mode — page header already shows Friendly Mix-In Games
+  // Hide tab nav in mix-in mode — page header already shows Create or Join Friendly Mix-In Games
   document.getElementById('app-nav').innerHTML = '';
   document.getElementById('app-nav').style.display = 'none';
   currentTab = 'open';
@@ -3621,7 +3621,7 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
     const leagueSport = (leagueInfo.sport || '').toLowerCase();
     quickAddWrap.style.display = (leagueSport === 'singles' || leagueSport === 'squash') ? 'none' : '';
   }
-  document.getElementById('app-league-name').textContent = mixInMode ? 'Friendly Mix-In Games' : (leagueInfo.name || 'League');
+  document.getElementById('app-league-name').textContent = mixInMode ? 'Create or Join Friendly Mix-In Games' : (leagueInfo.name || 'League');
 
   showScreen('app');
   initTips();
@@ -3923,7 +3923,7 @@ function renderAll() {
    ══════════════════════════════════════ */
 function renderHeader() {
   const el = document.getElementById('app-league-name');
-  if (mixInMode) { el.textContent = 'Friendly Mix-In Games'; }
+  if (mixInMode) { el.textContent = 'Create or Join Friendly Mix-In Games'; }
   else if (L.settings.leagueName) el.textContent = L.settings.leagueName;
   // Update invite link in Setup tab
   const linkEl = document.getElementById('setup-invite-link');
@@ -5852,7 +5852,7 @@ const EXPLAINERS = {
     steps: [
       '<strong>Organise Your Singles Box League Matches</strong> — compete 1v1 against everyone in your group',
       '<strong>Organise Your Doubles Box League Matches</strong> — team up with a partner and take on other pairs',
-      '<strong>Friendly Mix-In Games</strong> — post a game and let anyone at your club join',
+      '<strong>Create or Join Friendly Mix-In Games</strong> — post a game and let anyone at your club join',
       'Already have a league? Scroll down to <strong>"Your Leagues"</strong> or tap <strong>"Join directly"</strong> at the bottom'
     ]
   },
@@ -5863,7 +5863,7 @@ const EXPLAINERS = {
     steps: [
       '<strong>Join a League</strong> — search for your club, then pick an existing league to join',
       '<strong>Start a League</strong> — create a new league and invite your players with a share link',
-      '<strong>Friendly Mix-In Games</strong> — skip the league and go straight to casual games at your club',
+      '<strong>Create or Join Friendly Mix-In Games</strong> — skip the league and go straight to casual games at your club',
       'Got a <strong>league code</strong>? Enter it in the "Join by code" box to jump straight in'
     ]
   },
@@ -5913,7 +5913,7 @@ const EXPLAINERS = {
   },
   mixin: {
     icon: '&#127881;',
-    title: 'Friendly Mix-In Games',
+    title: 'Create or Join Friendly Mix-In Games',
     subtitle: 'Casual games at your club — no league needed',
     steps: [
       'Tap <strong>"Create a Game"</strong> to post a game — pick your sport, date, time, and level',
