@@ -4408,8 +4408,7 @@ function renderMySummary() {
   card.style.display = 'block';
   if (nextSteps && !mixInMode) nextSteps.style.display = 'block';
   body.innerHTML = `<div style="font-size:13px;color:var(--muted);margin-bottom:4px">${items.length} slot${items.length!==1?'s':''} in the next 2 weeks:</div>` +
-    items.slice(0,8).map(i => `<div style="font-size:14px;padding:3px 0">&#9989; ${i}</div>`).join('') +
-    (items.length > 8 ? `<div class="txt-muted mt8">+ ${items.length - 8} more</div>` : '');
+    items.map(i => `<div style="font-size:14px;padding:3px 0">&#9989; ${i}</div>`).join('');
 }
 
 /* ══════════════════════════════════════
