@@ -736,7 +736,7 @@
         <span>Sign out</span>
       </button>
     </div>
-    <div id="browse-game-type-label" style="display:none;margin-top:10px;font-size:14px;font-weight:700;color:rgba(255,255,255,0.85);background:rgba(255,255,255,0.15);display:inline-block;padding:4px 14px;border-radius:20px"></div>
+    <div id="browse-game-type-label" style="display:none;margin-top:10px;font-size:14px;font-weight:700;color:rgba(255,255,255,0.85);background:rgba(255,255,255,0.15);padding:4px 14px;border-radius:20px"></div>
   </div>
   <div class="browse-body">
     <!-- Returning user: Your Leagues -->
@@ -765,6 +765,10 @@
 
     <!-- Three options -->
     <div id="browse-options">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;padding:12px 14px">
+        <input id="browse-join-code" class="fi" placeholder="Got a code? Paste it here" style="flex:1;margin:0;font-size:15px;border:1.5px solid #d1d5db;border-radius:8px;padding:10px 12px" maxlength="8" onkeydown="if(event.key==='Enter')browseJoinByCode()">
+        <button class="btn btn-primary btn-sm" onclick="browseJoinByCode()" style="white-space:nowrap;padding:10px 16px;font-size:14px;border-radius:8px">Join</button>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
         <div class="option-card" onclick="showJoinFlow()" id="opt-join" style="text-align:center;padding:24px 16px;cursor:pointer;border:2px solid transparent;transition:border-color 0.2s">
           <div style="font-size:36px;margin-bottom:8px">&#127934;</div>
@@ -1312,6 +1316,7 @@
         <span style="font-size:20px">&#128161;</span>
         <span><strong>Create</strong> a game to find players, or <strong>Join</strong> an existing game below.</span>
       </div>
+      <div id="om-summary" style="margin-bottom:16px"></div>
       <div id="om-filters" class="om-filters"></div>
       <div id="om-list"></div>
     </div>
@@ -1597,6 +1602,7 @@ function deleteLeague(leagueId, event) {
     const updates = {};
     updates['/leagues/' + leagueId] = null;
     updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = null;
+    updates['/leagueIndex/' + leagueId] = null;
     // Remove from clubLeagues
     if (lg && lg.clubId) {
       updates['/clubLeagues/' + lg.clubId + '/' + leagueId] = null;
@@ -1759,6 +1765,7 @@ function adminDeleteLeague(leagueId, leagueName, clubId, code) {
 
   const updates = {};
   updates['/leagues/' + leagueId] = null;
+  updates['/leagueIndex/' + leagueId] = null;
   if (clubId) updates['/clubLeagues/' + clubId + '/' + leagueId] = null;
   if (code) updates['/codes/' + code] = null;
 
@@ -2117,10 +2124,10 @@ function adminDeleteAllLeagues() {
 
 function esc(s) { if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/\\/g,'&#92;'); }
 function val(id) { return document.getElementById(id).value.trim(); }
-function toast(msg) {
+function toast(msg, duration) {
   const el = document.getElementById('toast');
   el.textContent = msg; el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2400);
+  setTimeout(() => el.classList.remove('show'), duration || 3200);
 }
 function ds(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function avk(player, date, slot) { return `${player}|${typeof date === 'string' ? date : ds(date)}|${slot}`; }
@@ -2157,6 +2164,19 @@ function genCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // No 0/O/1/I confusion
   let code = '';
   for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+async function genUniqueCode() {
+  if (!FIREBASE_READY) return genCode();
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const code = genCode();
+    const snap = await db.ref('/codes/' + code).once('value');
+    if (!snap.exists()) return code;
+  }
+  // Fallback: extend to 8 chars to reduce collision chance
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
   return code;
 }
 function sanitizeEmail(email) { return email.replace(/\./g, ','); } // Firebase key-safe
@@ -2664,17 +2684,22 @@ function onAuthSuccess() {
       }
     } else {
       // Check Firebase for guided setup completion (per-user, not localStorage)
-      db.ref('/users/' + currentUser.uid + '/guidedDone').once('value', snap => {
-        if (!snap.val()) {
-          showGuidedSetup();
-        } else if (!userHomeClub) {
-          showScreen('onboarding');
-          waitForClubsThenEnableSearch();
-        } else {
-          showScreen('welcome');
-          if (!consentModalActive) setTimeout(checkAndStartTour, 600);
-        }
-      });
+      if (FIREBASE_READY) {
+        db.ref('/users/' + currentUser.uid + '/guidedDone').once('value', snap => {
+          if (!snap.val()) {
+            showGuidedSetup();
+          } else if (!userHomeClub) {
+            showScreen('onboarding');
+            waitForClubsThenEnableSearch();
+          } else {
+            showScreen('welcome');
+            if (!consentModalActive) setTimeout(checkAndStartTour, 600);
+          }
+        });
+      } else {
+        // Demo mode — show welcome screen
+        showScreen('welcome');
+      }
       return;
     }
   });
@@ -3126,6 +3151,23 @@ function hideJoinFlow() {
   document.getElementById('browse-options').style.display = 'block';
 }
 
+function browseJoinByCode() {
+  const inp = document.getElementById('browse-join-code');
+  const code = (inp.value || '').trim().toUpperCase();
+  if (!code) { toast('Please enter a league code'); inp.focus(); return; }
+  if (!FIREBASE_READY) { toast('Code lookup not available in demo mode'); return; }
+  db.ref('/codes/' + code).once('value', snap => {
+    const leagueId = snap.val();
+    if (leagueId) {
+      inp.value = '';
+      joinAndEnterLeague(leagueId);
+    } else {
+      toast('Code not found — check and try again');
+      inp.focus();
+    }
+  });
+}
+
 /* ── CREATE FLOW ── */
 function showCreateFlow() {
   document.getElementById('browse-options').style.display = 'none';
@@ -3343,12 +3385,12 @@ function clearClubSelection() {
   document.getElementById('club-create-option').style.display = 'none';
 }
 
-function createLeagueInClub() {
+async function createLeagueInClub() {
   const name = val('inp-create-league-name');
   const sport = val('inp-create-league-sport');
   if (!name) { toast('Enter a league name'); return; }
 
-  const code = genCode();
+  const code = await genUniqueCode();
   const deadline = val('inp-create-league-deadline') || '';
 
   if (!FIREBASE_READY) {
@@ -3909,7 +3951,7 @@ function fbSetAvailBatch(updates) {
 function saveSettings() {
   L.settings.leagueName = val('inp-league-name');
   const ref = leagueRef('settings');
-  if (ref) ref.set(L.settings); else localSave();
+  if (ref) ref.update(L.settings); else localSave();
   renderHeader(); renderDeadline();
 
   // Also update league name in userLeagues and hub
@@ -3945,7 +3987,7 @@ function saveDeadline() {
   if (!dlVal) { toast('Please pick a date and time first'); return; }
   L.settings.deadline = dlVal;
   const ref = leagueRef('settings');
-  if (ref) ref.set(L.settings); else localSave();
+  if (ref) ref.update({ deadline: dlVal }); else localSave();
   renderDeadline();
   toast('Deadline saved!');
 }
@@ -3954,7 +3996,7 @@ function clearDeadline() {
   document.getElementById('inp-deadline').value = '';
   L.settings.deadline = '';
   const ref = leagueRef('settings');
-  if (ref) ref.set(L.settings); else localSave();
+  if (ref) ref.update({ deadline: '' }); else localSave();
   renderDeadline();
   toast('Deadline removed');
 }
@@ -4202,9 +4244,47 @@ function addGroup() {
 }
 
 function removeGroup(id) {
-  if (!confirm('Remove this team?')) return;
+  const group = L.groups.find(g => g.id === id);
+  if (!group) return;
+  const playerNames = group.players || [];
+  const playerList = playerNames.join(', ') || 'unnamed';
+  if (!confirm('Remove team (' + playerList + ')?\n\nThis will also remove their availability and booked matches.')) return;
   L.groups = L.groups.filter(g => g.id !== id);
-  fbSetGroups(); renderGroups(); renderMembers(); renderProgress(); toast('Team removed');
+  fbSetGroups();
+
+  // Clean up availability and booked matches for removed players
+  if (playerNames.length > 0) {
+    const availRef = leagueRef('availability');
+    const bookedRef = leagueRef('booked');
+
+    // Remove availability entries for these players
+    const availUpdates = {};
+    Object.keys(L.availability).forEach(key => {
+      for (const pn of playerNames) {
+        if (key.startsWith(pn + '|')) {
+          availUpdates[key] = null;
+          delete L.availability[key];
+          break;
+        }
+      }
+    });
+    if (Object.keys(availUpdates).length > 0 && availRef) availRef.update(availUpdates);
+
+    // Remove booked matches involving these players
+    const bookedUpdates = {};
+    Object.entries(L.booked).forEach(([matchKey, slot]) => {
+      for (const pn of playerNames) {
+        if (matchKey.includes(pn)) {
+          bookedUpdates[matchKey] = null;
+          delete L.booked[matchKey];
+          break;
+        }
+      }
+    });
+    if (Object.keys(bookedUpdates).length > 0 && bookedRef) bookedRef.update(bookedUpdates);
+  }
+
+  renderGroups(); renderMembers(); renderProgress(); renderAvailGrid(); renderAllAvail(); toast('Team removed');
 }
 
 /* ── Templates ── */
@@ -4348,6 +4428,8 @@ function renderAvailGrid() {
   document.getElementById('avail-grid').innerHTML = h;
 }
 
+let _toggleBatch = {};
+let _toggleTimer = null;
 function toggleCell(el) {
   const player = getActivePlayer();
   if (!player) return;
@@ -4356,8 +4438,17 @@ function toggleCell(el) {
   const newVal = !L.availability[key];
   if (newVal) L.availability[key] = true; else delete L.availability[key];
   el.classList.toggle('on', newVal);
-  fbSetAvail(key, newVal);
-  renderMySummary(); renderMyMatches(); renderProgress();
+  // Batch Firebase writes and debounce re-renders
+  _toggleBatch[key] = newVal || null;
+  if (_toggleTimer) clearTimeout(_toggleTimer);
+  _toggleTimer = setTimeout(() => {
+    if (Object.keys(_toggleBatch).length > 0) {
+      fbSetAvailBatch(_toggleBatch);
+      _toggleBatch = {};
+    }
+    renderMySummary(); renderMyMatches(); renderProgress();
+    _toggleTimer = null;
+  }, 350);
 }
 
 function changeWeek(dir) { weekOff += dir; renderAvailGrid(); }
@@ -5402,8 +5493,8 @@ function renderComments() {
     const timeAgo = getTimeAgo(c.timestamp);
     const photo = c.photo;
     let avatarEl;
-    if (photo) {
-      avatarEl = `<img src="${photo}" alt="" onerror="this.style.display='none'">`;
+    if (photo && (photo.startsWith('data:image/') || photo.startsWith('https://'))) {
+      avatarEl = `<img src="${esc(photo)}" alt="" onerror="this.style.display='none'">`;
     } else {
       avatarEl = `<span class="avatar" style="background:${getPlayerColor(c.name || 'User')}">${esc(getInitials(c.name || '?'))}</span>`;
     }
@@ -5678,7 +5769,7 @@ function skipGuided() {
   showScreen('welcome');
 }
 
-function finishGuided() {
+async function finishGuided() {
   if (FIREBASE_READY && currentUser) db.ref('/users/' + currentUser.uid + '/guidedDone').set(true);
 
   if (qData.goal === 'join' && qData.hasCode === 'yes' && qData.code) {
@@ -5718,7 +5809,7 @@ function finishGuided() {
     // Create the league automatically
     const sport = qData.format === 'singles' ? 'singles' : qData.sport;
     const name = qData.leagueName || 'My League';
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const code = await genUniqueCode();
     const clubId = qData.clubId;
     const clubName = qData.club;
 
