@@ -1017,7 +1017,7 @@
   <div id="deadline-banner" class="deadline-banner"></div>
 
   <!-- ── Navigation ── -->
-  <div class="nav" id="app-nav"></div>
+  <div class="nav" id="app-nav" role="tablist"></div>
 
   <div class="content">
 
@@ -1528,7 +1528,7 @@
 <button id="tour-help-btn" class="tour-help-btn" onclick="openHelp()" title="Help &amp; Info" style="display:none">Help</button>
 
 <!-- ── Toast ── -->
-<div id="toast" class="toast"></div>
+<div id="toast" class="toast" role="alert" aria-live="polite"></div>
 
 <!-- ══════════════════════════════════════════════════════
      FIREBASE SDK
@@ -2183,7 +2183,15 @@ function getInitials(name) {
 function avatarHtml(name) {
   return `<span class="avatar" style="background:${getPlayerColor(name)}" title="${esc(name)}">${esc(getInitials(name))}</span>`;
 }
-function getAllPlayers() { return L.groups.flatMap(g => g.players); }
+let _allPlayersCache = null;
+let _allPlayersCacheKey = '';
+function getAllPlayers() {
+  const key = L.groups.map(g => g.id).join(',');
+  if (key === _allPlayersCacheKey && _allPlayersCache) return _allPlayersCache;
+  _allPlayersCacheKey = key;
+  _allPlayersCache = L.groups.flatMap(g => g.players);
+  return _allPlayersCache;
+}
 
 /* ── Time slots (1.5-hour blocks) ── */
 const SLOTS = ['9-1030','1030-12','12-130','130-3','3-430','430-6','6-730','730-9'];
@@ -3759,7 +3767,7 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   const navEl = document.getElementById('app-nav');
   navEl.style.display = '';
   navEl.innerHTML = tabs.map(([id, label], i) =>
-    `<div class="nav-tab${i===0?' active':''}" data-tab="${id}" onclick="showTab('${id}')">${label}</div>`
+    `<div class="nav-tab${i===0?' active':''}" data-tab="${id}" onclick="showTab('${id}')" onkeydown="if(event.key==='Enter')showTab('${id}')" role="tab" tabindex="0" aria-label="${label}">${label}</div>`
   ).join('');
 
   currentTab = mixInMode ? 'open' : 'availability';
@@ -4394,7 +4402,7 @@ function renderAvailGrid() {
       if (isPast) {
         h += `<td><div class="cell past"></div></td>`;
       } else {
-        h += `<td><div class="cell ${on}" data-date="${ds(d)}" data-slot="${slot}" onclick="toggleCell(this)"></div></td>`;
+        h += `<td><div class="cell ${on}" data-date="${ds(d)}" data-slot="${slot}" onclick="toggleCell(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCell(this)}" role="button" tabindex="0" aria-label="${DAY_NAMES[d.getDay()]} ${d.getDate()} ${SLOT_LABELS[slot]}${on ? ' — available' : ''}"></div></td>`;
       }
     });
     h += '</tr>';
@@ -4569,7 +4577,12 @@ function renderAllAvail() {
       const isToday = ds(d) === ds(today);
       const available = players.filter(p => L.availability[avk(p, d, slot)]);
       h += `<td${isToday ? ' class="today-col"' : ''}><div class="avail-cell">`;
-      available.forEach(p => { h += avatarHtml(p); });
+      if (available.length > 4) {
+        // Show count badge instead of many avatars for performance
+        h += `<span class="avatar" style="background:#059669;font-size:11px;width:22px;height:22px" title="${available.map(p => esc(p)).join(', ')}">${available.length}</span>`;
+      } else {
+        available.forEach(p => { h += avatarHtml(p); });
+      }
       h += '</div></td>';
     });
     h += '</tr>';
@@ -4627,7 +4640,16 @@ function chaseCopy() {
 /* ══════════════════════════════════════
    MATCH FINDER TAB
    ══════════════════════════════════════ */
+let _findSlotsCache = {};
+let _findSlotsCacheKey = '';
+function invalidateSlotsCache() { _findSlotsCache = {}; _findSlotsCacheKey = ''; }
 function findSlots(groupA, groupB) {
+  // Cache key based on availability state (invalidated when availability changes)
+  const cacheId = [groupA.id, groupB.id].sort().join('_');
+  const availKey = Object.keys(L.availability).length + '_' + ds(new Date());
+  if (availKey !== _findSlotsCacheKey) { _findSlotsCache = {}; _findSlotsCacheKey = availKey; }
+  if (_findSlotsCache[cacheId]) return _findSlotsCache[cacheId];
+
   const players = [...groupA.players, ...groupB.players];
   const result = [];
   const today = new Date(); today.setHours(0,0,0,0);
@@ -4639,6 +4661,7 @@ function findSlots(groupA, groupB) {
       }
     }
   }
+  _findSlotsCache[cacheId] = result;
   return result;
 }
 
@@ -5402,7 +5425,7 @@ function loadProfilePhoto() {
   const googlePhoto = currentUser.photoURL;
   const photo = memberPhoto || googlePhoto;
 
-  if (photo) {
+  if (isSafePhotoUrl(photo)) {
     photoImg.src = photo;
     photoImg.style.display = 'block';
     photoInitials.style.display = 'none';
@@ -5425,9 +5448,19 @@ function getMemberPhoto(playerName) {
   return null;
 }
 
+function isSafePhotoUrl(url) {
+  if (!url) return false;
+  if (url.startsWith('data:image/')) return true;
+  if (!url.startsWith('https://')) return false;
+  // Allow known photo domains only
+  const allowed = ['lh3.googleusercontent.com','firebasestorage.googleapis.com','graph.facebook.com','platform-lookaside.fbsbx.com','avatars.githubusercontent.com'];
+  try { const host = new URL(url).hostname; return allowed.some(d => host === d || host.endsWith('.' + d)); }
+  catch { return false; }
+}
+
 function avatarWithPhoto(name) {
   const photo = getMemberPhoto(name);
-  if (photo && (photo.startsWith('data:image/') || photo.startsWith('https://'))) {
+  if (isSafePhotoUrl(photo)) {
     const safeInitials = esc(getInitials(name)).replace(/'/g, '&#39;');
     const safeColor = getPlayerColor(name).replace(/'/g, '');
     return `<span class="avatar" style="padding:0;overflow:hidden" title="${esc(name)}"><img src="${esc(photo)}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='${safeInitials}';this.parentElement.style.background='${safeColor}'"></span>`;
@@ -5484,7 +5517,7 @@ function renderComments() {
     const timeAgo = getTimeAgo(c.timestamp);
     const photo = c.photo;
     let avatarEl;
-    if (photo && (photo.startsWith('data:image/') || photo.startsWith('https://'))) {
+    if (isSafePhotoUrl(photo)) {
       avatarEl = `<img src="${esc(photo)}" alt="" onerror="this.style.display='none'">`;
     } else {
       avatarEl = `<span class="avatar" style="background:${getPlayerColor(c.name || 'User')}">${esc(getInitials(c.name || '?'))}</span>`;
