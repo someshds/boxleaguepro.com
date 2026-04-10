@@ -1150,7 +1150,7 @@
       <div id="avail-not-linked" class="card" style="display:none;text-align:center;padding:28px">
         <div style="font-size:36px;margin-bottom:10px">&#9888;&#65039;</div>
         <div style="font-size:17px;font-weight:700;margin-bottom:6px">You're not linked to a player yet</div>
-        <div style="font-size:15px;color:var(--muted)">Ask your league organiser to link your account to your player name in the Setup tab.</div>
+        <div style="font-size:15px;color:var(--muted)">Ask your league organiser to link your account to your player name in the Settings tab.</div>
       </div>
 
       <div id="avail-body" style="display:none">
@@ -3721,7 +3721,7 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   if (mixInMode) {
     tabs = [['open','Friendly Matches']];
   } else if (isOrganiser) {
-    tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['setup','Setup']];
+    tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['setup','Settings']];
   } else {
     tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder']];
   }
@@ -3972,7 +3972,7 @@ function showTab(t) {
 
   document.querySelectorAll('#app-nav .nav-tab').forEach(el => {
     const text = el.textContent.trim();
-    const map = { 'My Availability':'availability', 'Everyone':'everyone', 'Match Finder':'matches', 'Friendly Matches':'open', 'Setup':'setup' };
+    const map = { 'My Availability':'availability', 'Everyone':'everyone', 'Match Finder':'matches', 'Friendly Matches':'open', 'Settings':'setup', 'Setup':'setup' };
     el.classList.toggle('active', map[text] === t);
   });
 
@@ -4018,7 +4018,7 @@ function checkPlayerLink() {
       notLinked.style.display = 'block';
       notLinked.innerHTML = `<div style="font-size:36px;margin-bottom:10px">&#128279;</div>
         <div style="font-size:17px;font-weight:700;margin-bottom:6px">Link yourself to a player</div>
-        <div style="font-size:15px;color:var(--muted)">Go to the <strong>Setup</strong> tab and add groups with player names. Then link your account to your name in the Members section.</div>`;
+        <div style="font-size:15px;color:var(--muted)">Go to the <strong>Settings</strong> tab and add groups with player names. Then link your account to your name in the Members section.</div>`;
       body.style.display = 'none';
     } else {
       notLinked.style.display = 'block';
