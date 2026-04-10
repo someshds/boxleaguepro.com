@@ -1618,22 +1618,40 @@ function adminLoadLeagues() {
   const el = document.getElementById('admin-league-list');
   el.innerHTML = '<div style="color:#92400e;font-size:13px;padding:8px 0">Loading leagues...</div>';
 
-  // Collect league IDs from userLeagues AND from all clubs
+  // Collect ALL league IDs — scan /leagues directly for admins, plus clubLeagues and userLeagues
   const leagueIdSet = new Set(Object.keys(userLeagues));
   const leagueData = [];
 
-  // First, scan all clubs for their leagues
-  db.ref('/clubLeagues').once('value', snap => {
-    const allClubLeagues = snap.val() || {};
-    Object.values(allClubLeagues).forEach(clubLgs => {
-      if (clubLgs && typeof clubLgs === 'object') {
-        Object.keys(clubLgs).forEach(lid => leagueIdSet.add(lid));
-      }
+  // Scan /leagues directly to get every league in the database
+  db.ref('/leagues').once('value', leaguesSnap => {
+    const allLeagues = leaguesSnap.val() || {};
+    Object.keys(allLeagues).forEach(lid => leagueIdSet.add(lid));
+
+    // Also scan clubLeagues for any orphaned references
+    db.ref('/clubLeagues').once('value', snap => {
+      const allClubLeagues = snap.val() || {};
+      Object.values(allClubLeagues).forEach(clubLgs => {
+        if (clubLgs && typeof clubLgs === 'object') {
+          Object.keys(clubLgs).forEach(lid => leagueIdSet.add(lid));
+        }
+      });
+      loadLeagueDetails();
+    }, () => {
+      loadLeagueDetails();
     });
-    loadLeagueDetails();
   }, () => {
-    // If can't read all clubLeagues, just use userLeagues
-    loadLeagueDetails();
+    // Fallback: if can't read /leagues, try clubLeagues + userLeagues
+    db.ref('/clubLeagues').once('value', snap => {
+      const allClubLeagues = snap.val() || {};
+      Object.values(allClubLeagues).forEach(clubLgs => {
+        if (clubLgs && typeof clubLgs === 'object') {
+          Object.keys(clubLgs).forEach(lid => leagueIdSet.add(lid));
+        }
+      });
+      loadLeagueDetails();
+    }, () => {
+      loadLeagueDetails();
+    });
   });
 
   function loadLeagueDetails() {
