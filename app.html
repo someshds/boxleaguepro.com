@@ -1239,7 +1239,11 @@
 
       <div id="tab-guide-everyone" class="tab-guide" style="display:none"></div>
 
-      <div class="card-title" style="margin-bottom:10px">Next 2 Weeks</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <button class="btn btn-secondary btn-sm" onclick="changeEveryoneWeek(-1)" id="everyone-prev" style="padding:6px 12px">&larr; Earlier</button>
+        <div class="card-title" style="margin:0" id="everyone-range-label">Next 2 Weeks</div>
+        <button class="btn btn-secondary btn-sm" onclick="changeEveryoneWeek(1)" style="padding:6px 12px">Later &rarr;</button>
+      </div>
       <div class="card" style="padding:12px 8px">
         <div id="avail-legend" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;padding:0 4px"></div>
         <div class="avail-cal-wrap"><div id="avail-cal-grid"></div></div>
@@ -4548,6 +4552,13 @@ function renderMySummary() {
 /* ══════════════════════════════════════
    EVERYONE TAB
    ══════════════════════════════════════ */
+let everyoneWeekOff = 0;
+function changeEveryoneWeek(dir) {
+  everyoneWeekOff += dir;
+  if (everyoneWeekOff < 0) everyoneWeekOff = 0; // Don't go before today
+  renderAllAvail(); renderMissing();
+}
+
 function renderAllAvail() {
   const players = getAllPlayers();
   const legend = document.getElementById('avail-legend');
@@ -4560,7 +4571,18 @@ function renderAllAvail() {
     </div>`).join('');
 
   const today = new Date(); today.setHours(0,0,0,0);
-  const dates = Array.from({length:14}, (_, i) => { const d = new Date(today); d.setDate(today.getDate()+i); return d; });
+  const startOffset = everyoneWeekOff * 14;
+  const dates = Array.from({length:14}, (_, i) => { const d = new Date(today); d.setDate(today.getDate() + startOffset + i); return d; });
+
+  // Update range label
+  const rangeLabel = document.getElementById('everyone-range-label');
+  const prevBtn = document.getElementById('everyone-prev');
+  if (rangeLabel) {
+    const first = dates[0], last = dates[dates.length - 1];
+    rangeLabel.textContent = `${first.getDate()} ${MONTH_NAMES[first.getMonth()]} – ${last.getDate()} ${MONTH_NAMES[last.getMonth()]}`;
+  }
+  if (prevBtn) prevBtn.style.visibility = everyoneWeekOff === 0 ? 'hidden' : 'visible';
+
   const dayNames = DAY_NAMES;
 
   let h = `<table class="avail-cal"><thead><tr><th class="slot-col">Slot</th>`;
