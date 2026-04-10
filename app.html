@@ -2003,16 +2003,22 @@ function adminRemoveUserFromLeague(emailKey, leagueId, uid) {
 
 function adminDeleteUser(email) {
   if (!isAdmin()) return;
-  if (!confirm('Remove ' + email + ' from ALL your leagues? This cannot be undone.')) return;
+  if (!confirm('Remove ' + email + ' from ALL leagues globally? This cannot be undone.')) return;
 
   const emailKey = email.replace(/\./g, ',');
-  const leagueIds = Object.keys(userLeagues);
   const updates = {};
-  let loaded = 0;
   let uid = null;
 
-  leagueIds.forEach(leagueId => {
-    db.ref('/leagues/' + leagueId).once('value', snap => {
+  // Use leagueIndex to get ALL leagues (not just admin's)
+  db.ref('/leagueIndex').once('value', indexSnap => {
+    const allLeagueIds = Object.keys(indexSnap.val() || {});
+    // Also include admin's own leagues as fallback
+    Object.keys(userLeagues).forEach(id => { if (!allLeagueIds.includes(id)) allLeagueIds.push(id); });
+    if (allLeagueIds.length === 0) { toast('No leagues found'); return; }
+    let loaded = 0;
+
+    allLeagueIds.forEach(leagueId => {
+      db.ref('/leagues/' + leagueId).once('value', snap => {
       const league = snap.val();
       if (league) {
         const members = league.members || {};
@@ -2034,7 +2040,7 @@ function adminDeleteUser(email) {
       }
 
       loaded++;
-      if (loaded === leagueIds.length) {
+      if (loaded === allLeagueIds.length) {
         if (uid) updates['/userLeagues/' + uid] = null;
         if (Object.keys(updates).length === 0) {
           toast('User not found in any league');
@@ -2046,6 +2052,7 @@ function adminDeleteUser(email) {
         }).catch(err => toast('Error: ' + err.message));
       }
     });
+  });
   });
 }
 
@@ -2882,23 +2889,11 @@ function waitForClubsThenEnableSearch() {
 }
 
 function searchOnboardClubs() {
-  const q = document.getElementById('inp-onboard-club').value.toLowerCase().trim();
+  const q = document.getElementById('inp-onboard-club').value;
   const results = document.getElementById('onboard-club-results');
   const createOpt = document.getElementById('onboard-club-create');
-  if (!q) { results.innerHTML = ''; createOpt.style.display = 'none'; return; }
-  const matches = Object.entries(allClubs).filter(([id, c]) => c.name.toLowerCase().includes(q));
-  if (matches.length > 0) {
-    results.innerHTML = matches.map(([id, c]) =>
-      `<div class="club-list-item" onclick="selectOnboardClub('${esc(id)}','${esc(c.name)}','${esc(c.bookingUrl || '')}')">
-        <span class="club-list-item-name">${esc(c.name)}</span>
-        <span class="club-list-item-count">&rarr;</span>
-      </div>`
-    ).join('');
-  } else {
-    results.innerHTML = '';
-  }
-  document.getElementById('onboard-club-create-name').textContent = '+ Create "' + document.getElementById('inp-onboard-club').value + '"';
-  createOpt.style.display = 'block';
+  clubSearchGeneric(q, results, createOpt, 'selectOnboardClub');
+  if (q.trim()) document.getElementById('onboard-club-create-name').textContent = '+ Create "' + q.trim() + '"';
 }
 
 function selectOnboardClub(clubId, clubName, bookingUrl) {
@@ -2997,19 +2992,9 @@ function changeHomeClub() {
 }
 
 function searchProfileClubs() {
-  const q = document.getElementById('inp-profile-club').value.toLowerCase().trim();
+  const q = document.getElementById('inp-profile-club').value;
   const results = document.getElementById('profile-club-results');
-  if (!q) { results.innerHTML = ''; return; }
-  const matches = Object.entries(allClubs).filter(([id, c]) => c.name.toLowerCase().includes(q));
-  results.innerHTML = matches.map(([id, c]) =>
-    `<div class="club-list-item" onclick="selectProfileClub('${esc(id)}','${esc(c.name)}','${esc(c.bookingUrl || '')}')" style="cursor:pointer">
-      <span class="club-list-item-name">${esc(c.name)}</span>
-      <span class="club-list-item-count">&rarr;</span>
-    </div>`
-  ).join('');
-  if (matches.length === 0) {
-    results.innerHTML = '<div style="padding:8px;font-size:13px;color:#6b7280">No clubs found. Search or create in Browse.</div>';
-  }
+  clubSearchGeneric(q, results, null, 'selectProfileClub', { emptyMsg: '<div style="padding:8px;font-size:13px;color:#6b7280">No clubs found. Search or create in Browse.</div>' });
 }
 
 function selectProfileClub(clubId, clubName, bookingUrl) {
@@ -3083,12 +3068,10 @@ function loadUserLeagues() {
   });
   globalListenerRefs.push({ ref: ulRef, event: 'value', fn: ulFn });
 
-  // Load all clubs for search
-  const clubsRef = db.ref('/clubs');
-  const clubsFn = clubsRef.on('value', snap => {
+  // Load all clubs once for search (no live listener — clubs change rarely)
+  db.ref('/clubs').once('value', snap => {
     allClubs = snap.val() || {};
   });
-  globalListenerRefs.push({ ref: clubsRef, event: 'value', fn: clubsFn });
 }
 
 let createdLeagueId = null; // Track league just created for the share flow
@@ -3188,23 +3171,11 @@ function hideCreateFlow() {
 }
 
 function searchClubsCreate() {
-  const q = document.getElementById('inp-create-club-search').value.toLowerCase();
+  const q = document.getElementById('inp-create-club-search').value;
   const results = document.getElementById('create-club-results');
   const createOpt = document.getElementById('create-club-create-option');
-  if (!q) { results.innerHTML = ''; createOpt.style.display = 'none'; return; }
-  const matches = Object.entries(allClubs).filter(([id, c]) => c.name.toLowerCase().includes(q));
-  if (matches.length > 0) {
-    results.innerHTML = matches.map(([id, c]) =>
-      `<div class="club-list-item" onclick="selectClubForCreate('${esc(id)}','${esc(c.name)}')">
-        <span class="club-list-item-name">${esc(c.name)}</span>
-        <span class="club-list-item-count">&rarr;</span>
-      </div>`
-    ).join('');
-  } else {
-    results.innerHTML = '';
-  }
-  document.getElementById('create-club-create-name').textContent = 'Create "' + document.getElementById('inp-create-club-search').value + '"';
-  createOpt.style.display = 'block';
+  clubSearchGeneric(q, results, createOpt, 'selectClubForCreate');
+  if (q.trim()) document.getElementById('create-club-create-name').textContent = 'Create "' + q.trim() + '"';
 }
 
 function selectClubForCreate(clubId, clubName) {
@@ -3282,29 +3253,11 @@ function enterCreatedLeague() {
 }
 
 function searchClubs() {
-  const q = val('inp-club-search').toLowerCase();
+  const q = val('inp-club-search');
   const results = document.getElementById('club-results');
   const createOpt = document.getElementById('club-create-option');
-
-  if (!q) { results.innerHTML = ''; createOpt.style.display = 'none'; return; }
-
-  // Search existing clubs
-  const matches = Object.entries(allClubs).filter(([id, c]) => c.name.toLowerCase().includes(q));
-
-  if (matches.length > 0) {
-    results.innerHTML = matches.map(([id, c]) =>
-      `<div class="club-list-item" onclick="selectClub('${esc(id)}','${esc(c.name)}')">
-        <span class="club-list-item-name">${esc(c.name)}</span>
-        <span class="club-list-item-count">&rarr;</span>
-      </div>`
-    ).join('');
-  } else {
-    results.innerHTML = '';
-  }
-
-  // Always show create option
-  document.getElementById('club-create-name').textContent = `Create "${val('inp-club-search')}"`;
-  createOpt.style.display = 'block';
+  clubSearchGeneric(q, results, createOpt, 'selectClub');
+  if (q.trim()) document.getElementById('club-create-name').textContent = 'Create "' + q.trim() + '"';
 }
 
 function createClubFromSearch() {
@@ -3345,6 +3298,27 @@ function selectClub(clubId, clubName) {
   db.ref('/clubLeagues/' + clubId).once('value', snap => {
     renderClubLeagues(snap.val() || {});
   });
+}
+
+/* ── Shared club search helper ── */
+function clubSearchGeneric(query, resultsEl, createEl, onSelect, opts) {
+  const q = query.toLowerCase().trim();
+  if (!q) { resultsEl.innerHTML = ''; if (createEl) createEl.style.display = 'none'; return; }
+  const matches = Object.entries(allClubs).filter(([id, c]) => c.name && c.name.toLowerCase().includes(q));
+  const limit = (opts && opts.limit) || 0;
+  const shown = limit ? matches.slice(0, limit) : matches;
+  const itemClass = (opts && opts.itemClass) || 'club-list-item';
+  if (shown.length > 0) {
+    resultsEl.innerHTML = shown.map(([id, c]) =>
+      `<div class="${itemClass}" onclick="${onSelect}('${esc(id)}','${esc(c.name)}','${esc(c.bookingUrl || '')}')" style="cursor:pointer">
+        <span class="club-list-item-name">${esc(c.name)}</span>
+        <span class="club-list-item-count">&rarr;</span>
+      </div>`
+    ).join('');
+  } else {
+    resultsEl.innerHTML = (opts && opts.emptyMsg) || '';
+  }
+  if (createEl) createEl.style.display = 'block';
 }
 
 function isSinglesLeague(sport) {
@@ -3600,11 +3574,13 @@ function wizSaveData() {
     const groups = snap.val() || {};
     let existingTeamId = null;
 
-    // Look for a team that already has myName or partnerName
+    // Look for a team that already has myName or partnerName (normalised comparison)
+    const normName = myName.toLowerCase().replace(/\s+/g, ' ').trim();
+    const normPartner = partnerName ? partnerName.toLowerCase().replace(/\s+/g, ' ').trim() : '';
     Object.entries(groups).forEach(([id, g]) => {
       if (g.players) {
-        const playersLower = g.players.map(p => p.toLowerCase());
-        if (playersLower.includes(myName.toLowerCase()) || (!wizIsSingles && partnerName && playersLower.includes(partnerName.toLowerCase()))) {
+        const playersNorm = g.players.map(p => p.toLowerCase().replace(/\s+/g, ' ').trim());
+        if (playersNorm.includes(normName) || (!wizIsSingles && normPartner && playersNorm.includes(normPartner))) {
           existingTeamId = id;
         }
       }
@@ -3614,7 +3590,7 @@ function wizSaveData() {
 
     // Create or update team
     if (!existingTeamId) {
-      const teamId = 'T' + Date.now();
+      const teamId = 'T' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
       const players = wizIsSingles ? [myName] : [myName, partnerName];
       updates['/leagues/' + wizLeagueId + '/groups/' + teamId] = {
         id: teamId, name: teamName, players: players
@@ -5050,46 +5026,32 @@ function setOmFilter(f) {
   renderOpenMatches();
 }
 
-function shareOpenMatch(matchId) {
+function buildOpenMatchMsg(matchId) {
   const m = L.openMatches[matchId];
-  if (!m) { toast('Match not found'); return; }
+  if (!m) return null;
   const players = m.players || [];
   const maxP = m.maxPlayers || 4;
   const spotsLeft = maxP - players.length;
   const mDate = new Date(m.date + 'T00:00:00');
-  const dayNames = DAY_NAMES;
-  const monthNames = MONTH_NAMES;
-  const dateStr = `${dayNames[mDate.getDay()]} ${mDate.getDate()} ${monthNames[mDate.getMonth()]}`;
+  const dateStr = `${DAY_NAMES[mDate.getDay()]} ${mDate.getDate()} ${MONTH_NAMES[mDate.getMonth()]}`;
   const slotLabel = SLOT_LABELS[m.slot] || m.slot || '';
   const link = mixInMode
     ? window.location.origin + window.location.pathname + '?mixin=1' + (userHomeClub ? '&club=' + userHomeClub.id : '')
     : window.location.origin + window.location.pathname + '?league=' + activeLeagueId;
   const sportLabel = (m.sport || 'tennis').charAt(0).toUpperCase() + (m.sport || 'tennis').slice(1);
+  return `${sportLabel} - ${m.title || 'Open Game'}\n${dateStr} | ${slotLabel}\n${m.venue ? 'Venue: ' + m.venue + '\n' : ''}${m.level ? 'Level: ' + m.level.charAt(0).toUpperCase() + m.level.slice(1) + '\n' : ''}Players: ${players.length}/${maxP}${spotsLeft > 0 ? ' - ' + spotsLeft + ' slot' + (spotsLeft !== 1 ? 's' : '') + ' left!' : ' - FULL'}\n\nJoin here: ${link}`;
+}
 
-  const msg = `${sportLabel} - ${m.title || 'Open Game'}\n${dateStr} | ${slotLabel}\n${m.venue ? 'Venue: ' + m.venue + '\n' : ''}${m.level ? 'Level: ' + m.level.charAt(0).toUpperCase() + m.level.slice(1) + '\n' : ''}Players: ${players.length}/${maxP}${spotsLeft > 0 ? ' - ' + spotsLeft + ' slot' + (spotsLeft !== 1 ? 's' : '') + ' left!' : ' - FULL'}\n\nJoin here: ${link}`;
-
+function shareOpenMatch(matchId) {
+  const msg = buildOpenMatchMsg(matchId);
+  if (!msg) { toast('Match not found'); return; }
   copyText(msg);
   toast('Game link copied! Paste it in WhatsApp or any chat.');
 }
 
 function whatsAppShareMatch(matchId) {
-  const m = L.openMatches[matchId];
-  if (!m) { toast('Match not found'); return; }
-  const players = m.players || [];
-  const maxP = m.maxPlayers || 4;
-  const spotsLeft = maxP - players.length;
-  const mDate = new Date(m.date + 'T00:00:00');
-  const dayNames = DAY_NAMES;
-  const monthNames = MONTH_NAMES;
-  const dateStr = `${dayNames[mDate.getDay()]} ${mDate.getDate()} ${monthNames[mDate.getMonth()]}`;
-  const slotLabel = SLOT_LABELS[m.slot] || m.slot || '';
-  const link = mixInMode
-    ? window.location.origin + window.location.pathname + '?mixin=1' + (userHomeClub ? '&club=' + userHomeClub.id : '')
-    : window.location.origin + window.location.pathname + '?league=' + activeLeagueId;
-  const sportLabel = (m.sport || 'tennis').charAt(0).toUpperCase() + (m.sport || 'tennis').slice(1);
-
-  const msg = `${sportLabel} - ${m.title || 'Open Game'}\n${dateStr} | ${slotLabel}\n${m.venue ? 'Venue: ' + m.venue + '\n' : ''}${m.level ? 'Level: ' + m.level.charAt(0).toUpperCase() + m.level.slice(1) + '\n' : ''}Players: ${players.length}/${maxP}${spotsLeft > 0 ? ' - ' + spotsLeft + ' slot' + (spotsLeft !== 1 ? 's' : '') + ' left!' : ' - FULL'}\n\nJoin here: ${link}`;
-
+  const msg = buildOpenMatchMsg(matchId);
+  if (!msg) { toast('Match not found'); return; }
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
 
@@ -5542,8 +5504,12 @@ function renderComments() {
   }).join('');
 }
 
+let _lastCommentTime = 0;
 function postComment() {
   if (!currentUser) { toast('Sign in to comment'); return; }
+  const now = Date.now();
+  if (now - _lastCommentTime < 5000) { toast('Please wait a few seconds between messages'); return; }
+  _lastCommentTime = now;
   const path = commentsPath();
   if (!path) { toast('No chat available'); return; }
   const input = document.getElementById('comment-input');
@@ -5750,21 +5716,15 @@ function qBack() {
 }
 
 function qSearchClubs() {
-  const q = (document.getElementById('q-club-input').value || '').toLowerCase().trim();
+  const q = document.getElementById('q-club-input').value || '';
   const results = document.getElementById('q-club-results');
   const createOpt = document.getElementById('q-club-create');
-  if (!q) { results.innerHTML = ''; createOpt.style.display = 'none'; return; }
-  const matches = Object.entries(allClubs).filter(([id, c]) => c.name.toLowerCase().includes(q));
-  if (matches.length > 0) {
-    results.innerHTML = matches.slice(0, 5).map(([id, c]) =>
-      `<div class="q-search-item" onclick="qSelectClub('${esc(id)}','${esc(c.name)}','${esc(c.bookingUrl || '')}')">${esc(c.name)}</div>`
-    ).join('');
-  } else {
-    results.innerHTML = '<div style="padding:10px;color:#6b7280;font-size:14px;text-align:center">No clubs found</div>';
-  }
+  clubSearchGeneric(q, results, createOpt, 'qSelectClub', {
+    limit: 5, itemClass: 'q-search-item',
+    emptyMsg: '<div style="padding:10px;color:#6b7280;font-size:14px;text-align:center">No clubs found</div>'
+  });
   const createName = document.getElementById('q-club-create-name');
-  if (createName) createName.textContent = document.getElementById('q-club-input').value.trim();
-  createOpt.style.display = 'block';
+  if (createName && q.trim()) createName.textContent = q.trim();
 }
 
 function qSelectClub(id, name, bookingUrl) {
