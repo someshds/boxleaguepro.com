@@ -1154,6 +1154,15 @@
       </div>
 
       <div id="avail-body" style="display:none">
+        <div id="fill-in-for" style="display:none;margin-bottom:12px">
+          <div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:12px 14px">
+            <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:6px">&#128100; Fill in availability for another player</div>
+            <select id="fill-in-select" class="fi" onchange="switchFillInPlayer()" style="font-size:14px;padding:8px 12px">
+              <option value="">Myself</option>
+            </select>
+            <div id="fill-in-label" style="display:none;font-size:12px;color:#b45309;margin-top:4px;font-weight:600"></div>
+          </div>
+        </div>
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
           <button class="btn btn-secondary btn-sm" onclick="copyLastWeek()">&#128260; Copy last week</button>
           <button class="btn btn-secondary btn-sm" onclick="clearMyWeek()">&#128465; Clear this week</button>
@@ -1179,7 +1188,7 @@
         </div>
 
         <div class="card mt12" id="my-summary" style="display:none">
-          <div class="card-title" style="margin-bottom:8px">Your upcoming availability</div>
+          <div class="card-title" style="margin-bottom:8px" id="my-summary-title">Your upcoming availability</div>
           <div id="my-summary-body" class="txt-muted"></div>
         </div>
 
@@ -3689,6 +3698,7 @@ function enterLeague(leagueId) {
 
 function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   activeLeagueId = leagueId;
+  fillInForPlayer = ''; // Reset fill-in when entering a league
 
   // Load club booking URL
   clubBookingUrl = '';
@@ -3995,6 +4005,8 @@ function showTab(t) {
 /* ══════════════════════════════════════
    PLAYER LINKING
    ══════════════════════════════════════ */
+let fillInForPlayer = '';
+
 function getMyPlayerName() {
   if (!currentUser) return '';
   const emailKey = sanitizeEmail(currentUser.email);
@@ -4003,6 +4015,52 @@ function getMyPlayerName() {
   // In mix-in mode (no league), fall back to display name
   if (mixInMode) return currentUser.displayName || currentUser.email.split('@')[0];
   return '';
+}
+
+function getActivePlayer() {
+  return fillInForPlayer || getMyPlayerName();
+}
+
+function populateFillInDropdown() {
+  const container = document.getElementById('fill-in-for');
+  const sel = document.getElementById('fill-in-select');
+  if (!container || !sel) return;
+
+  const myName = getMyPlayerName();
+  const allPlayers = getAllPlayers();
+  const otherPlayers = allPlayers.filter(p => p !== myName);
+
+  if (otherPlayers.length === 0) {
+    container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'block';
+  sel.innerHTML = '<option value="">Myself (' + esc(myName) + ')</option>';
+  otherPlayers.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p;
+    opt.textContent = p;
+    if (p === fillInForPlayer) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function switchFillInPlayer() {
+  const sel = document.getElementById('fill-in-select');
+  const label = document.getElementById('fill-in-label');
+  const title = document.getElementById('my-summary-title');
+  fillInForPlayer = sel.value;
+  if (fillInForPlayer) {
+    label.textContent = '⚠️ You are now editing availability for ' + fillInForPlayer;
+    label.style.display = 'block';
+    if (title) title.textContent = fillInForPlayer + "'s upcoming availability";
+  } else {
+    label.style.display = 'none';
+    if (title) title.textContent = 'Your upcoming availability';
+  }
+  renderAvailGrid();
+  renderMySummary();
 }
 
 function checkPlayerLink() {
@@ -4029,6 +4087,7 @@ function checkPlayerLink() {
 
   notLinked.style.display = 'none';
   body.style.display = 'block';
+  populateFillInDropdown();
   renderAvailGrid(); renderMySummary(); renderMyMatches();
 }
 
@@ -4256,7 +4315,7 @@ function weekDates() {
 }
 
 function renderAvailGrid() {
-  const player = getMyPlayerName();
+  const player = getActivePlayer();
   if (!player) return;
   const dates = weekDates();
   const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -4290,7 +4349,7 @@ function renderAvailGrid() {
 }
 
 function toggleCell(el) {
-  const player = getMyPlayerName();
+  const player = getActivePlayer();
   if (!player) return;
   const d = new Date(el.dataset.date + 'T00:00:00');
   const key = avk(player, d, el.dataset.slot);
@@ -4304,7 +4363,7 @@ function toggleCell(el) {
 function changeWeek(dir) { weekOff += dir; renderAvailGrid(); }
 
 function copyLastWeek() {
-  const player = getMyPlayerName();
+  const player = getActivePlayer();
   if (!player) return;
   const dates = weekDates();
   const updates = {};
@@ -4328,9 +4387,10 @@ function copyLastWeek() {
 }
 
 function clearMyWeek() {
-  const player = getMyPlayerName();
+  const player = getActivePlayer();
   if (!player) return;
-  if (!confirm('Clear all your availability for this week?')) return;
+  const who = fillInForPlayer ? fillInForPlayer + "'s" : 'your';
+  if (!confirm('Clear all ' + who + ' availability for this week?')) return;
   const dates = weekDates();
   const updates = {};
   dates.forEach(d => {
@@ -4391,7 +4451,7 @@ function renderMyMatches() {
 }
 
 function renderMySummary() {
-  const player = getMyPlayerName();
+  const player = getActivePlayer();
   const card = document.getElementById('my-summary');
   const body = document.getElementById('my-summary-body');
   if (!player) { card.style.display = 'none'; return; }
