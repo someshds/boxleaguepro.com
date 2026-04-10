@@ -2102,27 +2102,7 @@ function adminRebuildIndex() {
   });
 }
 
-function adminDeleteAllLeagues() {
-  if (!isAdmin()) return;
-  if (!confirm('DELETE ALL your leagues? This cannot be undone.')) return;
-  if (!confirm('FINAL WARNING: All leagues will be permanently deleted. Continue?')) return;
-  const ids = Object.keys(userLeagues);
-  const updates = {};
-  ids.forEach(id => {
-    const lg = userLeagues[id];
-    updates['/leagues/' + id] = null;
-    updates['/userLeagues/' + currentUser.uid + '/' + id] = null;
-    if (lg && lg.clubId) updates['/clubLeagues/' + lg.clubId + '/' + id] = null;
-    if (lg && lg.code) updates['/codes/' + lg.code] = null;
-  });
-  db.ref().update(updates).then(() => {
-    toast('All leagues deleted');
-  }).catch(err => {
-    toast('Delete failed: ' + err.message);
-  });
-}
-
-function esc(s) { if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/\\/g,'&#92;'); }
+function esc(s) { if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/\\/g,'&#92;').replace(/`/g,'&#96;'); }
 function val(id) { return document.getElementById(id).value.trim(); }
 function toast(msg, duration) {
   const el = document.getElementById('toast');
@@ -2183,6 +2163,8 @@ function sanitizeEmail(email) { return email.replace(/\./g, ','); } // Firebase 
 
 /* ── Player colours ── */
 const GROUP_COLORS = ['#1d4ed8','#0891b2','#dc2626','#d97706','#7c3aed','#059669','#be185d','#0d9488','#9333ea','#ea580c'];
+const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function getPlayerColor(name) {
   const idx = L.groups.findIndex(g => g.players.includes(name));
   return GROUP_COLORS[idx >= 0 ? idx % GROUP_COLORS.length : 0];
@@ -2387,6 +2369,7 @@ function resetPassword() {
 function signOut() {
   detachListeners();
   detachGlobalListeners();
+  if (_deadlineInterval) { clearInterval(_deadlineInterval); _deadlineInterval = null; }
   userHomeClub = null;
   userPreferredSport = '';
   mixInMode = false;
@@ -2501,12 +2484,22 @@ function saveProfile() {
                 updates['/leagues/' + activeLeagueId + '/availability/' + newKey] = v;
               }
             });
-            db.ref().update(updates).then(() => {
-              toast('Profile updated!');
-              closeProfile();
-            }).catch(err => {
-              errEl.textContent = 'Save failed: ' + err.message;
-              errEl.style.display = 'block';
+            // Also rename in booked match agreed entries
+            leagueRef.child('booked').once('value', bookedSnap => {
+              const booked = bookedSnap.val() || {};
+              Object.entries(booked).forEach(([matchKey, slot]) => {
+                if (slot && slot.agreed && slot.agreed[oldName] !== undefined) {
+                  updates['/leagues/' + activeLeagueId + '/booked/' + matchKey + '/agreed/' + oldName] = null;
+                  updates['/leagues/' + activeLeagueId + '/booked/' + matchKey + '/agreed/' + newName] = slot.agreed[oldName];
+                }
+              });
+              db.ref().update(updates).then(() => {
+                toast('Profile updated!');
+                closeProfile();
+              }).catch(err => {
+                errEl.textContent = 'Save failed: ' + err.message;
+                errEl.style.display = 'block';
+              });
             });
           });
         } else {
@@ -2805,7 +2798,7 @@ function enterMixInMode() {
   const clubLabel = userHomeClub ? userHomeClub.name : '';
   document.getElementById('app-league-name').textContent = 'Create or Join Friendly Mix-In Games';
   document.getElementById('app-league-code').textContent = clubLabel;
-  document.getElementById('app-league-code-wrap').style.display = clubLabel ? 'flex' : 'none';
+  document.getElementById('app-league-code-wrap').style.display = clubLabel ? 'block' : 'none';
   document.getElementById('progress-wrap').style.display = 'none';
   document.getElementById('deadline-banner').style.display = 'none';
   const photoUrl = currentUser.photoURL || getDefaultAvatar();
@@ -3094,13 +3087,6 @@ function loadUserLeagues() {
   const clubsRef = db.ref('/clubs');
   const clubsFn = clubsRef.on('value', snap => {
     allClubs = snap.val() || {};
-    // Auto-set East Grinstead booking URL if missing
-    Object.entries(allClubs).forEach(([id, c]) => {
-      if (c.name && c.name.toLowerCase().includes('east grinstead') && !c.bookingUrl) {
-        db.ref('/clubs/' + id + '/bookingUrl').set('https://egtsc.mycourts.co.uk/');
-        allClubs[id].bookingUrl = 'https://egtsc.mycourts.co.uk/';
-      }
-    });
   });
   globalListenerRefs.push({ ref: clubsRef, event: 'value', fn: clubsFn });
 }
@@ -3364,7 +3350,7 @@ function selectClub(clubId, clubName) {
 function isSinglesLeague(sport) {
   if (!sport) return false;
   const s = sport.toLowerCase();
-  return s === 'singles' || s === 'squash';
+  return s === 'singles' || s === 'squash' || s === 'racketball';
 }
 
 function renderClubLeagues(leagues) {
@@ -3797,13 +3783,13 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   const navEl = document.getElementById('app-nav');
   navEl.style.display = '';
   navEl.innerHTML = tabs.map(([id, label], i) =>
-    `<div class="nav-tab${i===0?' active':''}" onclick="showTab('${id}')">${label}</div>`
+    `<div class="nav-tab${i===0?' active':''}" data-tab="${id}" onclick="showTab('${id}')">${label}</div>`
   ).join('');
 
   currentTab = mixInMode ? 'open' : 'availability';
 
   // Hide league-specific header elements in mix-in mode
-  document.getElementById('app-league-code-wrap').style.display = mixInMode ? 'none' : 'flex';
+  document.getElementById('app-league-code-wrap').style.display = mixInMode ? 'none' : 'block';
   document.getElementById('progress-wrap').style.display = mixInMode ? 'none' : '';
   document.getElementById('deadline-banner').style.display = mixInMode ? 'none' : '';
   // Hide "Quick Add All Teams" in singles leagues
@@ -4028,20 +4014,20 @@ function fbSetBooked(matchKey, slotData) {
    ══════════════════════════════════════ */
 function showTab(t) {
   currentTab = t;
-  const tabNames = [];
-  document.querySelectorAll('#app-nav .nav-tab').forEach(el => {
-    const tabId = el.textContent.trim().toLowerCase().replace(/\s+/g, '');
-    tabNames.push(el);
-  });
-
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   const section = document.getElementById('tab-' + t);
   if (section) section.classList.add('active');
 
   document.querySelectorAll('#app-nav .nav-tab').forEach(el => {
-    const text = el.textContent.trim();
-    const map = { 'My Availability':'availability', 'Everyone':'everyone', 'Match Finder':'matches', 'Friendly Matches':'open', 'Settings':'setup', 'Setup':'setup' };
-    el.classList.toggle('active', map[text] === t);
+    const tabId = el.dataset.tab;
+    if (tabId) {
+      el.classList.toggle('active', tabId === t);
+    } else {
+      // Fallback for tabs without data-tab attribute
+      const text = el.textContent.trim();
+      const map = { 'My Availability':'availability', 'Everyone':'everyone', 'Match Finder':'matches', 'Friendly Matches':'open', 'Settings':'setup', 'Setup':'setup' };
+      el.classList.toggle('active', map[text] === t);
+    }
   });
 
   if (t === 'availability') { checkPlayerLink(); }
@@ -4591,7 +4577,7 @@ function renderAllAvail() {
 
   const today = new Date(); today.setHours(0,0,0,0);
   const dates = Array.from({length:14}, (_, i) => { const d = new Date(today); d.setDate(today.getDate()+i); return d; });
-  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const dayNames = DAY_NAMES;
 
   let h = `<table class="avail-cal"><thead><tr><th class="slot-col">Slot</th>`;
   dates.forEach(d => {
@@ -4778,6 +4764,10 @@ function renderMatchFinder() {
 }
 
 function bookMatch(matchKey, date, slot) {
+  const slotLabel = SLOT_LABELS[slot] || slot;
+  const d = new Date(date + 'T00:00:00');
+  const dateLabel = DAY_NAMES[d.getDay()] + ' ' + d.getDate() + ' ' + MONTH_NAMES[d.getMonth()];
+  if (!confirm('Book this match?\n\n' + dateLabel + ' at ' + slotLabel + '\n\nPlayers will be notified.')) return;
   fbSetBooked(matchKey, { date, slot, notes: '', courtBooked: false, agreed: {} });
   notifyBooking(matchKey, date, slot);
   renderMatchFinder(); renderMyMatches();
@@ -4908,8 +4898,8 @@ function renderOpenMatches() {
     dates.push(d);
   }
 
-  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dayNames = DAY_NAMES;
+  const monthNames = MONTH_NAMES;
   let fh = `<div class="om-chip ${omFilter === 'upcoming' ? 'active' : ''}" onclick="setOmFilter('upcoming')">Upcoming</div>`;
   dates.forEach(d => {
     const key = ds(d);
@@ -5067,8 +5057,8 @@ function shareOpenMatch(matchId) {
   const maxP = m.maxPlayers || 4;
   const spotsLeft = maxP - players.length;
   const mDate = new Date(m.date + 'T00:00:00');
-  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dayNames = DAY_NAMES;
+  const monthNames = MONTH_NAMES;
   const dateStr = `${dayNames[mDate.getDay()]} ${mDate.getDate()} ${monthNames[mDate.getMonth()]}`;
   const slotLabel = SLOT_LABELS[m.slot] || m.slot || '';
   const link = mixInMode
@@ -5089,8 +5079,8 @@ function whatsAppShareMatch(matchId) {
   const maxP = m.maxPlayers || 4;
   const spotsLeft = maxP - players.length;
   const mDate = new Date(m.date + 'T00:00:00');
-  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dayNames = DAY_NAMES;
+  const monthNames = MONTH_NAMES;
   const dateStr = `${dayNames[mDate.getDay()]} ${mDate.getDate()} ${monthNames[mDate.getMonth()]}`;
   const slotLabel = SLOT_LABELS[m.slot] || m.slot || '';
   const link = mixInMode
@@ -5116,14 +5106,15 @@ function showCreateOpenMatch() {
     d.setDate(d.getDate() + i);
     dateOpts.push(d);
   }
-  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const dayNames = DAY_NAMES;
 
-  const slotOpts = SLOTS.map(s => `<option value="${s}">${SLOT_LABELS[s]}</option>`).join('');
+  const allSlotOpts = SLOTS.map(s => `<option value="${s}">${SLOT_LABELS[s]}</option>`).join('');
   const dateOptHtml = dateOpts.map(d => {
     const val = ds(d);
     const label = `${dayNames[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}`;
     return `<option value="${val}">${label}</option>`;
   }).join('');
+  const slotOpts = allSlotOpts; // will be filtered dynamically for today
 
   const html = `
     <div style="padding:20px">
@@ -5153,7 +5144,7 @@ function showCreateOpenMatch() {
       </div>
       <div class="fg">
         <label class="fl">Date</label>
-        <select class="fi" id="om-date">${dateOptHtml}</select>
+        <select class="fi" id="om-date" onchange="filterOmSlots()">${dateOptHtml}</select>
       </div>
       <div class="fg">
         <label class="fl">Time Slot</label>
@@ -5211,12 +5202,33 @@ function closeCreateOpenMatch() {
   if (modal) modal.style.display = 'none';
 }
 
+// Map slot IDs to start hours for filtering past slots
+const SLOT_START_HOUR = { '9-1030':9, '1030-12':10.5, '12-130':12, '130-3':13.5, '3-430':15, '430-6':16.5, '6-730':18, '730-9':19.5 };
+
+function filterOmSlots() {
+  const dateEl = document.getElementById('om-date');
+  const slotEl = document.getElementById('om-slot');
+  if (!dateEl || !slotEl) return;
+  const selDate = dateEl.value;
+  const today = ds(new Date());
+  const nowHour = new Date().getHours() + new Date().getMinutes() / 60;
+  const prevSlot = slotEl.value;
+  slotEl.innerHTML = SLOTS.filter(s => {
+    if (selDate !== today) return true;
+    return SLOT_START_HOUR[s] > nowHour;
+  }).map(s => `<option value="${s}"${s === prevSlot ? ' selected' : ''}>${SLOT_LABELS[s]}</option>`).join('');
+  if (slotEl.options.length === 0) {
+    slotEl.innerHTML = '<option value="">No slots left today</option>';
+  }
+}
+
 function createOpenMatch() {
   const title = document.getElementById('om-title').value.trim() || 'Open Game';
   const sport = document.getElementById('om-sport').value;
   const level = document.getElementById('om-level').value;
   const date = document.getElementById('om-date').value;
   const slot = document.getElementById('om-slot').value;
+  if (!slot) { toast('Please select a valid time slot'); return; }
   const maxPlayers = parseInt(document.getElementById('om-max').value) || 4;
   const venue = document.getElementById('om-venue').value.trim();
   const notes = document.getElementById('om-notes').value.trim();
@@ -5341,8 +5353,8 @@ function renderMyOpenGames() {
 
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const monthNames = MONTH_NAMES;
+  const dayNames = DAY_NAMES;
 
   const myGames = Object.entries(L.openMatches || {})
     .map(([id, m]) => ({ id, ...m }))
@@ -5577,11 +5589,12 @@ function clearAllComments() {
   if (!confirm('Delete ALL messages? This cannot be undone.')) return;
   const path = commentsPath();
   if (!path) return;
+  L.comments = {};
+  renderComments();
   if (FIREBASE_READY) {
     db.ref(path).remove();
   } else {
-    L.comments = {};
-    renderComments();
+    localSave();
   }
   toast('All messages cleared');
 }
@@ -6387,7 +6400,7 @@ function checkAndStartTour() {
 /* ══════════════════════════════════════
    INIT
    ══════════════════════════════════════ */
-setInterval(renderDeadline, 60000);
+let _deadlineInterval = setInterval(renderDeadline, 60000);
 </script>
 
 <!-- GHL Form Embed -->
