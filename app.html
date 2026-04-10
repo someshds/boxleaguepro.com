@@ -1234,7 +1234,10 @@
       <div class="card mt12" id="missing-card" style="display:none">
         <div class="card-title" style="margin-bottom:8px;color:var(--amber)">&#9888;&#65039; Still waiting on:</div>
         <div id="missing-players" style="margin-bottom:12px"></div>
-        <button class="btn btn-whatsapp btn-sm" onclick="chaseWhatsApp()">&#128172; Copy WhatsApp chase message</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-whatsapp btn-sm" onclick="chaseWhatsApp()" style="flex:1">&#128172; Share to WhatsApp</button>
+          <button class="btn btn-sm" onclick="chaseCopy()" style="flex:1;background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd">&#128203; Copy to Share</button>
+        </div>
       </div>
 
       <div class="card mt12" id="all-in-card" style="display:none">
@@ -1267,7 +1270,10 @@
 
       <div id="share-results" style="display:none;margin-top:16px">
         <div class="divider"></div>
-        <button class="btn btn-whatsapp btn-full" onclick="shareResults()">&#128172; Copy match summary for WhatsApp</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-whatsapp" onclick="shareResultsWhatsApp()" style="flex:1">&#128172; Share to WhatsApp</button>
+          <button class="btn" onclick="shareResults()" style="flex:1;background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd">&#128203; Copy to Share</button>
+        </div>
       </div>
     </div>
 
@@ -3515,8 +3521,7 @@ function shareWizWhatsApp() {
   const link = document.getElementById('wiz-share-link').textContent;
   const leagueName = document.getElementById('wizard-league-name').textContent;
   const msg = `Join our box league "${leagueName}" on BoxLeague Pro!\n\nSign up and fill in your availability here:\n${link}\n\nTakes 1 minute \u{1F3BE}`;
-  copyText(msg);
-  toast('WhatsApp message copied!');
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
 
 function wizFinish() {
@@ -3775,8 +3780,7 @@ function shareSetupWhatsApp() {
   const link = document.getElementById('setup-invite-link').textContent;
   const leagueName = L.settings.leagueName || 'our box league';
   const msg = `Join "${leagueName}" on BoxLeague Pro!\n\nSign up and fill in your availability here:\n${link}\n\nTakes 1 minute \u{1F3BE}`;
-  copyText(msg);
-  toast('WhatsApp message copied!');
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
 
 /* ══════════════════════════════════════
@@ -4398,15 +4402,22 @@ function renderMissing() {
   body.innerHTML = missing.map(p => `<span class="player-chip" style="margin:3px 0">${avatarHtml(p)} ${esc(p)}</span>`).join(' ');
 }
 
-function chaseWhatsApp() {
+function getChaseMsg() {
   const missing = getMissingPlayers();
-  if (missing.length === 0) { toast('Everyone has submitted!'); return; }
+  if (missing.length === 0) { toast('Everyone has submitted!'); return null; }
   const league = L.settings.leagueName || 'our league';
   const deadlineStr = L.settings.deadline ? ` by ${new Date(L.settings.deadline).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}` : '';
   const names = missing.join(', ');
   const code = userLeagues[activeLeagueId] ? userLeagues[activeLeagueId].code : '';
-  const msg = `Hi all! Still waiting on availability for ${league} from: ${names}\n\nPlease sign in and fill yours in${deadlineStr}.\nLeague code: ${code}\n\nhttps://boxleaguepro.com\n\nTakes 30 seconds \u2014 just tap when you're free \ud83c\udfbe`;
-  copyText(msg);
+  return `Hi all! Still waiting on availability for ${league} from: ${names}\n\nPlease sign in and fill yours in${deadlineStr}.\nLeague code: ${code}\n\nhttps://boxleaguepro.com\n\nTakes 30 seconds \u2014 just tap when you're free \ud83c\udfbe`;
+}
+function chaseWhatsApp() {
+  const msg = getChaseMsg();
+  if (msg) window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+function chaseCopy() {
+  const msg = getChaseMsg();
+  if (msg) { copyText(msg); toast('Chase message copied!'); }
 }
 
 /* ══════════════════════════════════════
@@ -4594,7 +4605,7 @@ function getAgreedHtml(matchKey, booked) {
   return h;
 }
 
-function shareResults() {
+function getResultsMsg() {
   const league = L.settings.leagueName || 'Match Finder';
   let msg = `\u{1F3BE} ${league} \u2014 Match Schedule\n\n`;
   L.groups.forEach((gA, i) => {
@@ -4623,7 +4634,14 @@ function shareResults() {
   if (missing.length > 0) msg += `\nStill waiting on: ${missing.join(', ')}\n`;
   const code = userLeagues[activeLeagueId] ? userLeagues[activeLeagueId].code : '';
   msg += `\nLeague code: ${code}\nJoin at: https://boxleaguepro.com`;
-  copyText(msg);
+  return msg;
+}
+function shareResults() {
+  copyText(getResultsMsg());
+  toast('Match summary copied!');
+}
+function shareResultsWhatsApp() {
+  window.open('https://wa.me/?text=' + encodeURIComponent(getResultsMsg()), '_blank');
 }
 
 /* ══════════════════════════════════════
