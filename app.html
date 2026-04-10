@@ -2536,10 +2536,15 @@ function saveProfile() {
 }
 
 // ── GHL CRM Contact Creation ──
-const GHL_WEBHOOK_SIGNUP = 'https://services.leadconnectorhq.com/hooks/XvQbY3vQ9dnMEnouNyKK/webhook-trigger/2a5e4603-b13e-4772-96c7-5da1417abfff';
-const GHL_WEBHOOK_BOOKING = 'https://services.leadconnectorhq.com/hooks/XvQbY3vQ9dnMEnouNyKK/webhook-trigger/3ed128d1-7b51-4b4f-8eb0-00d6bba22cf8';
+// Webhook URLs are split to avoid simple scraping; reassembled at call time
+const _GHL_BASE = 'https://services.leadconnectorhq.com/hooks/';
+const _GHL_LOC = 'XvQbY3vQ9dnMEnouNyKK';
+const _GHL_SIG = { s: '2a5e4603-b13e-4772-96c7-5da1417abfff', b: '3ed128d1-7b51-4b4f-8eb0-00d6bba22cf8' };
+function _ghlUrl(type) { return _GHL_BASE + _GHL_LOC + '/webhook-trigger/' + _GHL_SIG[type]; }
 
 function addContactToGHL(name, email) {
+  // Only send from authenticated users to reduce abuse
+  if (!currentUser || !currentUser.uid || currentUser.uid === 'demo') return;
   const nameParts = name.trim().split(' ');
   const firstName = nameParts[0] || '';
   const lastName = nameParts.slice(1).join(' ') || '';
@@ -2548,9 +2553,10 @@ function addContactToGHL(name, email) {
     lastName: lastName,
     email: email,
     source: 'BoxLeague Pro',
-    tags: ['boxleague-pro', 'app-signup']
+    tags: ['boxleague-pro', 'app-signup'],
+    uid: currentUser.uid
   };
-  fetch(GHL_WEBHOOK_SIGNUP, {
+  fetch(_ghlUrl('s'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -2599,7 +2605,7 @@ function notifyBooking(matchKey, date, slot) {
       playerName: player.name,
       bookedBy: currentUser ? currentUser.email : ''
     };
-    fetch(GHL_WEBHOOK_BOOKING, {
+    fetch(_ghlUrl('b'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -2791,6 +2797,7 @@ function enterMixInMode() {
     return;
   }
   activeLeagueId = null;
+  fillInForPlayer = '';
   clubBookingUrl = userHomeClub.bookingUrl || '';
   L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {} };
 
@@ -3408,7 +3415,8 @@ async function createLeagueInClub() {
   const updates = {};
   updates['/leagues/' + leagueId] = {
     info: { name, sport, code, clubId: selectedClubId, clubName: selectedClubName, organiserUid: currentUser.uid, createdAt: Date.now() },
-    groups: {}, availability: {}, settings: { leagueName: name, deadline: deadline }, booked: {}, members: {}
+    groups: {}, availability: {}, settings: { leagueName: name, deadline: deadline }, booked: {},
+    members: { [sanitizeEmail(currentUser.email)]: { uid: currentUser.uid, name: currentUser.displayName, email: currentUser.email, role: 'organiser', playerName: '', partnerName: '', joinedAt: Date.now() } }
   };
   updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = { name, sport, code, role: 'organiser', clubId: selectedClubId, clubName: selectedClubName };
   updates['/clubLeagues/' + selectedClubId + '/' + leagueId] = { name, sport };
@@ -3434,9 +3442,11 @@ function joinAndEnterLeague(leagueId) {
   // Join the league and start wizard
   if (!FIREBASE_READY) { return; }
 
+  toast('Joining league...');
+
   db.ref('/leagues/' + leagueId + '/info').once('value', infoSnap => {
     const info = infoSnap.val();
-    if (!info) { toast('League not found'); return; }
+    if (!info) { toast('League not found — it may have been deleted'); return; }
 
     const updates = {};
     updates['/leagues/' + leagueId + '/members/' + sanitizeEmail(currentUser.email)] = {
@@ -3449,7 +3459,13 @@ function joinAndEnterLeague(leagueId) {
 
     db.ref().update(updates).then(() => {
       startWizard(leagueId, info.name);
+    }).catch(err => {
+      console.error('Join league error:', err);
+      toast('Error joining league — please try again');
     });
+  }, err => {
+    console.error('League lookup error:', err);
+    toast('Error looking up league — please try again');
   });
 }
 
@@ -4270,15 +4286,12 @@ function removeGroup(id) {
     });
     if (Object.keys(availUpdates).length > 0 && availRef) availRef.update(availUpdates);
 
-    // Remove booked matches involving these players
+    // Remove booked matches involving this team (match keys use group IDs like T123_T456)
     const bookedUpdates = {};
     Object.entries(L.booked).forEach(([matchKey, slot]) => {
-      for (const pn of playerNames) {
-        if (matchKey.includes(pn)) {
-          bookedUpdates[matchKey] = null;
-          delete L.booked[matchKey];
-          break;
-        }
+      if (matchKey.includes(id)) {
+        bookedUpdates[matchKey] = null;
+        delete L.booked[matchKey];
       }
     });
     if (Object.keys(bookedUpdates).length > 0 && bookedRef) bookedRef.update(bookedUpdates);
@@ -5248,13 +5261,17 @@ function joinOpenMatch(matchId) {
   if (players.length >= (match.maxPlayers || 4)) { toast('Game is full'); return; }
 
   if (FIREBASE_READY) {
-    const ref = db.ref(omPath() + '/' + matchId + '/players');
-    ref.transaction(current => {
-      const arr = current || [];
+    const maxP = match.maxPlayers || 4;
+    const matchRef = db.ref(omPath() + '/' + matchId);
+    matchRef.transaction(current => {
+      if (!current) return current;
+      const arr = current.players || [];
+      const limit = current.maxPlayers || maxP;
       if (arr.includes(myName)) return; // abort — already joined
-      if (arr.length >= (match.maxPlayers || 4)) return; // abort — full
+      if (arr.length >= limit) return; // abort — full
       arr.push(myName);
-      return arr;
+      current.players = arr;
+      return current;
     }, (err, committed) => {
       if (err) { toast('Error joining — try again'); return; }
       if (!committed) { toast('Could not join — game may be full'); return; }
@@ -5818,7 +5835,9 @@ async function finishGuided() {
       const updates = {};
       updates['/leagues/' + leagueId] = {
         info: { name, sport, code, clubId, clubName, organiserUid: currentUser.uid, createdAt: Date.now() },
-        groups: {}, availability: {}, settings: { leagueName: name }, booked: {}, members: {}, openMatches: {}, comments: {}
+        groups: {}, availability: {}, settings: { leagueName: name }, booked: {},
+        members: { [sanitizeEmail(currentUser.email)]: { uid: currentUser.uid, name: currentUser.displayName, email: currentUser.email, role: 'organiser', playerName: '', partnerName: '', joinedAt: Date.now() } },
+        openMatches: {}, comments: {}
       };
       updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = { name, sport, code, role: 'organiser', clubId, clubName };
       updates['/clubLeagues/' + clubId + '/' + leagueId] = { name, sport };
