@@ -535,7 +535,7 @@
 
   <div class="auth-form">
     <div class="auth-error" id="auth-error"></div>
-    <input class="fi" id="auth-name" type="text" placeholder="Your name" style="display:none">
+    <input class="fi" id="auth-name" type="text" placeholder="Your full name (e.g. Grant de Swardt)" style="display:none">
     <input class="fi" id="auth-email" type="email" placeholder="Email address">
     <input class="fi" id="auth-password" type="password" placeholder="Password (min 6 characters)">
     <label id="auth-gdpr" style="display:none;color:rgba(255,255,255,0.85);font-size:13px;line-height:1.5;margin:8px 0 12px;text-align:left;cursor:pointer">
@@ -917,10 +917,10 @@
     <!-- Step 1: Your name -->
     <div class="wizard-step active" id="wiz-step-0">
       <div class="wizard-step-icon">&#128075;</div>
-      <div class="wizard-step-title">What's your name?</div>
-      <div class="wizard-step-desc">This is how other players will see you in the league.</div>
+      <div class="wizard-step-title">What's your full name?</div>
+      <div class="wizard-step-desc">Use your first and last name — this is how other players will see you in the league.</div>
       <div class="fg">
-        <input class="fi" id="wiz-name" placeholder="e.g. Grant" style="font-size:20px;text-align:center;font-weight:700">
+        <input class="fi" id="wiz-name" placeholder="e.g. Grant de Swardt" style="font-size:20px;text-align:center;font-weight:700">
       </div>
       <div class="wizard-nav">
         <button class="btn btn-primary btn-full" onclick="wizNext(0)" style="font-size:17px;padding:14px">Next &rarr;</button>
@@ -931,9 +931,13 @@
     <div class="wizard-step" id="wiz-step-1">
       <div class="wizard-step-icon">&#129309;</div>
       <div class="wizard-step-title">Who's your doubles partner?</div>
-      <div class="wizard-step-desc">Enter their first name. If they've already joined, we'll match you up automatically.</div>
+      <div class="wizard-step-desc">Pick from existing members or type their full name if they haven't joined yet.</div>
       <div class="fg">
-        <input class="fi" id="wiz-partner" placeholder="e.g. James" style="font-size:20px;text-align:center;font-weight:700">
+        <select id="wiz-partner-select" class="fi" style="font-size:18px;text-align:center;font-weight:700;display:none;margin-bottom:8px" onchange="if(this.value){document.getElementById('wiz-partner').value=this.value}">
+          <option value="">— Choose a member —</option>
+        </select>
+        <input class="fi" id="wiz-partner" placeholder="e.g. James Smith" style="font-size:20px;text-align:center;font-weight:700">
+        <div style="font-size:13px;color:var(--muted);margin-top:6px">Or type a name if they're not in the list yet</div>
       </div>
       <div id="wiz-partner-match" style="display:none" class="success-box mt12"></div>
       <div class="wizard-nav">
@@ -1374,7 +1378,7 @@
         </label>
       </div>
       <div style="font-size:13px;font-weight:600;color:#6b7280;margin-bottom:4px">Player Name</div>
-      <input class="fi" id="profile-name" placeholder="Your name" style="margin-bottom:12px">
+      <input class="fi" id="profile-name" placeholder="Your full name (e.g. Grant de Swardt)" style="margin-bottom:12px">
       <div id="profile-partner-wrap">
         <div style="font-size:13px;font-weight:600;color:#6b7280;margin-bottom:4px">Partner Name</div>
         <input class="fi" id="profile-partner" placeholder="Your partner's name" style="margin-bottom:12px">
@@ -3335,8 +3339,10 @@ function startWizard(leagueId, leagueName) {
   function initWizardUI() {
     document.getElementById('wizard-league-name').textContent = leagueName;
     const displayName = currentUser.displayName || '';
-    document.getElementById('wiz-name').value = displayName.split(' ')[0];
+    document.getElementById('wiz-name').value = displayName;
     document.getElementById('wiz-partner').value = '';
+    // Populate partner dropdown from existing league members
+    populatePartnerDropdown();
     showScreen('wizard');
     renderWizStep();
     renderWizAvailGrid();
@@ -3403,6 +3409,39 @@ function wizPrev(step) {
     wizStep = step - 1;
   }
   renderWizStep();
+}
+
+function populatePartnerDropdown() {
+  const sel = document.getElementById('wiz-partner-select');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Choose a member —</option>';
+  const myName = val('wiz-name') || '';
+  let members = [];
+  // Get members from current league
+  if (FIREBASE_READY && wizLeagueId) {
+    db.ref('/leagues/' + wizLeagueId + '/members').once('value', snap => {
+      const mems = snap.val() || {};
+      Object.values(mems).forEach(m => {
+        if (m.playerName && m.playerName !== myName) {
+          members.push(m.playerName);
+        }
+      });
+      if (members.length > 0) {
+        members.sort();
+        members.forEach(name => {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          sel.appendChild(opt);
+        });
+        sel.style.display = 'block';
+      } else {
+        sel.style.display = 'none';
+      }
+    });
+  } else {
+    sel.style.display = 'none';
+  }
 }
 
 function wizSaveData() {
@@ -5354,8 +5393,8 @@ const Q_STEPS = [
     return (qData.goal === 'create') || (qData.goal === 'join' && qData.hasCode === 'no') || qData.goal === 'mixin';
   }},
   { id: 'leagueName', question: 'What would you like to call your league?', hint: 'Give it a name your players will recognise.', type: 'input', placeholder: 'e.g. Mens Doubles 1, Tuesday Night Tennis', show: () => qData.goal === 'create' },
-  { id: 'playerName', question: 'What is your first name?', hint: 'This is how other players will see you.', type: 'input', placeholder: 'e.g. Grant' },
-  { id: 'partner', question: 'Who is your doubles partner?', hint: 'Enter their first name. They can join later with the link you\'ll get.', type: 'input', placeholder: 'e.g. James', show: () => qData.goal === 'create' && qData.format === 'doubles' },
+  { id: 'playerName', question: 'What is your full name?', hint: 'Use your first and last name — this is how other players will see you in the league.', type: 'input', placeholder: 'e.g. Grant de Swardt' },
+  { id: 'partner', question: 'Who is your doubles partner?', hint: 'Enter their full name, or pick from the list if they\'ve already joined.', type: 'input', placeholder: 'e.g. James Smith', show: () => qData.goal === 'create' && qData.format === 'doubles' },
 ];
 
 function getVisibleSteps() {
