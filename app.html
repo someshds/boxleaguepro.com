@@ -594,7 +594,7 @@
     <div class="wc-card" onclick="selectGameType('singles')">
       <div class="wc-card-badge" style="background:#eff6ff;color:var(--primary-dark)">1v1</div>
       <div class="wc-card-icon">&#127941;</div>
-      <div class="wc-card-title">Singles Box League</div>
+      <div class="wc-card-title">Organise Your Singles Box League</div>
       <div class="wc-card-desc">Compete individually against everyone in your league. Play each opponent once, climb the ladder.</div>
       <div class="wc-card-players">
         <span style="background:#2563eb;color:#fff">&#9899;</span>
@@ -611,7 +611,7 @@
     <div class="wc-card" onclick="selectGameType('doubles')">
       <div class="wc-card-badge" style="background:#f0fdf4;color:#166534">2v2</div>
       <div class="wc-card-icon">&#129309;</div>
-      <div class="wc-card-title">Doubles Box League</div>
+      <div class="wc-card-title">Organise Your Doubles Box League</div>
       <div class="wc-card-desc">Team up with a partner and take on other pairs. Find times when all 4 players are free.</div>
       <div class="wc-card-players">
         <span style="background:#2563eb;color:#fff">&#9899;</span>
@@ -2914,8 +2914,8 @@ function goToBrowse() {
   document.getElementById('browse-user-photo').src = photoUrl;
   // Show game type subtitle
   const label = document.getElementById('browse-game-type-label');
-  if (selectedGameType === 'singles') { label.textContent = 'Singles Box League'; label.style.display = 'inline-block'; }
-  else if (selectedGameType === 'doubles') { label.textContent = 'Doubles Box League'; label.style.display = 'inline-block'; }
+  if (selectedGameType === 'singles') { label.textContent = 'Organise Your Singles Box League'; label.style.display = 'inline-block'; }
+  else if (selectedGameType === 'doubles') { label.textContent = 'Organise Your Doubles Box League'; label.style.display = 'inline-block'; }
   else { label.style.display = 'none'; }
   // Re-render leagues with filter applied
   renderMyLeagues();
@@ -5850,8 +5850,8 @@ const EXPLAINERS = {
     title: 'Welcome to BoxLeague Pro',
     subtitle: 'Choose how you want to play',
     steps: [
-      '<strong>Singles Box League</strong> — compete 1v1 against everyone in your group',
-      '<strong>Doubles Box League</strong> — team up with a partner and take on other pairs',
+      '<strong>Organise Your Singles Box League</strong> — compete 1v1 against everyone in your group',
+      '<strong>Organise Your Doubles Box League</strong> — team up with a partner and take on other pairs',
       '<strong>Mix-In Games</strong> — post a game and let anyone at your club join',
       'Already have a league? Scroll down to <strong>"Your Leagues"</strong> or tap <strong>"Join directly"</strong> at the bottom'
     ]
