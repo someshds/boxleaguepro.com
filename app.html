@@ -756,6 +756,7 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
           <button onclick="adminLoadAllUsers()" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Load Users</button>
           <button onclick="adminLoadLeagues()" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Load Leagues</button>
+          <button onclick="adminRebuildIndex()" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Rebuild Index</button>
         </div>
         <div id="admin-league-list" style="max-height:300px;overflow-y:auto;margin-bottom:8px"></div>
         <div id="admin-user-list" style="max-height:400px;overflow-y:auto"></div>
@@ -1623,41 +1624,51 @@ function adminLoadLeagues() {
   const el = document.getElementById('admin-league-list');
   el.innerHTML = '<div style="color:#92400e;font-size:13px;padding:8px 0">Loading leagues...</div>';
 
-  // Collect ALL league IDs — scan /leagues directly for admins, plus clubLeagues and userLeagues
+  // Collect ALL league IDs from every available source
   const leagueIdSet = new Set(Object.keys(userLeagues));
   const leagueData = [];
+  let sourcesChecked = 0;
+  const totalSources = 4;
 
-  // Scan /leagues directly to get every league in the database
-  db.ref('/leagues').once('value', leaguesSnap => {
-    const allLeagues = leaguesSnap.val() || {};
-    Object.keys(allLeagues).forEach(lid => leagueIdSet.add(lid));
+  function sourceChecked() {
+    sourcesChecked++;
+    if (sourcesChecked >= totalSources) {
+      el.innerHTML = '<div style="color:#92400e;font-size:13px;padding:8px 0">Found ' + leagueIdSet.size + ' league IDs, loading details...</div>';
+      loadLeagueDetails();
+    }
+  }
 
-    // Also scan clubLeagues for any orphaned references
-    db.ref('/clubLeagues').once('value', snap => {
-      const allClubLeagues = snap.val() || {};
-      Object.values(allClubLeagues).forEach(clubLgs => {
-        if (clubLgs && typeof clubLgs === 'object') {
-          Object.keys(clubLgs).forEach(lid => leagueIdSet.add(lid));
-        }
-      });
-      loadLeagueDetails();
-    }, () => {
-      loadLeagueDetails();
+  // Source 1: /codes — maps every league code to its league ID (most reliable)
+  db.ref('/codes').once('value', snap => {
+    const codes = snap.val() || {};
+    Object.values(codes).forEach(lid => { if (typeof lid === 'string') leagueIdSet.add(lid); });
+    sourceChecked();
+  }, () => sourceChecked());
+
+  // Source 2: /leagueIndex — admin index of all leagues
+  db.ref('/leagueIndex').once('value', snap => {
+    const idx = snap.val() || {};
+    Object.keys(idx).forEach(lid => leagueIdSet.add(lid));
+    sourceChecked();
+  }, () => sourceChecked());
+
+  // Source 3: /leagues — scan all leagues directly
+  db.ref('/leagues').once('value', snap => {
+    const all = snap.val() || {};
+    Object.keys(all).forEach(lid => leagueIdSet.add(lid));
+    sourceChecked();
+  }, () => sourceChecked());
+
+  // Source 4: /clubLeagues — leagues registered under clubs
+  db.ref('/clubLeagues').once('value', snap => {
+    const allClubLeagues = snap.val() || {};
+    Object.values(allClubLeagues).forEach(clubLgs => {
+      if (clubLgs && typeof clubLgs === 'object') {
+        Object.keys(clubLgs).forEach(lid => leagueIdSet.add(lid));
+      }
     });
-  }, () => {
-    // Fallback: if can't read /leagues, try clubLeagues + userLeagues
-    db.ref('/clubLeagues').once('value', snap => {
-      const allClubLeagues = snap.val() || {};
-      Object.values(allClubLeagues).forEach(clubLgs => {
-        if (clubLgs && typeof clubLgs === 'object') {
-          Object.keys(clubLgs).forEach(lid => leagueIdSet.add(lid));
-        }
-      });
-      loadLeagueDetails();
-    }, () => {
-      loadLeagueDetails();
-    });
-  });
+    sourceChecked();
+  }, () => sourceChecked());
 
   function loadLeagueDetails() {
     const leagueIds = Array.from(leagueIdSet);
@@ -1833,10 +1844,39 @@ function adminLoadAllUsers() {
     taskDone();
   }, () => { taskDone(); }); // Permission denied — skip
 
-  // SOURCE 3: Scan all leagues for members (most reliable — we can always read individual leagues)
+  // SOURCE 3: Scan all leagues for members — gather league IDs from every source
   pendingTasks++;
   const leagueIdSet = new Set(Object.keys(userLeagues));
+  let userSources = 0;
+  const userTotalSources = 4;
 
+  function userSourceDone() {
+    userSources++;
+    if (userSources >= userTotalSources) loadLeagueMembers();
+  }
+
+  // /codes — maps every league code to a league ID
+  db.ref('/codes').once('value', snap => {
+    const codes = snap.val() || {};
+    Object.values(codes).forEach(lid => { if (typeof lid === 'string') leagueIdSet.add(lid); });
+    userSourceDone();
+  }, () => userSourceDone());
+
+  // /leagueIndex
+  db.ref('/leagueIndex').once('value', snap => {
+    const idx = snap.val() || {};
+    Object.keys(idx).forEach(lid => leagueIdSet.add(lid));
+    userSourceDone();
+  }, () => userSourceDone());
+
+  // /leagues directly
+  db.ref('/leagues').once('value', snap => {
+    const all = snap.val() || {};
+    Object.keys(all).forEach(lid => leagueIdSet.add(lid));
+    userSourceDone();
+  }, () => userSourceDone());
+
+  // /clubLeagues
   db.ref('/clubLeagues').once('value', snap => {
     const allClubLeagues = snap.val() || {};
     Object.values(allClubLeagues).forEach(clubLgs => {
@@ -1844,23 +1884,8 @@ function adminLoadAllUsers() {
         Object.keys(clubLgs).forEach(lid => leagueIdSet.add(lid));
       }
     });
-    loadLeagueMembers();
-  }, () => {
-    db.ref('/clubs').once('value', clubSnap => {
-      const clubs = clubSnap.val() || {};
-      const clubIds = Object.keys(clubs);
-      let clubsLoaded = 0;
-      if (clubIds.length === 0) { loadLeagueMembers(); return; }
-      clubIds.forEach(cid => {
-        db.ref('/clubLeagues/' + cid).once('value', clSnap => {
-          const cls = clSnap.val() || {};
-          Object.keys(cls).forEach(lid => leagueIdSet.add(lid));
-          clubsLoaded++;
-          if (clubsLoaded === clubIds.length) loadLeagueMembers();
-        }, () => { clubsLoaded++; if (clubsLoaded === clubIds.length) loadLeagueMembers(); });
-      });
-    }, () => { loadLeagueMembers(); });
-  });
+    userSourceDone();
+  }, () => userSourceDone());
 
   function loadLeagueMembers() {
     const leagueIds = Array.from(leagueIdSet);
@@ -2005,6 +2030,59 @@ function adminDeleteUser(email) {
         }).catch(err => toast('Error: ' + err.message));
       }
     });
+  });
+}
+
+function adminRebuildIndex() {
+  if (!isAdmin() || !FIREBASE_READY) return;
+  const el = document.getElementById('admin-league-list');
+  el.innerHTML = '<div style="color:#7c3aed;font-size:13px;padding:8px 0">Rebuilding league index...</div>';
+
+  // Gather league IDs from /codes (most reliable source)
+  db.ref('/codes').once('value', codesSnap => {
+    const codes = codesSnap.val() || {};
+    const leagueIds = new Set();
+    Object.values(codes).forEach(lid => { if (typeof lid === 'string') leagueIds.add(lid); });
+
+    // Also from current userLeagues
+    Object.keys(userLeagues).forEach(lid => leagueIds.add(lid));
+
+    const ids = Array.from(leagueIds);
+    if (ids.length === 0) {
+      el.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:8px 0">No leagues found in /codes. Cannot rebuild.</div>';
+      return;
+    }
+
+    let loaded = 0;
+    const updates = {};
+    ids.forEach(lid => {
+      db.ref('/leagues/' + lid + '/info').once('value', snap => {
+        const info = snap.val();
+        if (info) {
+          updates['/leagueIndex/' + lid] = {
+            name: info.name || 'Unnamed',
+            sport: info.sport || '',
+            clubId: info.clubId || '',
+            clubName: info.clubName || '',
+            createdAt: info.createdAt || 0
+          };
+        }
+        loaded++;
+        if (loaded === ids.length) {
+          if (Object.keys(updates).length === 0) {
+            el.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:8px 0">No league details found.</div>';
+            return;
+          }
+          db.ref().update(updates).then(() => {
+            el.innerHTML = '<div style="color:#059669;font-size:13px;padding:8px 0">Index rebuilt with ' + Object.keys(updates).length + ' leagues. Click "Load Leagues" to see them.</div>';
+          }).catch(err => {
+            el.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:8px 0">Error: ' + err.message + '</div>';
+          });
+        }
+      }, () => { loaded++; if (loaded === ids.length && Object.keys(updates).length > 0) db.ref().update(updates); });
+    });
+  }, () => {
+    el.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:8px 0">Cannot read /codes. Check Firebase rules.</div>';
   });
 }
 
@@ -3284,6 +3362,7 @@ function createLeagueInClub() {
   updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = { name, sport, code, role: 'organiser', clubId: selectedClubId, clubName: selectedClubName };
   updates['/clubLeagues/' + selectedClubId + '/' + leagueId] = { name, sport };
   updates['/codes/' + code] = leagueId;
+  updates['/leagueIndex/' + leagueId] = { name, sport, clubId: selectedClubId, clubName: selectedClubName, createdAt: Date.now() };
 
   db.ref().update(updates).then(() => {
     showCreateShareStep(leagueId, name);
