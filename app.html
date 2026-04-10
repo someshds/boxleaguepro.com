@@ -772,7 +772,7 @@
         </div>
         <div class="option-card" onclick="showCreateFlow()" id="opt-create" style="text-align:center;padding:24px 16px;cursor:pointer;border:2px solid transparent;transition:border-color 0.2s">
           <div style="font-size:36px;margin-bottom:8px">&#10133;</div>
-          <div style="font-size:17px;font-weight:800;color:#1a1a1a">Start a League</div>
+          <div style="font-size:17px;font-weight:800;color:#1a1a1a">Add a League</div>
           <div style="font-size:13px;color:#6b7280;margin-top:4px">Create a new box league</div>
         </div>
       </div>
@@ -5858,11 +5858,11 @@ const EXPLAINERS = {
   },
   browse: {
     icon: '&#128269;',
-    title: 'Find or Start a League',
+    title: 'Find or Add a League',
     subtitle: 'Get set up in under a minute',
     steps: [
       '<strong>Join a League</strong> — search for your club, then pick an existing league to join',
-      '<strong>Start a League</strong> — create a new league and invite your players with a share link',
+      '<strong>Add a League</strong> — create a new league and invite your players with a share link',
       '<strong>Create or Join Friendly Mix-In Games</strong> — skip the league and go straight to casual games at your club',
       'Got a <strong>league code</strong>? Enter it in the "Join by code" box to jump straight in'
     ]
@@ -5980,7 +5980,7 @@ function resetExplainers() {
 /* ── Guided Tour ── */
 const TOUR_STEPS = [
   { target: null, title: 'Welcome to BoxLeague Pro! \u{1F3BE}', text: "Let's take a quick tour to get you started. It only takes 30 seconds." },
-  { target: '#browse-options', title: 'Join or Start a League', text: 'Choose "Join a League" to find an existing league at your club, or "Start a League" to create a brand new one.' },
+  { target: '#browse-options', title: 'Join or Add a League', text: 'Choose "Join a League" to find an existing league at your club, or "Add a League" to create a brand new one.' },
   { target: null, title: 'Quick Setup Wizard', text: "After joining or creating a league, a short wizard walks you through entering your name, picking your doubles partner, and marking when you're free to play.", icon: '\u{2699}\u{FE0F}' },
   { target: null, title: 'Invite Your Players', text: 'After creating a league, you get a share link. Send it via WhatsApp, email, or text. Players click the link, sign up, and set their own availability.', icon: '\u{1F4E8}' },
   { target: null, title: 'Find & Book Matches', text: "The Match Finder compares everyone's availability and shows times when all players can play. Tap a slot to book instantly.", icon: '\u{1F3BE}' },
