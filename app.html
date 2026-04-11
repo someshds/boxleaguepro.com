@@ -478,6 +478,9 @@
     .wc-card-players { display: flex; gap: 4px; margin-top: 10px; }
     .wc-card-players span { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
     .wc-card-feature { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--primary-dark); background: #eff6ff; padding: 4px 10px; border-radius: 12px; margin-top: 10px; margin-right: 6px; }
+    .wc-card-img { padding: 0; min-height: 200px; background-size: cover; background-position: center; background-repeat: no-repeat; display: flex; flex-direction: column; justify-content: flex-end; }
+    .wc-card-img-fallback { padding: 20px; background: linear-gradient(transparent, rgba(0,0,0,0.7)); border-radius: 0 0 14px 14px; }
+    .wc-card-img .wc-card-badge { z-index: 2; }
     .welcome-existing { text-align: center; margin-top: 20px; }
     .welcome-existing a { color: var(--primary); font-weight: 700; font-size: 15px; cursor: pointer; text-decoration: none; }
     .welcome-existing a:hover { text-decoration: underline; }
@@ -591,57 +594,23 @@
   <div class="welcome-body">
     <div class="welcome-heading">Choose your game type</div>
 
-    <div class="wc-card" onclick="selectGameType('singles')">
-      <div class="wc-card-badge" style="background:#eff6ff;color:var(--primary-dark)">1v1</div>
-      <div class="wc-card-icon">&#127941;</div>
-      <div class="wc-card-title">Organise Your Singles Box League Matches</div>
-      <div class="wc-card-desc">Share availability, find matching times, and organise 1v1 matches — all in one place.</div>
-      <div class="wc-card-players">
-        <span style="background:#2563eb;color:#fff">&#9899;</span>
-        <span style="font-size:18px">vs</span>
-        <span style="background:#dc2626;color:#fff">&#9899;</span>
-      </div>
-      <div style="margin-top:10px">
-        <span class="wc-card-feature">&#127934; Tennis</span>
-        <span class="wc-card-feature">&#127955; Squash</span>
-        <span class="wc-card-feature">&#127992; Badminton</span>
+    <div class="wc-card wc-card-img" onclick="selectGameType('singles')" style="background-image:url('images/singles-card.png')">
+      <div class="wc-card-badge" style="background:rgba(0,0,0,0.5);color:#fff">1v1</div>
+    </div>
+
+    <div class="wc-card wc-card-img" onclick="selectGameType('doubles')" id="doubles-card" style="background-image:url('images/doubles-card.png')">
+      <div class="wc-card-badge" style="background:rgba(0,0,0,0.5);color:#fff">2v2</div>
+      <div class="wc-card-img-fallback">
+        <div class="wc-card-title" style="color:#fff">Organise Your Doubles Box League Matches</div>
+        <div class="wc-card-desc" style="color:rgba(255,255,255,0.85)">Tennis · Padel · Badminton</div>
       </div>
     </div>
 
-    <div class="wc-card" onclick="selectGameType('doubles')">
-      <div class="wc-card-badge" style="background:#f0fdf4;color:#166534">2v2</div>
-      <div class="wc-card-icon">&#129309;</div>
-      <div class="wc-card-title">Organise Your Doubles Box League Matches</div>
-      <div class="wc-card-desc">Pair up, share availability, and find times when all 4 players can play — no more group chat chaos.</div>
-      <div class="wc-card-players">
-        <span style="background:#2563eb;color:#fff">&#9899;</span>
-        <span style="background:#2563eb;color:#fff">&#9899;</span>
-        <span style="font-size:18px">vs</span>
-        <span style="background:#dc2626;color:#fff">&#9899;</span>
-        <span style="background:#dc2626;color:#fff">&#9899;</span>
-      </div>
-      <div style="margin-top:10px">
-        <span class="wc-card-feature">&#127934; Tennis</span>
-        <span class="wc-card-feature">&#129358; Padel</span>
-        <span class="wc-card-feature">&#127992; Badminton</span>
-      </div>
-    </div>
-
-    <div class="wc-card" onclick="selectGameType('mixin')">
-      <div class="wc-card-badge" style="background:#fef3c7;color:#92400e">Open</div>
-      <div class="wc-card-icon">&#127881;</div>
-      <div class="wc-card-title">Create or Join Friendly Mix-In Games</div>
-      <div class="wc-card-desc">Post a game at your club and let others join. No league needed — just pick a time, share it, and play.</div>
-      <div class="wc-card-players">
-        <span style="background:#059669;color:#fff">&#9899;</span>
-        <span style="background:#7c3aed;color:#fff">&#9899;</span>
-        <span style="background:#f59e0b;color:#fff">&#9899;</span>
-        <span style="background:#2563eb;color:#fff;border:2px dashed #e5e7eb">?</span>
-      </div>
-      <div style="margin-top:10px">
-        <span class="wc-card-feature">&#128197; Book a court</span>
-        <span class="wc-card-feature">&#128587; Find players</span>
-        <span class="wc-card-feature">&#9889; Instant join</span>
+    <div class="wc-card wc-card-img" onclick="selectGameType('mixin')" id="mixin-card" style="background-image:url('images/mixin-card.png')">
+      <div class="wc-card-badge" style="background:rgba(0,0,0,0.5);color:#fff">Open</div>
+      <div class="wc-card-img-fallback">
+        <div class="wc-card-title" style="color:#fff">Create or Join Friendly Mix-In Games</div>
+        <div class="wc-card-desc" style="color:rgba(255,255,255,0.85)">Book a Court · Find Players · Instant Join</div>
       </div>
     </div>
 
