@@ -76,7 +76,8 @@
     /* ══════════════════════════════════════
        BROWSE SCREEN (club → league)
        ══════════════════════════════════════ */
-    .browse-screen { padding-bottom: 40px; }
+    .browse-screen { padding-bottom: 40px; background: linear-gradient(135deg, rgba(5,150,105,0.08) 0%, rgba(16,185,129,0.04) 50%, rgba(5,150,105,0.08) 100%); min-height: 100vh; }
+    .browse-screen::before { content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: url('images/hero-banner.png') center/cover no-repeat; opacity: 0.06; z-index: 0; pointer-events: none; }
     .browse-header { background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%); color: #fff; padding: 24px 20px 20px; }
     .browse-greeting { font-size: 18px; opacity: 0.85; font-weight: 500; }
     .browse-name { font-size: 28px; font-weight: 800; letter-spacing: -0.3px; margin-top: 2px; }
