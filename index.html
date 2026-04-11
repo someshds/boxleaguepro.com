@@ -47,10 +47,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica N
 .btn-white:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,0.15)}
 
 /* HERO */
-.hero{padding:120px 20px 80px;text-align:center;background:#1e40af;color:#fff;position:relative;overflow:hidden}
-.hero-video{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:0.35}
-.hero::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,rgba(30,64,175,0.75) 0%,rgba(37,99,235,0.65) 40%,rgba(59,130,246,0.7) 100%);z-index:1}
-.hero>*{position:relative;z-index:2}
+.hero{padding:120px 20px 80px;text-align:center;background:linear-gradient(135deg,#1e40af 0%,#2563eb 40%,#3b82f6 100%);color:#fff;position:relative;overflow:hidden}
 .hero::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:60px;background:var(--bg);border-radius:50% 50% 0 0 / 100% 100% 0 0}
 .hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.2);border-radius:30px;padding:6px 16px;font-size:13px;font-weight:600;margin-bottom:24px}
 .hero h1{font-size:clamp(36px,5vw,56px);font-weight:900;letter-spacing:-1px;line-height:1.1;margin-bottom:20px;max-width:800px;margin-left:auto;margin-right:auto}
@@ -232,9 +229,6 @@ footer a:hover{text-decoration:underline}
 
 <!-- HERO -->
 <section class="hero">
-  <video class="hero-video" autoplay muted loop playsinline>
-    <source src="images/hero-video.mp4" type="video/mp4">
-  </video>
   <h1>Organise Your Box League in Minutes.<br>More Time Playing.</h1>
   <p>Arrange your games and matches in minutes — coordinate availability, schedule matches, and post open games. All in one free app. Works for any team sport.</p>
   <div class="hero-badge">&#9889; 100% Free — No Limits, No Catch</div>
