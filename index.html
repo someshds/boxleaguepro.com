@@ -122,7 +122,7 @@ section{padding:80px 20px}
 .testimonial-card cite{font-size:14px;color:var(--muted);font-style:normal;font-weight:600}
 
 /* CTA BANNER */
-.cta-banner{background:linear-gradient(135deg,#1e40af 0%,#2563eb 50%,#3b82f6 100%);padding:80px 20px;text-align:center;color:#fff;position:relative}
+.cta-banner{background:#0f172a;padding:80px 20px;text-align:center;color:#fff;position:relative;overflow:hidden}
 .cta-banner h2{font-size:clamp(28px,3.5vw,40px);font-weight:900;margin-bottom:16px;letter-spacing:-0.5px}
 .cta-banner p{font-size:18px;opacity:0.9;margin-bottom:32px;max-width:500px;margin-left:auto;margin-right:auto}
 
@@ -629,17 +629,20 @@ footer a:hover{text-decoration:underline}
 
 <!-- CTA -->
 <section class="cta-banner">
-  <h2>Ready to Organise Your League?</h2>
-  <p>Join hundreds of players already using BoxLeague Pro. Free forever — no credit card needed.</p>
-  <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+  <video autoplay muted loop playsinline style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.5"><source src="images/bg-video-cta.mp4" type="video/mp4"></video>
+  <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,rgba(30,64,175,0.6) 0%,rgba(37,99,235,0.5) 100%);z-index:1"></div>
+  <h2 style="position:relative;z-index:2">Ready to Organise Your League?</h2>
+  <p style="position:relative;z-index:2">Join hundreds of players already using BoxLeague Pro. Free forever — no credit card needed.</p>
+  <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative;z-index:2">
     <a href="/app.html" class="btn btn-white">Login — It's Free</a>
     <a href="mailto:grant@aifusionautomations.com" class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.4)">Contact Us</a>
   </div>
 </section>
 
 <!-- AIFA SECTION -->
-<section style="text-align:center">
-  <div class="section-inner">
+<section style="text-align:center;position:relative;overflow:hidden">
+  <video autoplay muted loop playsinline style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.5"><source src="images/bg-video-aifa.mp4" type="video/mp4"></video>
+  <div class="section-inner" style="position:relative;z-index:1">
     <div style="font-size:32px;margin-bottom:12px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg></div>
     <div class="section-title" style="font-size:24px">Got an Idea for an App?</div>
     <p class="section-subtitle" style="margin-left:auto;margin-right:auto">BoxLeague Pro is built by <strong>AI Fusion Automations</strong> — we design and build custom software, apps, and AI automations for businesses. Projects from &pound;500.</p>
