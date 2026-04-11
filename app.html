@@ -1423,7 +1423,8 @@
       <div style="font-size:12px;color:#9ca3af;margin-bottom:16px">Changes will update your team in this league.</div>
       <div id="profile-error" style="display:none;color:#ef4444;font-size:13px;margin-bottom:12px"></div>
       <button class="btn btn-primary" onclick="saveProfile()" style="width:100%;margin-bottom:8px">Save Changes</button>
-      <button class="btn btn-secondary" onclick="signOut();closeProfile()" style="width:100%">Sign Out</button>
+      <button class="btn btn-secondary" onclick="signOut();closeProfile()" style="width:100%;margin-bottom:8px">Sign Out</button>
+      <button id="profile-leave-btn" class="btn btn-sm" onclick="leaveLeague()" style="width:100%;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;font-weight:600;cursor:pointer;display:none">Leave This League</button>
     </div>
   </div>
 </div>
@@ -1627,6 +1628,63 @@ function deleteLeague(leagueId, event) {
       console.error('Delete failed:', err);
       toast('Delete failed: ' + err.message);
     });
+  });
+}
+
+function leaveLeague() {
+  if (!activeLeagueId || !FIREBASE_READY) { toast('Cannot leave in demo mode'); return; }
+  const lg = userLeagues[activeLeagueId];
+  const leagueName = lg ? lg.name : 'this league';
+  if (!confirm('Leave "' + leagueName + '"?\n\nThis will remove you from the league, including your availability and any booked matches.\n\nYou can rejoin later with the league code.')) return;
+
+  const emailKey = sanitizeEmail(currentUser.email);
+  const member = L.members[emailKey];
+  const playerName = member ? member.playerName : '';
+  const partnerName = member ? member.partnerName : '';
+  const leagueId = activeLeagueId;
+
+  const updates = {};
+
+  // 1. Remove from members list
+  updates['/leagues/' + leagueId + '/members/' + emailKey] = null;
+
+  // 2. Remove from userLeagues
+  updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = null;
+
+  // 3. Find and remove the player's group/team
+  if (playerName) {
+    const group = L.groups.find(g => g.players && g.players.includes(playerName));
+    if (group) {
+      updates['/leagues/' + leagueId + '/groups/' + group.id] = null;
+
+      // 4. Remove availability for all players in the group
+      const groupPlayers = group.players || [];
+      Object.keys(L.availability).forEach(key => {
+        for (const pn of groupPlayers) {
+          if (key.startsWith(pn + '|')) {
+            updates['/leagues/' + leagueId + '/availability/' + key] = null;
+            break;
+          }
+        }
+      });
+
+      // 5. Remove booked matches involving this team
+      Object.keys(L.booked).forEach(matchKey => {
+        if (matchKey.includes(group.id)) {
+          updates['/leagues/' + leagueId + '/booked/' + matchKey] = null;
+        }
+      });
+    }
+  }
+
+  closeProfile();
+  db.ref().update(updates).then(() => {
+    delete userLeagues[leagueId];
+    toast('You have left "' + leagueName + '"');
+    goToHub();
+  }).catch(err => {
+    console.error('Leave failed:', err);
+    toast('Failed to leave: ' + err.message);
   });
 }
 
@@ -2423,6 +2481,14 @@ function openProfile() {
   clubNameEl.textContent = userHomeClub ? userHomeClub.name : 'Not set';
   document.getElementById('profile-home-club-search').style.display = 'none';
   loadProfilePhoto();
+  // Show leave button if inside a league (not for organisers — they should delete instead)
+  const leaveBtn = document.getElementById('profile-leave-btn');
+  if (leaveBtn) {
+    const isOrganiser = lg && lg.role === 'organiser';
+    leaveBtn.style.display = activeLeagueId && !mixInMode ? 'block' : 'none';
+    leaveBtn.textContent = isOrganiser ? 'Delete This League' : 'Leave This League';
+    leaveBtn.onclick = isOrganiser ? function() { closeProfile(); deleteLeague(activeLeagueId, { stopPropagation: function(){} }); } : leaveLeague;
+  }
   document.getElementById('profile-modal').style.display = 'flex';
 }
 
@@ -4344,6 +4410,7 @@ function renderMembers() {
                 ${allPlayers.map(p => `<option value="${esc(p)}" ${m.playerName===p?'selected':''}>${esc(p)}</option>`).join('')}
                </select>`
           }
+          ${m.role !== 'organiser' ? `<button onclick="removeMember('${esc(key)}')" style="background:none;border:none;color:#dc2626;font-size:12px;font-weight:600;cursor:pointer;padding:4px 8px" title="Remove member">&#10005;</button>` : ''}
         </div>
       </div>
     </div>`;
@@ -4357,6 +4424,55 @@ function linkMember(memberKey, playerName) {
   else { L.members[memberKey].playerName = playerName; localSave(); renderMembers(); }
   toast(`Linked to ${playerName}`);
   if (currentTab === 'availability') checkPlayerLink();
+}
+
+function removeMember(emailKey) {
+  const m = L.members[emailKey];
+  if (!m) return;
+  const memberName = m.name || m.email;
+  if (!confirm('Remove ' + memberName + ' from this league?\n\nThis will also remove their team, availability, and booked matches.')) return;
+  if (!FIREBASE_READY) { toast('Cannot remove in demo mode'); return; }
+
+  const playerName = m.playerName || '';
+  const leagueId = activeLeagueId;
+  const updates = {};
+
+  // Remove from members
+  updates['/leagues/' + leagueId + '/members/' + emailKey] = null;
+
+  // Remove from their userLeagues
+  if (m.uid) updates['/userLeagues/' + m.uid + '/' + leagueId] = null;
+
+  // Find and remove their group/team
+  if (playerName) {
+    const group = L.groups.find(g => g.players && g.players.includes(playerName));
+    if (group) {
+      updates['/leagues/' + leagueId + '/groups/' + group.id] = null;
+      const groupPlayers = group.players || [];
+      Object.keys(L.availability).forEach(key => {
+        for (const pn of groupPlayers) {
+          if (key.startsWith(pn + '|')) {
+            updates['/leagues/' + leagueId + '/availability/' + key] = null;
+            break;
+          }
+        }
+      });
+      Object.keys(L.booked).forEach(matchKey => {
+        if (matchKey.includes(group.id)) {
+          updates['/leagues/' + leagueId + '/booked/' + matchKey] = null;
+        }
+      });
+      L.groups = L.groups.filter(g => g.id !== group.id);
+    }
+  }
+
+  delete L.members[emailKey];
+  db.ref().update(updates).then(() => {
+    toast(memberName + ' removed');
+    renderGroups(); renderMembers(); renderProgress(); renderAvailGrid(); renderAllAvail();
+  }).catch(err => {
+    toast('Remove failed: ' + err.message);
+  });
 }
 
 function resetLeagueData() {
