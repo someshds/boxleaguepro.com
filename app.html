@@ -757,7 +757,21 @@
           <button onclick="adminLoadAllUsers()" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Load Users</button>
           <button onclick="adminLoadLeagues()" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Load Leagues</button>
           <button onclick="adminRebuildIndex()" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Rebuild Index</button>
+          <button onclick="adminLoadLogs()" style="background:#0891b2;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Activity Log</button>
+          <button onclick="adminClearLogs()" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Clear Logs</button>
         </div>
+        <div id="admin-log-filter" style="display:none;margin-bottom:8px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <select id="admin-log-action-filter" onchange="adminFilterLogs()" style="padding:6px 10px;border-radius:6px;border:1px solid #d1d5db;font-size:12px">
+              <option value="">All actions</option>
+            </select>
+            <select id="admin-log-user-filter" onchange="adminFilterLogs()" style="padding:6px 10px;border-radius:6px;border:1px solid #d1d5db;font-size:12px">
+              <option value="">All users</option>
+            </select>
+            <span id="admin-log-count" style="font-size:12px;color:#6b7280"></span>
+          </div>
+        </div>
+        <div id="admin-log-list" style="max-height:500px;overflow-y:auto;margin-bottom:8px"></div>
         <div id="admin-league-list" style="max-height:300px;overflow-y:auto;margin-bottom:8px"></div>
         <div id="admin-user-list" style="max-height:400px;overflow-y:auto"></div>
       </div>
@@ -1597,6 +1611,26 @@ let listeners = [];           // Active Firebase listeners (to detach on league 
    ══════════════════════════════════════ */
 function isAdmin() { return currentUser && ADMIN_EMAILS.includes(currentUser.email); }
 
+function logAction(action, details) {
+  if (!FIREBASE_READY) return;
+  try {
+    const entry = {
+      action: action,
+      user: currentUser ? (currentUser.displayName || currentUser.email || 'unknown') : 'unknown',
+      email: currentUser ? currentUser.email : '',
+      timestamp: Date.now(),
+      time: new Date().toISOString(),
+      details: details || ''
+    };
+    if (activeLeagueId) {
+      const lg = userLeagues[activeLeagueId];
+      entry.league = lg ? lg.name : activeLeagueId;
+      entry.leagueId = activeLeagueId;
+    }
+    db.ref('/activityLog').push(entry);
+  } catch(e) { /* silent fail — logging should never break the app */ }
+}
+
 function deleteLeague(leagueId, event) {
   event.stopPropagation();
   const lg = userLeagues[leagueId];
@@ -1626,6 +1660,7 @@ function deleteLeague(leagueId, event) {
       }
     });
     db.ref().update(updates).then(() => {
+      logAction('delete_league', name);
       toast('League deleted');
     }).catch(err => {
       console.error('Delete failed:', err);
@@ -1683,6 +1718,7 @@ function leaveLeague() {
   closeProfile();
   db.ref().update(updates).then(() => {
     delete userLeagues[leagueId];
+    logAction('leave_league', leagueName);
     toast('You have left "' + leagueName + '"');
     goToHub();
   }).catch(err => {
@@ -2174,6 +2210,76 @@ function adminRebuildIndex() {
   });
 }
 
+/* ── Activity Log Admin ── */
+let _adminLogs = [];
+function adminLoadLogs() {
+  if (!isAdmin() || !FIREBASE_READY) return;
+  const el = document.getElementById('admin-log-list');
+  el.innerHTML = '<div style="color:#0891b2;font-size:13px;padding:8px 0">Loading activity log...</div>';
+  document.getElementById('admin-log-filter').style.display = 'block';
+  db.ref('/activityLog').orderByChild('timestamp').limitToLast(500).once('value', snap => {
+    const raw = snap.val() || {};
+    _adminLogs = Object.entries(raw).map(([k, v]) => ({ id: k, ...v })).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    // Populate filters
+    const actions = [...new Set(_adminLogs.map(l => l.action))].sort();
+    const users = [...new Set(_adminLogs.map(l => l.user))].sort();
+    const af = document.getElementById('admin-log-action-filter');
+    const uf = document.getElementById('admin-log-user-filter');
+    af.innerHTML = '<option value="">All actions (' + actions.length + ')</option>' + actions.map(a => '<option value="' + esc(a) + '">' + esc(a) + '</option>').join('');
+    uf.innerHTML = '<option value="">All users (' + users.length + ')</option>' + users.map(u => '<option value="' + esc(u) + '">' + esc(u) + '</option>').join('');
+    adminFilterLogs();
+  }, err => {
+    el.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:8px 0">Error: ' + err.message + '</div>';
+  });
+}
+
+function adminFilterLogs() {
+  const actionFilter = document.getElementById('admin-log-action-filter').value;
+  const userFilter = document.getElementById('admin-log-user-filter').value;
+  let filtered = _adminLogs;
+  if (actionFilter) filtered = filtered.filter(l => l.action === actionFilter);
+  if (userFilter) filtered = filtered.filter(l => l.user === userFilter);
+  document.getElementById('admin-log-count').textContent = filtered.length + ' entries';
+  const el = document.getElementById('admin-log-list');
+  if (filtered.length === 0) {
+    el.innerHTML = '<div style="color:#6b7280;font-size:13px;padding:8px 0">No log entries found.</div>';
+    return;
+  }
+  const actionColors = {
+    'sign_in': '#059669', 'sign_out': '#6b7280', 'create_league': '#7c3aed', 'join_league': '#2563eb',
+    'leave_league': '#dc2626', 'delete_league': '#dc2626', 'save_availability': '#0891b2',
+    'book_match': '#d97706', 'create_open_match': '#d97706', 'join_open_match': '#d97706',
+    'save_settings': '#6366f1', 'add_group': '#059669', 'remove_group': '#dc2626',
+    'remove_member': '#dc2626', 'save_profile': '#6366f1', 'post_comment': '#2563eb',
+    'link_member': '#059669', 'confirm_match': '#059669'
+  };
+  el.innerHTML = filtered.map(l => {
+    const d = new Date(l.timestamp);
+    const timeStr = d.toLocaleDateString('en-GB', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    const color = actionColors[l.action] || '#374151';
+    return `<div style="padding:8px 10px;border-bottom:1px solid #f3f4f6;font-size:12px;display:flex;gap:8px;align-items:flex-start">
+      <div style="min-width:110px;color:#6b7280;white-space:nowrap">${timeStr}</div>
+      <div style="min-width:120px"><span style="background:${color}15;color:${color};padding:2px 8px;border-radius:4px;font-weight:700;font-size:11px;white-space:nowrap">${esc(l.action)}</span></div>
+      <div style="flex:1">
+        <span style="font-weight:600">${esc(l.user)}</span>
+        ${l.details ? '<span style="color:#6b7280"> — ' + esc(l.details) + '</span>' : ''}
+        ${l.league ? '<div style="color:#9ca3af;font-size:11px;margin-top:1px">' + esc(l.league) + '</div>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function adminClearLogs() {
+  if (!isAdmin() || !FIREBASE_READY) return;
+  if (!confirm('Clear all activity logs? This cannot be undone.')) return;
+  db.ref('/activityLog').set(null).then(() => {
+    _adminLogs = [];
+    document.getElementById('admin-log-list').innerHTML = '<div style="color:#059669;font-size:13px;padding:8px 0">Logs cleared.</div>';
+    document.getElementById('admin-log-filter').style.display = 'none';
+    toast('Activity logs cleared');
+  });
+}
+
 function esc(s) { if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/\\/g,'&#92;').replace(/`/g,'&#96;'); }
 function val(id) { return document.getElementById(id).value.trim(); }
 function toast(msg, duration) {
@@ -2447,6 +2553,7 @@ function resetPassword() {
 }
 
 function signOut() {
+  logAction('sign_out');
   detachListeners();
   detachGlobalListeners();
   if (_deadlineInterval) { clearInterval(_deadlineInterval); _deadlineInterval = null; }
@@ -2509,6 +2616,7 @@ function saveProfile() {
   const isSingles = mixInMode || (lg && lg.sport && (lg.sport.toLowerCase() === 'squash' || lg.sport.toLowerCase() === 'singles'));
   if (!isSingles && !newPartner) { errEl.textContent = 'Please enter your partner\'s name.'; errEl.style.display = 'block'; return; }
 
+  logAction('save_profile', newName + (newPartner ? ' & ' + newPartner : ''));
   // Mix-in mode: no league member record to update
   if (mixInMode || !activeLeagueId) {
     if (FIREBASE_READY && currentUser) {
@@ -2739,6 +2847,7 @@ function getDefaultAvatar() {
 }
 
 function onAuthSuccess() {
+  logAction('sign_in', currentUser.email);
   loadUserLeagues();
   loadUserHomeClub(() => {
     // Check URL params for shared league link
@@ -3465,6 +3574,7 @@ async function createLeagueInClub() {
   updates['/leagueIndex/' + leagueId] = { name, sport, clubId: selectedClubId, clubName: selectedClubName, createdAt: Date.now() };
 
   db.ref().update(updates).then(() => {
+    logAction('create_league', name + ' at ' + selectedClubName);
     showCreateShareStep(leagueId, name);
   }).catch(err => {
     console.error('Create league error:', err);
@@ -3499,6 +3609,7 @@ function joinAndEnterLeague(leagueId) {
     };
 
     db.ref().update(updates).then(() => {
+      logAction('join_league', info.name);
       startWizard(leagueId, info.name);
     }).catch(err => {
       console.error('Join league error:', err);
@@ -3799,6 +3910,7 @@ function enterLeague(leagueId) {
 
 function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   activeLeagueId = leagueId;
+  logAction('enter_league', leagueInfo.name || leagueId);
   fillInForPlayer = ''; // Reset fill-in when entering a league
 
   // Load club booking URL
@@ -4005,6 +4117,9 @@ function fbSetAvailBatch(updates) {
   const ref = leagueRef('availability');
   if (ref) ref.update(updates);
   else { Object.entries(updates).forEach(([k,v]) => { if(v) L.availability[k]=true; else delete L.availability[k]; }); localSave(); }
+  const count = Object.keys(updates).length;
+  const player = getActivePlayer();
+  logAction('save_availability', player + ' — ' + count + ' slot(s) changed');
 }
 
 function saveSettings() {
@@ -4020,6 +4135,7 @@ function saveSettings() {
     db.ref('/userLeagues/' + currentUser.uid + '/' + activeLeagueId + '/name').set(L.settings.leagueName);
     db.ref('/leagues/' + activeLeagueId + '/info/name').set(L.settings.leagueName);
   }
+  logAction('save_settings', 'League name: ' + newName);
   toast('League name saved!');
 }
 
@@ -4320,6 +4436,7 @@ function addGroup() {
     if (existing.includes(p)) { toast(`${p} is already in another team`); return; }
   }
   L.groups.push({ id: 'G' + Date.now(), name, players });
+  logAction('add_group', name + ': ' + players.join(', '));
   fbSetGroups(); hideGroupForm(); renderGroups(); renderMembers(); renderProgress(); toast('Team added!');
 }
 
@@ -4361,6 +4478,7 @@ function removeGroup(id) {
     if (Object.keys(bookedUpdates).length > 0 && bookedRef) bookedRef.update(bookedUpdates);
   }
 
+  logAction('remove_group', playerList);
   renderGroups(); renderMembers(); renderProgress(); renderAvailGrid(); renderAllAvail(); toast('Team removed');
 }
 
@@ -4448,6 +4566,7 @@ function linkMember(memberKey, playerName) {
   const ref = leagueRef('members/' + memberKey + '/playerName');
   if (ref) ref.set(playerName);
   else { L.members[memberKey].playerName = playerName; localSave(); renderMembers(); }
+  logAction('link_member', memberKey + ' → ' + playerName);
   toast(`Linked to ${playerName}`);
   if (currentTab === 'availability') checkPlayerLink();
 }
@@ -4494,6 +4613,7 @@ function removeMember(emailKey) {
 
   delete L.members[emailKey];
   db.ref().update(updates).then(() => {
+    logAction('remove_member', memberName);
     toast(memberName + ' removed');
     renderGroups(); renderMembers(); renderProgress(); renderAvailGrid(); renderAllAvail();
   }).catch(err => {
@@ -4949,6 +5069,7 @@ function bookMatch(matchKey, date, slot) {
   const dateLabel = DAY_NAMES[d.getDay()] + ' ' + d.getDate() + ' ' + MONTH_NAMES[d.getMonth()];
   if (!confirm('Book this match?\n\n' + dateLabel + ' at ' + slotLabel + '\n\nPlayers will be notified.')) return;
   fbSetBooked(matchKey, { date, slot, notes: '', courtBooked: false, agreed: {} });
+  logAction('book_match', dateLabel + ' at ' + slotLabel);
   notifyBooking(matchKey, date, slot);
   renderMatchFinder(); renderMyMatches();
   toast('Match booked! Players will be notified.');
@@ -4956,6 +5077,7 @@ function bookMatch(matchKey, date, slot) {
 
 function unbookMatch(matchKey) {
   if (!confirm('Cancel this booking?')) return;
+  logAction('unbook_match', matchKey);
   fbSetBooked(matchKey, null);
   renderMatchFinder(); renderMyMatches();
   toast('Booking cancelled');
@@ -4986,7 +5108,7 @@ function toggleAgreed(matchKey) {
   const booked = L.booked[matchKey];
   if (!booked) return;
   if (!booked.agreed) booked.agreed = {};
-  if (booked.agreed[player]) { delete booked.agreed[player]; } else { booked.agreed[player] = true; }
+  if (booked.agreed[player]) { delete booked.agreed[player]; logAction('unconfirm_match', matchKey); } else { booked.agreed[player] = true; logAction('confirm_match', matchKey); }
   fbSetBooked(matchKey, booked);
   renderMatchFinder(); renderMyMatches();
 }
@@ -5425,6 +5547,7 @@ function createOpenMatch() {
   }
 
   closeCreateOpenMatch();
+  logAction('create_open_match', slot + ' — ' + sport);
   toast('Game created! Other players can now join.');
   renderOpenMatches();
 }
@@ -5453,11 +5576,13 @@ function joinOpenMatch(matchId) {
     }, (err, committed) => {
       if (err) { toast('Error joining — try again'); return; }
       if (!committed) { toast('Could not join — game may be full'); return; }
+      logAction('join_open_match', matchId);
       toast('You joined the game!');
     });
   } else {
     players.push(myName);
     match.players = players;
+    logAction('join_open_match', matchId);
     renderOpenMatches();
     toast('You joined the game!');
   }
@@ -5750,7 +5875,7 @@ function postComment() {
     L.comments[id] = comment;
     renderComments();
   }
-
+  logAction('post_comment', text.substring(0, 80));
   input.value = '';
 }
 
