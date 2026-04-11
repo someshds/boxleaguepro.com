@@ -4393,6 +4393,8 @@ function renderMembers() {
     return;
   }
   const allPlayers = getAllPlayers();
+  const lgInfo = activeLeagueId ? userLeagues[activeLeagueId] : null;
+  const isOrg = lgInfo && lgInfo.role === 'organiser';
   el.innerHTML = memberKeys.map(key => {
     const m = L.members[key];
     const linked = m.playerName && allPlayers.includes(m.playerName);
@@ -4405,12 +4407,12 @@ function renderMembers() {
         <div style="display:flex;align-items:center;gap:6px">
           ${linked
             ? `<span class="badge badge-booked">Linked: ${esc(m.playerName)}</span>`
-            : `<select class="fi" style="width:auto;padding:6px 10px;font-size:13px" onchange="linkMember('${esc(key)}',this.value)">
+            : isOrg ? `<select class="fi" style="width:auto;padding:6px 10px;font-size:13px" onchange="linkMember('${esc(key)}',this.value)">
                 <option value="">Link to player...</option>
                 ${allPlayers.map(p => `<option value="${esc(p)}" ${m.playerName===p?'selected':''}>${esc(p)}</option>`).join('')}
-               </select>`
+               </select>` : `<span class="badge" style="background:#fef3c7;color:#92400e">Not linked</span>`
           }
-          ${m.role !== 'organiser' ? `<button onclick="removeMember('${esc(key)}')" style="background:none;border:none;color:#dc2626;font-size:12px;font-weight:600;cursor:pointer;padding:4px 8px" title="Remove member">&#10005;</button>` : ''}
+          ${isOrg && m.role !== 'organiser' ? `<button onclick="removeMember('${esc(key)}')" style="background:none;border:none;color:#dc2626;font-size:12px;font-weight:600;cursor:pointer;padding:4px 8px" title="Remove member">&#10005;</button>` : ''}
         </div>
       </div>
     </div>`;
