@@ -2219,7 +2219,7 @@ function adminLoadLogs() {
   const el = document.getElementById('admin-log-list');
   el.innerHTML = '<div style="color:#0891b2;font-size:13px;padding:8px 0">Loading activity log...</div>';
   document.getElementById('admin-log-filter').style.display = 'block';
-  db.ref('/activityLog').orderByChild('timestamp').limitToLast(500).once('value', snap => {
+  db.ref('/activityLog').orderByChild('timestamp').limitToLast(500).once('value').then(snap => {
     const raw = snap.val() || {};
     _adminLogs = Object.entries(raw).map(([k, v]) => ({ id: k, ...v })).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
     // Populate filters
@@ -2230,8 +2230,8 @@ function adminLoadLogs() {
     af.innerHTML = '<option value="">All actions (' + actions.length + ')</option>' + actions.map(a => '<option value="' + esc(a) + '">' + esc(a) + '</option>').join('');
     uf.innerHTML = '<option value="">All users (' + users.length + ')</option>' + users.map(u => '<option value="' + esc(u) + '">' + esc(u) + '</option>').join('');
     adminFilterLogs();
-  }, err => {
-    el.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:8px 0">Error: ' + err.message + '</div>';
+  }).catch(err => {
+    el.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:8px 0">Error loading logs: ' + err.message + '</div>';
   });
 }
 
