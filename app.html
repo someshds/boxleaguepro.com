@@ -651,6 +651,25 @@
       <div id="welcome-leagues-list"></div>
     </div>
 
+    <!-- Admin tools on welcome screen -->
+    <div id="welcome-admin-tools" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:12px;padding:14px 16px;margin-top:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:14px;font-weight:700;color:#92400e">&#128272; Admin Console</div>
+        <button onclick="toggleWelcomeAdmin()" id="welcome-admin-toggle-btn" style="background:#92400e;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer">Expand</button>
+      </div>
+      <div id="welcome-admin-body" style="display:none">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <button onclick="openAdminAction('adminLoadAllUsers')" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Load Users</button>
+          <button onclick="openAdminAction('adminLoadLeagues')" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Load Leagues</button>
+          <button onclick="openAdminAction('adminLoadClubs')" style="background:#d97706;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Load Clubs</button>
+          <button onclick="openAdminAction('adminRebuildIndex')" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Rebuild Index</button>
+          <button onclick="openAdminAction('adminLoadLogs')" style="background:#0891b2;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Activity Log</button>
+          <button onclick="openAdminAction('adminClearLogs')" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Clear Logs</button>
+        </div>
+        <div style="font-size:12px;color:#6b7280">Opens the admin panel with results.</div>
+      </div>
+    </div>
+
     <div class="welcome-existing">
       <a onclick="skipWelcome()">Already have a league code? Join directly &rarr;</a>
     </div>
@@ -1732,6 +1751,25 @@ function leaveLeague() {
 function toggleAdminConsole() {
   const body = document.getElementById('admin-console-body');
   const btn = document.getElementById('admin-toggle-btn');
+  const isHidden = body.style.display === 'none';
+  body.style.display = isHidden ? 'block' : 'none';
+  btn.textContent = isHidden ? 'Collapse' : 'Expand';
+}
+
+function openAdminAction(fnName) {
+  // Navigate to browse screen, expand admin console, then run the action
+  goToBrowse();
+  const body = document.getElementById('admin-console-body');
+  const btn = document.getElementById('admin-toggle-btn');
+  if (body) body.style.display = 'block';
+  if (btn) btn.textContent = 'Collapse';
+  // Run the action
+  setTimeout(() => { window[fnName](); }, 100);
+}
+
+function toggleWelcomeAdmin() {
+  const body = document.getElementById('welcome-admin-body');
+  const btn = document.getElementById('welcome-admin-toggle-btn');
   const isHidden = body.style.display === 'none';
   body.style.display = isHidden ? 'block' : 'none';
   btn.textContent = isHidden ? 'Collapse' : 'Expand';
@@ -3298,6 +3336,9 @@ function renderWelcomeLeagues() {
       <div class="league-card-meta">${esc(lg.clubName || '')}${lg.clubName ? ' &middot; ' : ''}${esc(lg.sport || '')}</div>
     </div>`;
   }).join('');
+  // Show admin panel on welcome screen
+  const welcomeAdmin = document.getElementById('welcome-admin-tools');
+  if (welcomeAdmin) welcomeAdmin.style.display = isAdmin() ? 'block' : 'none';
 }
 
 let globalListenerRefs = []; // Track userLeagues + clubs listeners separately from league listeners
