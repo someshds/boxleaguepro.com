@@ -1070,9 +1070,11 @@
         <div class="card-title" style="margin-bottom:8px;color:#166534">Invite Players</div>
         <div style="font-size:15px;color:#15803d;line-height:1.5;margin-bottom:12px">Share this link with your players. When they click it, they'll be taken straight into this league.</div>
         <div id="setup-invite-link" style="font-size:14px;word-break:break-all;background:#fff;padding:12px;border-radius:8px;font-weight:600;margin-bottom:12px;border:1px solid #bbf7d0;color:#1a1a1a"></div>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-primary btn-sm" onclick="copySetupInviteLink()">Copy Link</button>
           <button class="btn btn-whatsapp btn-sm" onclick="shareSetupWhatsApp()">WhatsApp</button>
+          <button class="btn btn-sm" onclick="shareSetupEmail()" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd">Email</button>
+          <button class="btn btn-sm" onclick="copySetupEmailText()" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d">Copy Email Text</button>
         </div>
       </div>
 
@@ -4153,6 +4155,28 @@ function shareSetupWhatsApp() {
   const leagueName = L.settings.leagueName || 'our box league';
   const msg = `Join "${leagueName}" on BoxLeague Pro!\n\nSign up and fill in your availability here:\n${link}\n\nTakes 1 minute — just tap when you're free!`;
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+
+function getSetupEmailText() {
+  const link = document.getElementById('setup-invite-link').textContent;
+  const leagueName = L.settings.leagueName || 'our box league';
+  const clubName = L.settings.clubName || '';
+  const sportType = L.settings.sport || 'Tennis';
+  const gameType = L.settings.gameType === 'doubles' ? 'Doubles' : L.settings.gameType === 'singles' ? 'Singles' : 'Mix-In';
+  let body = `Hi everyone,\n\nI've set up our ${gameType} box league "${leagueName}"${clubName ? ' at ' + clubName : ''} on BoxLeague Pro — a free app that makes it easy to organise matches.\n\nHere's what you need to do:\n\n1. Click this link to join: ${link}\n2. Sign in with your email (takes 30 seconds)\n3. Fill in your availability — just tap the dates and times you can play\n\nThe app will then find the best times for everyone and help us book matches.\n\nLooking forward to playing!\n\nSent via BoxLeague Pro — free at boxleaguepro.com`;
+  return { subject: `Join ${leagueName} — ${sportType} ${gameType} Box League`, body };
+}
+
+function shareSetupEmail() {
+  const { subject, body } = getSetupEmailText();
+  window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+}
+
+function copySetupEmailText() {
+  const { subject, body } = getSetupEmailText();
+  const fullText = `Subject: ${subject}\n\n${body}`;
+  copyText(fullText);
+  toast('Email text copied to clipboard!');
 }
 
 /* ══════════════════════════════════════
