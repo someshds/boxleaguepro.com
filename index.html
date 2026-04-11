@@ -70,6 +70,12 @@ section{padding:80px 20px}
 .section-title{font-size:clamp(28px,3.5vw,40px);font-weight:800;letter-spacing:-0.5px;margin-bottom:12px;line-height:1.15;text-align:center}
 .section-subtitle{font-size:17px;color:var(--muted);max-width:600px;margin:0 auto 40px;text-align:center}
 
+/* VIDEO BG SECTIONS — white text */
+.vbg{color:#fff}
+.vbg .section-title{color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.3)}
+.vbg .section-subtitle{color:rgba(255,255,255,0.85);text-shadow:0 1px 4px rgba(0,0,0,0.2)}
+.vbg .section-label{background:rgba(255,255,255,0.2);color:#fff;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.3)}
+
 /* TWO MODES */
 .modes{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:40px}
 .mode-card{background:var(--white);border-radius:var(--radius);padding:32px;box-shadow:var(--shadow);border:2px solid transparent;transition:all .3s;text-align:left}
@@ -418,7 +424,7 @@ footer a:hover{text-decoration:underline}
 </section>
 
 <!-- VIDEO -->
-<section style="padding:60px 20px;text-align:center;background:var(--bg);position:relative;overflow:hidden">
+<section class="vbg" style="padding:60px 20px;text-align:center;background:var(--bg);position:relative;overflow:hidden">
   <video autoplay muted loop playsinline style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.5"><source src="images/bg-video-how.mp4" type="video/mp4"></video>
   <div class="section-inner" style="position:relative;z-index:1">
     <div class="section-label">See It In Action</div>
@@ -437,7 +443,7 @@ footer a:hover{text-decoration:underline}
 </section>
 
 <!-- TWO MODES -->
-<section id="features" style="position:relative;overflow:hidden">
+<section id="features" class="vbg" style="position:relative;overflow:hidden">
   <video autoplay muted loop playsinline style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.5"><source src="images/bg-video-features.mp4" type="video/mp4"></video>
   <div class="section-inner" style="position:relative;z-index:1">
     <div class="section-label">Two Ways to Play</div>
@@ -478,7 +484,7 @@ footer a:hover{text-decoration:underline}
 </section>
 
 <!-- FEATURES GRID -->
-<section style="background:var(--white);position:relative;overflow:hidden">
+<section class="vbg" style="background:var(--white);position:relative;overflow:hidden">
   <video autoplay muted loop playsinline style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.5"><source src="images/bg-video-grid.mp4" type="video/mp4"></video>
   <div class="section-inner" style="position:relative;z-index:1">
     <div class="section-label">Packed with Features</div>
@@ -564,7 +570,7 @@ footer a:hover{text-decoration:underline}
 </section>
 
 <!-- SPORTS -->
-<section id="sports" style="background:var(--white);position:relative;overflow:hidden">
+<section id="sports" class="vbg" style="background:var(--white);position:relative;overflow:hidden">
   <video autoplay muted loop playsinline style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.5"><source src="images/bg-video-sports.mp4" type="video/mp4"></video>
   <div class="section-inner" style="text-align:center;position:relative;z-index:1">
     <div class="section-label">Multi-Sport</div>
@@ -640,7 +646,7 @@ footer a:hover{text-decoration:underline}
 </section>
 
 <!-- AIFA SECTION -->
-<section style="text-align:center;position:relative;overflow:hidden">
+<section class="vbg" style="text-align:center;position:relative;overflow:hidden">
   <video autoplay muted loop playsinline style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.5"><source src="images/bg-video-aifa.mp4" type="video/mp4"></video>
   <div class="section-inner" style="position:relative;z-index:1">
     <div style="font-size:32px;margin-bottom:12px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg></div>
