@@ -2294,16 +2294,11 @@ function adminLoadClubs() {
       el.innerHTML = '<div style="color:#6b7280;font-size:13px;padding:8px 0">No clubs found.</div>';
       return;
     }
-    // Count leagues per club
+    // Count leagues per club — try clubLeagues, fall back to 0 if permission denied
     const leagueCounts = {};
     entries.forEach(([id]) => { leagueCounts[id] = 0; });
 
-    db.ref('/clubLeagues').once('value', clSnap => {
-      const clubLeagues = clSnap.val() || {};
-      Object.entries(clubLeagues).forEach(([clubId, leagues]) => {
-        leagueCounts[clubId] = Object.keys(leagues || {}).length;
-      });
-
+    function renderClubList() {
       el.innerHTML = '<div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:8px">' + entries.length + ' clubs</div>' +
         entries.map(([id, club]) => {
           const count = leagueCounts[id] || 0;
@@ -2311,12 +2306,20 @@ function adminLoadClubs() {
           return `<div style="padding:8px 12px;margin-bottom:6px;background:${hasLeagues ? '#f0fdf4' : '#fff'};border:1px solid ${hasLeagues ? '#bbf7d0' : '#e5e7eb'};border-radius:8px;display:flex;justify-content:space-between;align-items:center">
             <div>
               <div style="font-size:14px;font-weight:600">${esc(club.name || 'Unnamed')}</div>
-              <div style="font-size:11px;color:#6b7280">${esc(id)} &middot; ${count} league${count !== 1 ? 's' : ''}${club.bookingUrl ? ' &middot; 🔗 ' + esc(club.bookingUrl) : ''}</div>
+              <div style="font-size:11px;color:#6b7280">${esc(id)}${count > 0 ? ' &middot; ' + count + ' league' + (count !== 1 ? 's' : '') : ''}${club.bookingUrl ? ' &middot; 🔗 ' + esc(club.bookingUrl) : ''}</div>
             </div>
-            <button onclick="adminDeleteClub('${esc(id)}','${esc(club.name || 'Unnamed')}',${count})" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Delete</button>
+            <button onclick="adminDeleteClub('${esc(id)}','${esc((club.name || 'Unnamed').replace(/'/g, ''))}',${count})" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Delete</button>
           </div>`;
         }).join('');
-    });
+    }
+
+    db.ref('/clubLeagues').once('value', clSnap => {
+      const clubLeagues = clSnap.val() || {};
+      Object.entries(clubLeagues).forEach(([clubId, leagues]) => {
+        leagueCounts[clubId] = Object.keys(leagues || {}).length;
+      });
+      renderClubList();
+    }, () => { renderClubList(); });
   }, err => {
     el.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:8px 0">Error: ' + err.message + '</div>';
   });
