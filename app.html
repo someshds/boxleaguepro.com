@@ -4240,13 +4240,14 @@ function renderProgress() {
   const players = getAllPlayers();
   if (players.length === 0) { wrap.style.display = 'none'; return; }
 
-  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = ds(new Date());
   let submitted = 0;
   players.forEach(p => {
-    for (let i = 0; i < 14; i++) {
-      const d = new Date(today); d.setDate(today.getDate()+i);
-      for (const slot of SLOTS) {
-        if (L.availability[avk(p, d, slot)]) { submitted++; return; }
+    const prefix = p + '|';
+    for (const key of Object.keys(L.availability)) {
+      if (key.startsWith(prefix)) {
+        const dateStr = key.split('|')[1];
+        if (dateStr >= todayStr) { submitted++; return; }
       }
     }
   });
@@ -4686,19 +4687,25 @@ function renderMySummary() {
   const body = document.getElementById('my-summary-body');
   if (!player) { card.style.display = 'none'; return; }
   const today = new Date(); today.setHours(0,0,0,0);
+  // Scan ALL availability keys for this player (not just 14 days)
   let items = [];
-  for (let i = 0; i < 14; i++) {
-    const d = new Date(today); d.setDate(today.getDate()+i);
-    for (const slot of SLOTS) {
-      if (L.availability[avk(player, d, slot)]) items.push(`${fmtFull(ds(d))} \u2014 ${SLOT_LABELS[slot]}`);
-    }
-  }
+  const prefix = player + '|';
+  Object.keys(L.availability).forEach(key => {
+    if (!key.startsWith(prefix)) return;
+    const parts = key.split('|'); // playerName|YYYY-MM-DD|slot
+    if (parts.length < 3) return;
+    const d = new Date(parts[1] + 'T00:00:00');
+    if (d < today) return; // Skip past dates
+    items.push({ label: `${fmtFull(parts[1])} \u2014 ${SLOT_LABELS[parts[2]] || parts[2]}`, date: parts[1], slot: parts[2] });
+  });
+  // Sort by date then slot
+  items.sort((a, b) => a.date === b.date ? a.slot.localeCompare(b.slot) : a.date.localeCompare(b.date));
   const nextSteps = document.getElementById('avail-next-steps');
   if (items.length === 0) { card.style.display = 'none'; if (nextSteps) nextSteps.style.display = 'none'; return; }
   card.style.display = 'block';
   if (nextSteps && !mixInMode) nextSteps.style.display = 'block';
   body.innerHTML = `<div style="font-size:13px;color:var(--muted);margin-bottom:4px">${items.length} upcoming slot${items.length!==1?'s':''}:</div>` +
-    items.map(i => `<div style="font-size:14px;padding:3px 0">&#9989; ${i}</div>`).join('');
+    items.map(i => `<div style="font-size:14px;padding:3px 0">&#9989; ${i.label}</div>`).join('');
 }
 
 /* ══════════════════════════════════════
