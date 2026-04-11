@@ -757,6 +757,7 @@
           <button onclick="adminLoadAllUsers()" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Load Users</button>
           <button onclick="adminLoadLeagues()" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Load Leagues</button>
           <button onclick="adminRebuildIndex()" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Rebuild Index</button>
+          <button onclick="adminLoadClubs()" style="background:#d97706;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Load Clubs</button>
           <button onclick="adminLoadLogs()" style="background:#0891b2;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Activity Log</button>
           <button onclick="adminClearLogs()" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Clear Logs</button>
         </div>
@@ -772,6 +773,7 @@
           </div>
         </div>
         <div id="admin-log-list" style="max-height:500px;overflow-y:auto;margin-bottom:8px"></div>
+        <div id="admin-club-list" style="max-height:400px;overflow-y:auto;margin-bottom:8px"></div>
         <div id="admin-league-list" style="max-height:300px;overflow-y:auto;margin-bottom:8px"></div>
         <div id="admin-user-list" style="max-height:400px;overflow-y:auto"></div>
       </div>
@@ -2277,6 +2279,66 @@ function adminClearLogs() {
     document.getElementById('admin-log-list').innerHTML = '<div style="color:#059669;font-size:13px;padding:8px 0">Logs cleared.</div>';
     document.getElementById('admin-log-filter').style.display = 'none';
     toast('Activity logs cleared');
+  });
+}
+
+/* ── Club Admin ── */
+function adminLoadClubs() {
+  if (!isAdmin() || !FIREBASE_READY) return;
+  const el = document.getElementById('admin-club-list');
+  el.innerHTML = '<div style="color:#d97706;font-size:13px;padding:8px 0">Loading clubs...</div>';
+  db.ref('/clubs').once('value', snap => {
+    const clubs = snap.val() || {};
+    const entries = Object.entries(clubs).sort((a, b) => (a[1].name || '').localeCompare(b[1].name || ''));
+    if (entries.length === 0) {
+      el.innerHTML = '<div style="color:#6b7280;font-size:13px;padding:8px 0">No clubs found.</div>';
+      return;
+    }
+    // Count leagues per club
+    const leagueCounts = {};
+    entries.forEach(([id]) => { leagueCounts[id] = 0; });
+
+    db.ref('/clubLeagues').once('value', clSnap => {
+      const clubLeagues = clSnap.val() || {};
+      Object.entries(clubLeagues).forEach(([clubId, leagues]) => {
+        leagueCounts[clubId] = Object.keys(leagues || {}).length;
+      });
+
+      el.innerHTML = '<div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:8px">' + entries.length + ' clubs</div>' +
+        entries.map(([id, club]) => {
+          const count = leagueCounts[id] || 0;
+          const hasLeagues = count > 0;
+          return `<div style="padding:8px 12px;margin-bottom:6px;background:${hasLeagues ? '#f0fdf4' : '#fff'};border:1px solid ${hasLeagues ? '#bbf7d0' : '#e5e7eb'};border-radius:8px;display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:14px;font-weight:600">${esc(club.name || 'Unnamed')}</div>
+              <div style="font-size:11px;color:#6b7280">${esc(id)} &middot; ${count} league${count !== 1 ? 's' : ''}${club.bookingUrl ? ' &middot; 🔗 ' + esc(club.bookingUrl) : ''}</div>
+            </div>
+            <button onclick="adminDeleteClub('${esc(id)}','${esc(club.name || 'Unnamed')}',${count})" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Delete</button>
+          </div>`;
+        }).join('');
+    });
+  }, err => {
+    el.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:8px 0">Error: ' + err.message + '</div>';
+  });
+}
+
+function adminDeleteClub(clubId, clubName, leagueCount) {
+  if (!isAdmin() || !FIREBASE_READY) return;
+  if (leagueCount > 0) {
+    if (!confirm('⚠️ "' + clubName + '" has ' + leagueCount + ' league(s) attached.\n\nDeleting this club will NOT delete the leagues, but they will lose their club association.\n\nAre you sure?')) return;
+  } else {
+    if (!confirm('Delete club "' + clubName + '"?\n\nThis cannot be undone.')) return;
+  }
+  const updates = {};
+  updates['/clubs/' + clubId] = null;
+  updates['/clubLeagues/' + clubId] = null;
+  db.ref().update(updates).then(() => {
+    delete allClubs[clubId];
+    logAction('delete_club', clubName);
+    toast('"' + clubName + '" deleted');
+    adminLoadClubs();
+  }).catch(err => {
+    toast('Delete failed: ' + err.message);
   });
 }
 
