@@ -2287,14 +2287,13 @@ function adminLoadClubs() {
   if (!isAdmin() || !FIREBASE_READY) return;
   const el = document.getElementById('admin-club-list');
   el.innerHTML = '<div style="color:#d97706;font-size:13px;padding:8px 0">Loading clubs...</div>';
-  db.ref('/clubs').once('value', snap => {
+  db.ref('/clubs').once('value').then(snap => {
     const clubs = snap.val() || {};
     const entries = Object.entries(clubs).sort((a, b) => (a[1].name || '').localeCompare(b[1].name || ''));
     if (entries.length === 0) {
       el.innerHTML = '<div style="color:#6b7280;font-size:13px;padding:8px 0">No clubs found.</div>';
       return;
     }
-    // Count leagues per club — try clubLeagues, fall back to 0 if permission denied
     const leagueCounts = {};
     entries.forEach(([id]) => { leagueCounts[id] = 0; });
 
@@ -2313,15 +2312,16 @@ function adminLoadClubs() {
         }).join('');
     }
 
-    db.ref('/clubLeagues').once('value', clSnap => {
+    // Try to get league counts, but render regardless
+    db.ref('/clubLeagues').once('value').then(clSnap => {
       const clubLeagues = clSnap.val() || {};
       Object.entries(clubLeagues).forEach(([clubId, leagues]) => {
         leagueCounts[clubId] = Object.keys(leagues || {}).length;
       });
       renderClubList();
-    }, () => { renderClubList(); });
-  }, err => {
-    el.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:8px 0">Error: ' + err.message + '</div>';
+    }).catch(() => { renderClubList(); });
+  }).catch(err => {
+    el.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:8px 0">Error loading clubs: ' + err.message + '</div>';
   });
 }
 
