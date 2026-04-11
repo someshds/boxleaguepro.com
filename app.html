@@ -4131,17 +4131,34 @@ function populateFillInDropdown() {
   if (!container || !sel) return;
 
   const myName = getMyPlayerName();
-  const allPlayers = getAllPlayers();
-  const otherPlayers = allPlayers.filter(p => p !== myName);
+  const lgInfo = activeLeagueId ? userLeagues[activeLeagueId] : null;
+  const isOrg = lgInfo && lgInfo.role === 'organiser';
 
-  if (otherPlayers.length === 0) {
+  let allowedPlayers;
+  if (isOrg) {
+    // Organisers can fill in for anyone
+    const allPlayers = getAllPlayers();
+    allowedPlayers = allPlayers.filter(p => p !== myName);
+  } else {
+    // Regular players can only fill in for their doubles partner
+    allowedPlayers = [];
+    const myGroup = L.groups.find(g => g.players && g.players.includes(myName));
+    if (myGroup && myGroup.players) {
+      allowedPlayers = myGroup.players.filter(p => p !== myName);
+    }
+  }
+
+  if (allowedPlayers.length === 0) {
     container.style.display = 'none';
+    fillInForPlayer = '';
     return;
   }
 
   container.style.display = 'block';
+  const label = isOrg ? 'Fill in availability for another player' : 'Fill in availability for your partner';
+  container.querySelector('div > div:first-child').innerHTML = '&#128100; ' + label;
   sel.innerHTML = '<option value="">Myself (' + esc(myName) + ')</option>';
-  otherPlayers.forEach(p => {
+  allowedPlayers.forEach(p => {
     const opt = document.createElement('option');
     opt.value = p;
     opt.textContent = p;
@@ -4544,6 +4561,17 @@ let _toggleTimer = null;
 function toggleCell(el) {
   const player = getActivePlayer();
   if (!player) return;
+  // Security: verify the active player is allowed (self or partner for non-organisers)
+  const myName = getMyPlayerName();
+  const lgInfo = activeLeagueId ? userLeagues[activeLeagueId] : null;
+  const isOrg = lgInfo && lgInfo.role === 'organiser';
+  if (player !== myName && !isOrg) {
+    const myGroup = L.groups.find(g => g.players && g.players.includes(myName));
+    if (!myGroup || !myGroup.players || !myGroup.players.includes(player)) {
+      toast('You can only edit your own or your partner\'s availability');
+      return;
+    }
+  }
   const d = new Date(el.dataset.date + 'T00:00:00');
   const key = avk(player, d, el.dataset.slot);
   const newVal = !L.availability[key];
