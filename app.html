@@ -3530,7 +3530,7 @@ function copyCreateInviteLink() {
 function shareCreateWhatsApp() {
   const link = document.getElementById('create-share-link').textContent;
   const leagueName = document.getElementById('create-share-league-name').textContent;
-  const msg = encodeURIComponent('Join our box league "' + leagueName + '" on BoxLeague Pro!\n\nSign up and fill in your availability here:\n' + link + '\n\nhttps://boxleaguepro.com\n\nTakes 1 minute 🎾');
+  const msg = encodeURIComponent('Join our box league "' + leagueName + '" on BoxLeague Pro!\n\nSign up and fill in your availability here:\n' + link + '\n\nTakes 1 minute — just tap when you\'re free!');
   window.open('https://wa.me/?text=' + msg, '_blank');
 }
 
@@ -4187,7 +4187,7 @@ function copySetupInviteLink() {
 function shareSetupWhatsApp() {
   const link = document.getElementById('setup-invite-link').textContent;
   const leagueName = L.settings.leagueName || 'our box league';
-  const msg = `Join "${leagueName}" on BoxLeague Pro!\n\nSign up and fill in your availability here:\n${link}\n\nTakes 1 minute \u{1F3BE}`;
+  const msg = `Join "${leagueName}" on BoxLeague Pro!\n\nSign up and fill in your availability here:\n${link}\n\nTakes 1 minute — just tap when you're free!`;
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
 
@@ -5033,7 +5033,7 @@ function getChaseMsg() {
   const deadlineStr = L.settings.deadline ? ` by ${new Date(L.settings.deadline).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}` : '';
   const names = missing.join(', ');
   const code = userLeagues[activeLeagueId] ? userLeagues[activeLeagueId].code : '';
-  return `Hi all! Still waiting on availability for ${league} from: ${names}\n\nPlease sign in and fill yours in${deadlineStr}.\nLeague code: ${code}\n\nhttps://boxleaguepro.com\n\nTakes 30 seconds \u2014 just tap when you're free \ud83c\udfbe`;
+  return `Hi ${names},\n\nStill waiting on your availability for ${league}.\n\nPlease sign in and fill yours in${deadlineStr}.\nLeague code: ${code}\n\nhttps://boxleaguepro.com\n\nTakes 30 seconds — just tap when you're free!`;
 }
 function chaseWhatsApp() {
   const msg = getChaseMsg();
