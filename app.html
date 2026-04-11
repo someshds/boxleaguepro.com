@@ -1043,7 +1043,10 @@
         <div class="card-title" style="margin-bottom:12px">League Settings</div>
         <div class="fg">
           <label class="fl">League Name</label>
-          <input class="fi" id="inp-league-name" placeholder="e.g. Men's Doubles Box 3" oninput="saveSettings()">
+          <div style="display:flex;gap:8px;align-items:center">
+            <input class="fi" id="inp-league-name" placeholder="e.g. Men's Doubles Box 3" style="flex:1">
+            <button class="btn btn-primary btn-sm" onclick="saveSettings()" style="white-space:nowrap;padding:10px 18px">Save</button>
+          </div>
         </div>
         <div class="fg">
           <label class="fl">Availability Deadline</label>
@@ -4005,7 +4008,9 @@ function fbSetAvailBatch(updates) {
 }
 
 function saveSettings() {
-  L.settings.leagueName = val('inp-league-name');
+  const newName = val('inp-league-name');
+  if (!newName) { toast('Please enter a league name'); return; }
+  L.settings.leagueName = newName;
   const ref = leagueRef('settings');
   if (ref) ref.update(L.settings); else localSave();
   renderHeader(); renderDeadline();
@@ -4015,6 +4020,7 @@ function saveSettings() {
     db.ref('/userLeagues/' + currentUser.uid + '/' + activeLeagueId + '/name').set(L.settings.leagueName);
     db.ref('/leagues/' + activeLeagueId + '/info/name').set(L.settings.leagueName);
   }
+  toast('League name saved!');
 }
 
 function bookCourtHtml() {
