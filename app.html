@@ -1241,7 +1241,7 @@
 
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <button class="btn btn-secondary btn-sm" onclick="changeEveryoneWeek(-1)" id="everyone-prev" style="padding:6px 12px">&larr; Earlier</button>
-        <div class="card-title" style="margin:0" id="everyone-range-label">Next 2 Weeks</div>
+        <div class="card-title" style="margin:0" id="everyone-range-label">Everyone's Availability</div>
         <button class="btn btn-secondary btn-sm" onclick="changeEveryoneWeek(1)" style="padding:6px 12px">Later &rarr;</button>
       </div>
       <div class="card" style="padding:12px 8px">
@@ -4545,7 +4545,7 @@ function renderMySummary() {
   if (items.length === 0) { card.style.display = 'none'; if (nextSteps) nextSteps.style.display = 'none'; return; }
   card.style.display = 'block';
   if (nextSteps && !mixInMode) nextSteps.style.display = 'block';
-  body.innerHTML = `<div style="font-size:13px;color:var(--muted);margin-bottom:4px">${items.length} slot${items.length!==1?'s':''} in the next 2 weeks:</div>` +
+  body.innerHTML = `<div style="font-size:13px;color:var(--muted);margin-bottom:4px">${items.length} upcoming slot${items.length!==1?'s':''}:</div>` +
     items.map(i => `<div style="font-size:14px;padding:3px 0">&#9989; ${i}</div>`).join('');
 }
 
