@@ -5518,7 +5518,7 @@ function renderOpenMatches() {
     const spotsLeft = maxP - players.length;
     const isFull = spotsLeft <= 0;
     const iJoined = players.includes(myName);
-    const isCreator = m.createdBy === (currentUser ? currentUser.email : '');
+    const isCreator = m.createdBy === (currentUser ? currentUser.email : '') || (iJoined && players[0] === myName);
     const mDate = new Date(m.date + 'T00:00:00');
     const dateStr = `${mDate.getDate()} ${monthNames[mDate.getMonth()]}`;
     const slotLbl = slotLabel(m.slot) || m.time || '';
@@ -5542,7 +5542,8 @@ function renderOpenMatches() {
     actionsHtml += `<button class="btn btn-sm btn-whatsapp" onclick="whatsAppShareMatch('${esc(m.id)}')" style="font-weight:700;padding:8px 14px;font-size:13px">Share to WhatsApp</button>`;
     actionsHtml += `<button class="btn btn-sm" onclick="shareOpenMatch('${esc(m.id)}')" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700;padding:8px 14px;font-size:13px">Copy to Share</button>`;
     if (isCreator) {
-      actionsHtml += `<button class="btn btn-secondary btn-sm" onclick="deleteOpenMatch('${esc(m.id)}')" style="margin-left:auto">Delete</button>`;
+      actionsHtml += `<button class="btn btn-sm" onclick="editOpenMatch('${esc(m.id)}')" style="margin-left:auto;background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700">Edit</button>`;
+      actionsHtml += `<button class="btn btn-secondary btn-sm" onclick="deleteOpenMatch('${esc(m.id)}')">Delete</button>`;
     }
     if (!myName) {
       actionsHtml = `<span style="font-size:13px;color:var(--amber);font-weight:600">Link your account to a player name to join</span>`;
@@ -5870,6 +5871,152 @@ function deleteOpenMatch(matchId) {
     renderOpenMatches();
   }
   toast('Game deleted');
+}
+
+function editOpenMatch(matchId) {
+  const m = L.openMatches[matchId];
+  if (!m) { toast('Game not found'); return; }
+
+  // Build date options for next 30 days
+  const now = new Date();
+  const dateOpts = [];
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + i);
+    dateOpts.push(d);
+  }
+  // Also include the match's existing date if it's not in the range
+  const existingDate = m.date;
+  if (!dateOpts.some(d => ds(d) === existingDate)) {
+    const ed = new Date(existingDate + 'T00:00:00');
+    dateOpts.unshift(ed);
+  }
+
+  const dateOptHtml = dateOpts.map(d => {
+    const val = ds(d);
+    return `<option value="${val}"${val === existingDate ? ' selected' : ''}>${DAY_NAMES[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}</option>`;
+  }).join('');
+
+  const allSlotOpts = SLOTS.map(s => `<option value="${s}"${s === m.slot ? ' selected' : ''}>${slotLabel(s)}</option>`).join('');
+
+  const sportOpts = ['tennis','padel','squash','racketball','badminton','other'].map(s =>
+    `<option value="${s}"${s === (m.sport || 'tennis') ? ' selected' : ''}>${s.charAt(0).toUpperCase() + s.slice(1)}</option>`
+  ).join('');
+
+  const levelOpts = [['fun','Fun — all welcome'],['intermediate','Intermediate'],['advanced','Advanced']].map(([v,l]) =>
+    `<option value="${v}"${v === (m.level || 'fun') ? ' selected' : ''}>${l}</option>`
+  ).join('');
+
+  const maxOpts = [2,4,6,8].map(n =>
+    `<option value="${n}"${n === (m.maxPlayers || 4) ? ' selected' : ''}>${n} players${n === 4 ? ' (doubles)' : ''}</option>`
+  ).join('');
+
+  const html = `
+    <div style="padding:20px">
+      <h3 style="font-size:20px;font-weight:800;margin-bottom:16px">Edit Game</h3>
+      <div class="fg">
+        <label class="fl">Title</label>
+        <input class="fi" id="ome-title" value="${esc(m.title || '')}">
+      </div>
+      <div class="fg">
+        <label class="fl">Sport</label>
+        <select class="fi" id="ome-sport">${sportOpts}</select>
+      </div>
+      <div class="fg">
+        <label class="fl">Level</label>
+        <select class="fi" id="ome-level">${levelOpts}</select>
+      </div>
+      <div class="fg">
+        <label class="fl">Date</label>
+        <select class="fi" id="ome-date" onchange="filterOmeSlots()">${dateOptHtml}</select>
+      </div>
+      <div class="fg">
+        <label class="fl">Time Slot</label>
+        <select class="fi" id="ome-slot">${allSlotOpts}</select>
+      </div>
+      <div class="fg">
+        <label class="fl">Max Players</label>
+        <select class="fi" id="ome-max">${maxOpts}</select>
+      </div>
+      <div class="fg">
+        <label class="fl">Venue / Court</label>
+        <input class="fi" id="ome-venue" value="${esc(m.venue || '')}">
+      </div>
+      <div class="fg">
+        <label class="fl">Notes (optional)</label>
+        <input class="fi" id="ome-notes" value="${esc(m.notes || '')}">
+      </div>
+      <div class="fg">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="ome-court" style="width:18px;height:18px"${m.courtBooked ? ' checked' : ''}>
+          <span style="font-size:15px;font-weight:600">Court already booked</span>
+        </label>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:20px">
+        <button class="btn btn-secondary" onclick="closeEditOpenMatch()" style="flex:1">Cancel</button>
+        <button class="btn btn-primary" onclick="saveOpenMatchEdit('${esc(matchId)}')" style="flex:1">Save Changes</button>
+      </div>
+    </div>`;
+
+  let modal = document.getElementById('om-edit-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'om-edit-modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px';
+    modal.onclick = function(e) { if (e.target === modal) closeEditOpenMatch(); };
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `<div style="background:#fff;border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">${html}</div>`;
+  modal.style.display = 'flex';
+}
+
+function closeEditOpenMatch() {
+  const modal = document.getElementById('om-edit-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function filterOmeSlots() {
+  const dateEl = document.getElementById('ome-date');
+  const slotEl = document.getElementById('ome-slot');
+  if (!dateEl || !slotEl) return;
+  const selDate = dateEl.value;
+  const today = ds(new Date());
+  const nowHour = new Date().getHours() + new Date().getMinutes() / 60;
+  const prevSlot = slotEl.value;
+  slotEl.innerHTML = SLOTS.filter(s => {
+    if (selDate !== today) return true;
+    return SLOT_START_HOUR[s] > nowHour;
+  }).map(s => `<option value="${s}"${s === prevSlot ? ' selected' : ''}>${slotLabel(s)}</option>`).join('');
+  if (slotEl.options.length === 0) {
+    slotEl.innerHTML = '<option value="">No slots left today</option>';
+  }
+}
+
+function saveOpenMatchEdit(matchId) {
+  const title = document.getElementById('ome-title').value.trim() || 'Open Game';
+  const sport = document.getElementById('ome-sport').value;
+  const level = document.getElementById('ome-level').value;
+  const date = document.getElementById('ome-date').value;
+  const slot = document.getElementById('ome-slot').value;
+  if (!slot) { toast('Please select a valid time slot'); return; }
+  const maxPlayers = parseInt(document.getElementById('ome-max').value) || 4;
+  const venue = document.getElementById('ome-venue').value.trim();
+  const notes = document.getElementById('ome-notes').value.trim();
+  const courtBooked = document.getElementById('ome-court').checked;
+  const bookedBy = courtBooked ? (currentUser.displayName || currentUser.email || 'Unknown') : '';
+
+  const updates = { title, sport, level, date, slot, maxPlayers, venue, notes, courtBooked, courtBookedBy: bookedBy };
+
+  if (FIREBASE_READY) {
+    db.ref(omPath() + '/' + matchId).update(updates);
+  } else {
+    Object.assign(L.openMatches[matchId], updates);
+    renderOpenMatches();
+  }
+
+  closeEditOpenMatch();
+  logAction('edit_open_match', matchId);
+  toast('Game updated!');
 }
 
 /* ══════════════════════════════════════
