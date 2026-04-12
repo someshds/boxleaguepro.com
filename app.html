@@ -486,6 +486,9 @@
     .wc-card-img { padding: 0; background-size: contain; background-position: center; background-repeat: no-repeat; aspect-ratio: 4/3; display: flex; flex-direction: column; justify-content: flex-end; }
     .wc-card-img-fallback { padding: 20px; background: linear-gradient(transparent, rgba(0,0,0,0.7)); border-radius: 0 0 14px 14px; }
     .wc-card-img .wc-card-badge { z-index: 2; }
+    .wc-card-fallback { padding: 16px 20px; background: linear-gradient(transparent, rgba(0,0,0,0.7)); border-radius: 0 0 14px 14px; }
+    .wc-card-fallback-title { font-size: 18px; font-weight: 800; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.4); }
+    .wc-card-fallback-desc { font-size: 13px; color: rgba(255,255,255,0.85); margin-top: 4px; }
     .welcome-existing { text-align: center; margin-top: 20px; }
     .welcome-existing a { color: var(--primary); font-weight: 700; font-size: 15px; cursor: pointer; text-decoration: none; }
     .welcome-existing a:hover { text-decoration: underline; }
@@ -597,18 +600,21 @@
     <div id="welcome-home-club" style="display:none;margin-top:8px;font-size:13px;color:rgba(255,255,255,0.8)">&#127968; <span id="welcome-home-club-name"></span> &middot; <a onclick="showScreen('onboarding')" style="color:#93c5fd;cursor:pointer;text-decoration:underline">change</a></div>
   </div>
   <div class="welcome-body">
-    <img src="images/hero-banner.png" alt="BoxLeague Pro" style="width:100%;border-radius:16px;margin-bottom:10px">
+    <img src="images/hero-banner-sm.jpg" alt="BoxLeague Pro" style="width:100%;border-radius:16px;margin-bottom:10px">
 
-    <div class="wc-card wc-card-img" onclick="selectGameType('singles')" style="background-image:url('images/singles-card.png')">
+    <div class="wc-card wc-card-img" onclick="selectGameType('singles')" style="background-image:url('images/singles-card-sm.jpg')">
       <div class="wc-card-badge" style="background:rgba(0,0,0,0.5);color:#fff">1v1</div>
+      <div class="wc-card-fallback"><div class="wc-card-fallback-title">Singles Box League</div><div class="wc-card-fallback-desc">Organise your singles matches</div></div>
     </div>
 
-    <div class="wc-card wc-card-img" onclick="selectGameType('doubles')" style="background-image:url('images/doubles-card.png')">
+    <div class="wc-card wc-card-img" onclick="selectGameType('doubles')" style="background-image:url('images/doubles-card-sm.jpg')">
       <div class="wc-card-badge" style="background:rgba(0,0,0,0.5);color:#fff">2v2</div>
+      <div class="wc-card-fallback"><div class="wc-card-fallback-title">Doubles Box League</div><div class="wc-card-fallback-desc">Organise your doubles matches</div></div>
     </div>
 
-    <div class="wc-card wc-card-img" onclick="selectGameType('mixin')" id="mixin-card" style="background-image:url('images/mixin-card.png')">
+    <div class="wc-card wc-card-img" onclick="selectGameType('mixin')" id="mixin-card" style="background-image:url('images/mixin-card-sm.jpg')">
       <div class="wc-card-badge" style="background:rgba(0,0,0,0.5);color:#fff">Open</div>
+      <div class="wc-card-fallback"><div class="wc-card-fallback-title">Friendly Mix-In Games</div><div class="wc-card-fallback-desc">Book a court &middot; Find players &middot; Instant join</div></div>
     </div>
 
     <div id="welcome-my-leagues" style="display:none">
