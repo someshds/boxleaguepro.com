@@ -299,17 +299,18 @@
     .badge-organiser { background: #fef3c7; color: #92400e; }
 
     /* ── Availability Grid ── */
-    .avail-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .avail-tbl { border-collapse: collapse; font-size: 14px; min-width: 100%; }
-    .avail-tbl th { padding: 6px 3px; text-align: center; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--border); min-width: 38px; }
-    .avail-tbl td { padding: 4px; border-bottom: 1px solid var(--border); }
-    .slot-lbl { font-size: 14px; font-weight: 600; color: var(--muted); text-align: left !important; padding: 5px 8px !important; white-space: nowrap; }
-    .cell { width: 40px; height: 40px; border-radius: 8px; cursor: pointer; background: #f0f0f0; display: flex; align-items: center; justify-content: center; margin: auto; transition: background 0.12s; border: 2px solid transparent; }
+    .avail-wrap { overflow-x: auto; overflow-y: auto; -webkit-overflow-scrolling: touch; max-height: 60vh; }
+    .avail-tbl { border-collapse: collapse; font-size: 12px; min-width: 100%; }
+    .avail-tbl thead { position: sticky; top: 0; background: var(--card-bg, #fff); z-index: 2; }
+    .avail-tbl th { padding: 4px 2px; text-align: center; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--border); min-width: 32px; font-size: 11px; }
+    .avail-tbl td { padding: 2px; border-bottom: 1px solid var(--border); }
+    .slot-lbl { font-size: 11px; font-weight: 600; color: var(--muted); text-align: left !important; padding: 2px 4px !important; white-space: nowrap; min-width: 42px; }
+    .cell { width: 30px; height: 24px; border-radius: 6px; cursor: pointer; background: #f0f0f0; display: flex; align-items: center; justify-content: center; margin: auto; transition: background 0.12s; border: 2px solid transparent; }
     .cell.on { background: var(--primary); border-color: var(--primary-dark); }
-    .cell.on::after { content: '\2713'; color: #fff; font-size: 16px; font-weight: 700; }
+    .cell.on::after { content: '\2713'; color: #fff; font-size: 13px; font-weight: 700; }
     .cell:not(.on):active { background: #bfdbfe; }
     .cell.past { background: #e5e7eb; cursor: not-allowed; opacity: 0.4; }
-    .cell.past::after { content: '\2013'; color: #9ca3af; font-size: 14px; font-weight: 700; }
+    .cell.past::after { content: '\2013'; color: #9ca3af; font-size: 12px; font-weight: 700; }
     .cell.past:active { transform: none; }
     .avail-tbl th.past-day { opacity: 0.4; text-decoration: line-through; }
 
@@ -318,12 +319,13 @@
     .wk-title { font-size: 16px; font-weight: 700; }
 
     /* ── All-player availability calendar ── */
-    .avail-cal-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .avail-cal { border-collapse: collapse; font-size: 13px; min-width: 100%; }
-    .avail-cal th { padding: 5px 3px; text-align: center; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--border); min-width: 52px; }
-    .avail-cal th.slot-col { text-align: left; min-width: 66px; }
-    .avail-cal td { padding: 4px 3px; border-bottom: 1px solid var(--border); vertical-align: top; }
-    .avail-cal td.slot-col { font-size: 13px; font-weight: 600; color: var(--muted); padding: 6px 8px; white-space: nowrap; }
+    .avail-cal-wrap { overflow-x: auto; overflow-y: auto; -webkit-overflow-scrolling: touch; max-height: 65vh; }
+    .avail-cal { border-collapse: collapse; font-size: 11px; min-width: 100%; }
+    .avail-cal thead { position: sticky; top: 0; background: var(--card-bg, #fff); z-index: 2; }
+    .avail-cal th { padding: 4px 2px; text-align: center; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--border); min-width: 40px; font-size: 10px; }
+    .avail-cal th.slot-col { text-align: left; min-width: 46px; }
+    .avail-cal td { padding: 2px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .avail-cal td.slot-col { font-size: 11px; font-weight: 600; color: var(--muted); padding: 3px 4px; white-space: nowrap; }
     .avail-cell { display: flex; flex-wrap: wrap; gap: 2px; justify-content: center; min-height: 28px; padding: 2px; }
     .avail-cal .today-col { background: #eff6ff; }
 
@@ -1508,7 +1510,7 @@
           ["How do players join my league?", "Share the invite link via WhatsApp, email, or text. When players click it, they\u2019re taken straight to your league. They just sign in and they\u2019re in."],
           ["Can I run multiple leagues?", "Yes. Each club can have unlimited leagues \u2014 e.g. Men\u2019s Singles Box 1, Mixed Doubles Box 2, Ladies\u2019 Box 3, etc."],
           ["What\u2019s the difference between Box Leagues and Mix-In Games?", "Box Leagues are structured competitions with teams, availability matching, and match scheduling. Mix-In Games are casual \u2014 post a game, set the date, and let anyone join."],
-          ["How does the availability grid work?", "Each player marks their free time slots across 6 daily windows (8\u201310am, 10\u201312, 12\u20132pm, 2\u20134pm, 4\u20136pm, 6\u20138pm). You can tap individual slots, copy last week, or clear the week."],
+          ["How does the availability grid work?", "Each player marks their free time in 30-minute slots from 7am to 9pm. You can tap individual slots, copy last week, or clear the week. The grid scrolls vertically to show all time slots."],
           ["What is Match Finder?", "Match Finder automatically compares everyone\u2019s availability and shows time slots where all players in a match are free. One tap to book."],
           ["Can I share via WhatsApp?", "Yes. Throughout the app there are WhatsApp share buttons for leagues, matches, availability reminders, and open games."],
           ["Do I have to manage everything as organiser?", "No. Players join via link, set their own availability, and book their own matches. The organiser just sets up the league and shares the link."],
@@ -2472,10 +2474,39 @@ function getAllPlayers() {
   return _allPlayersCache;
 }
 
-/* ── Time slots (1.5-hour blocks) ── */
-const SLOTS = ['9-1030','1030-12','12-130','130-3','3-430','430-6','6-730','730-9'];
-const SLOT_LABELS = { '9-1030':'9–10:30am', '1030-12':'10:30–12pm', '12-130':'12–1:30pm', '130-3':'1:30–3pm', '3-430':'3–4:30pm', '430-6':'4:30–6pm', '6-730':'6–7:30pm', '730-9':'7:30–9pm' };
-const SLOT_SHORT = { '9-1030':'9-10:30', '1030-12':'10:30-12', '12-130':'12-1:30', '130-3':'1:30-3', '3-430':'3-4:30', '430-6':'4:30-6', '6-730':'6-7:30', '730-9':'7:30-9' };
+/* ── Time slots (30-minute intervals, 7am–9pm) ── */
+const SLOTS = (function() {
+  const s = [];
+  for (let h = 7; h <= 21; h++) {
+    s.push(String(h).padStart(2,'0') + '00');
+    if (h < 21) s.push(String(h).padStart(2,'0') + '30');
+  }
+  return s;
+})();
+const SLOT_LABELS = (function() {
+  const o = {};
+  SLOTS.forEach(s => {
+    const h = parseInt(s.slice(0,2)), m = s.slice(2);
+    const suffix = h < 12 ? 'am' : 'pm';
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    o[s] = h12 + ':' + m + suffix;
+  });
+  return o;
+})();
+const SLOT_SHORT = (function() {
+  const o = {};
+  SLOTS.forEach(s => {
+    const h = parseInt(s.slice(0,2)), m = s.slice(2);
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    o[s] = h12 + ':' + m;
+  });
+  return o;
+})();
+/* Legacy slot keys from old 1.5-hour format — kept for backward compatibility */
+const LEGACY_SLOT_LABELS = { '9-1030':'9–10:30am', '1030-12':'10:30–12pm', '12-130':'12–1:30pm', '130-3':'1:30–3pm', '3-430':'3–4:30pm', '430-6':'4:30–6pm', '6-730':'6–7:30pm', '730-9':'7:30–9pm' };
+const LEGACY_SLOT_SHORT = { '9-1030':'9-10:30', '1030-12':'10:30-12', '12-130':'12-1:30', '130-3':'1:30-3', '3-430':'3-4:30', '430-6':'4:30-6', '6-730':'6-7:30', '730-9':'7:30-9' };
+function slotLabel(s) { return SLOT_LABELS[s] || LEGACY_SLOT_LABELS[s] || s; }
+function slotShort(s) { return SLOT_SHORT[s] || LEGACY_SLOT_SHORT[s] || s; }
 
 /* ── Educational tips ── */
 function closeTip(id) {
@@ -2889,7 +2920,7 @@ function notifyBooking(matchKey, date, slot) {
     });
   }
   // Send one webhook per player so GHL can Find Contact by email
-  const slotLabel = SLOT_LABELS[slot] || slot;
+  const slotLbl = slotLabel(slot);
   playerEmails.forEach(player => {
     const payload = {
       event: 'match_booked',
@@ -2897,7 +2928,7 @@ function notifyBooking(matchKey, date, slot) {
       teamA: teamA.name,
       teamB: teamB.name,
       date: date,
-      slot: slotLabel,
+      slot: slotLbl,
       email: player.email,
       playerName: player.name,
       bookedBy: currentUser ? currentUser.email : ''
@@ -3965,7 +3996,7 @@ function renderWizAvailGrid() {
   });
   h += '</tr></thead><tbody>';
   SLOTS.forEach(slot => {
-    h += `<tr><td class="slot-lbl" style="font-size:11px">${SLOT_SHORT[slot]}</td>`;
+    h += `<tr><td class="slot-lbl" style="font-size:11px">${slotShort(slot)}</td>`;
     dates.forEach(d => {
       const isPast = d < now;
       const key = avk(playerName, d, slot);
@@ -4794,14 +4825,14 @@ function renderAvailGrid() {
   });
   h += '</tr></thead><tbody>';
   SLOTS.forEach(slot => {
-    h += `<tr><td class="slot-lbl" style="font-size:11px">${SLOT_SHORT[slot]}</td>`;
+    h += `<tr><td class="slot-lbl" style="font-size:11px">${slotShort(slot)}</td>`;
     dates.forEach(d => {
       const isPast = d < now;
       const on = L.availability[avk(player, d, slot)] ? 'on' : '';
       if (isPast) {
         h += `<td><div class="cell past"></div></td>`;
       } else {
-        h += `<td><div class="cell ${on}" data-date="${ds(d)}" data-slot="${slot}" onclick="toggleCell(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCell(this)}" role="button" tabindex="0" aria-label="${DAY_NAMES[d.getDay()]} ${d.getDate()} ${SLOT_LABELS[slot]}${on ? ' — available' : ''}"></div></td>`;
+        h += `<td><div class="cell ${on}" data-date="${ds(d)}" data-slot="${slot}" onclick="toggleCell(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCell(this)}" role="button" tabindex="0" aria-label="${DAY_NAMES[d.getDay()]} ${d.getDate()} ${slotLabel(slot)}${on ? ' — available' : ''}"></div></td>`;
       }
     });
     h += '</tr>';
@@ -4912,7 +4943,7 @@ function renderMyMatches() {
       const myAgreed = player && agreed[player];
       return `<div class="my-match ready">
         <div style="font-size:15px;font-weight:700">vs ${esc(opp.name)}</div>
-        <div style="font-size:14px;color:#059669;font-weight:600;margin-top:4px">&#9989; Booked: ${fmtFull(booked.date)} &middot; ${SLOT_LABELS[booked.slot] || booked.slot}</div>
+        <div style="font-size:14px;color:#059669;font-weight:600;margin-top:4px">&#9989; Booked: ${fmtFull(booked.date)} &middot; ${slotLabel(booked.slot)}</div>
         ${booked.courtBooked ? '<div style="font-size:12px;color:#059669;margin-top:2px">✅ Court booked</div>' : '<div style="font-size:12px;color:var(--amber);margin-top:2px">⚠️ Court not yet booked</div>'}
         ${booked.notes ? `<div style="font-size:12px;color:var(--muted);margin-top:2px">📝 ${esc(booked.notes)}</div>` : ''}
         <div style="font-size:12px;margin-top:4px;color:${agreedCount === allPlayers.length ? '#059669' : 'var(--amber)'}">${agreedCount}/${allPlayers.length} confirmed${myAgreed ? ' (you ✓)' : ''}</div>
@@ -4928,7 +4959,7 @@ function renderMyMatches() {
           ? `<span style="font-size:12px;font-weight:700;color:#059669">&#128994; ${slots.length} time${slots.length!==1?'s':''}</span>`
           : `<span style="font-size:12px;color:var(--amber);font-weight:600">&#128993; No overlap yet</span>`}
       </div>
-      ${slots.length > 0 ? `<div class="sug-slots" style="margin-top:6px">${slots.slice(0,3).map(s => `<span class="sug-slot">${fmtFull(s.date)} &middot; ${SLOT_LABELS[s.slot] || s.slot}</span>`).join('')}</div>` : ''}
+      ${slots.length > 0 ? `<div class="sug-slots" style="margin-top:6px">${slots.slice(0,3).map(s => `<span class="sug-slot">${fmtFull(s.date)} &middot; ${slotLabel(s.slot)}</span>`).join('')}</div>` : ''}
     </div>`;
   }).join('');
   if (blEl) blEl.innerHTML = bookCourtHtml();
@@ -4949,7 +4980,7 @@ function renderMySummary() {
     if (parts.length < 3) return;
     const d = new Date(parts[1] + 'T00:00:00');
     if (d < today) return; // Skip past dates
-    items.push({ label: `${fmtFull(parts[1])} \u2014 ${SLOT_LABELS[parts[2]] || parts[2]}`, date: parts[1], slot: parts[2] });
+    items.push({ label: `${fmtFull(parts[1])} \u2014 ${slotLabel(parts[2])}`, date: parts[1], slot: parts[2] });
   });
   // Sort by date then slot
   items.sort((a, b) => a.date === b.date ? a.slot.localeCompare(b.slot) : a.date.localeCompare(b.date));
@@ -5006,7 +5037,7 @@ function renderAllAvail() {
   });
   h += '</tr></thead><tbody>';
   SLOTS.forEach(slot => {
-    h += `<tr><td class="slot-col" style="font-size:11px">${SLOT_SHORT[slot]}</td>`;
+    h += `<tr><td class="slot-col" style="font-size:11px">${slotShort(slot)}</td>`;
     dates.forEach(d => {
       const isToday = ds(d) === ds(today);
       const available = players.filter(p => L.availability[avk(p, d, slot)]);
@@ -5139,12 +5170,14 @@ function renderMatchFinder() {
   if (bookedMatches.length > 0) {
     html += bookedMatches.map(m => {
       const safeKey = m.matchKey.replace(/[^a-zA-Z0-9]/g,'');
+      const editSlotOpts = SLOTS.map(s => `<option value="${s}"${s === m.booked.slot ? ' selected' : ''}>${slotLabel(s)}</option>`).join('');
       return `<div class="match-card is-booked">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
         <div class="match-players">${esc(m.gA.name)} <span style="color:#9ca3af;font-weight:400">vs</span> ${esc(m.gB.name)}</div>
         <span class="badge badge-booked">Booked</span>
       </div>
-      <div style="font-size:14px;font-weight:600;color:#059669">\u{1F4C5} ${fmtFull(m.booked.date)} &middot; ${SLOT_LABELS[m.booked.slot] || m.booked.slot}</div>
+      <div style="font-size:14px;font-weight:600;color:#059669">\u{1F4C5} ${fmtFull(m.booked.date)} &middot; ${slotLabel(m.booked.slot)}</div>
+      ${m.booked.courtNumber ? `<div style="font-size:13px;color:var(--text);margin-top:4px;font-weight:600">Court: ${esc(m.booked.courtNumber)}</div>` : ''}
       <div style="margin-top:8px">
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;color:var(--text)">
           <input type="checkbox" ${m.booked.courtBooked ? 'checked' : ''} onchange="toggleCourtBooked('${esc(m.matchKey)}')" style="width:16px;height:16px;accent-color:var(--green)">
@@ -5152,10 +5185,40 @@ function renderMatchFinder() {
         </label>
       </div>
       <div style="margin-top:8px">
-        <input type="text" id="notes-${safeKey}" placeholder="Add notes (e.g. court number, meeting point)..." value="${esc(m.booked.notes || '')}" onblur="updateBookingNotes('${esc(m.matchKey)}')" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg)">
+        <input type="text" id="notes-${safeKey}" placeholder="Add notes (e.g. meeting point, instructions)..." value="${esc(m.booked.notes || '')}" onblur="updateBookingNotes('${esc(m.matchKey)}')" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg)">
       </div>
       ${getAgreedHtml(m.matchKey, m.booked)}
-      <button class="btn btn-secondary btn-sm mt8" onclick="unbookMatch('${esc(m.matchKey)}')" style="font-size:12px">Cancel booking</button>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" onclick="toggleEditBooking('${esc(m.matchKey)}')" style="font-size:12px">&#9998; Edit booking</button>
+        <button class="btn btn-secondary btn-sm" onclick="unbookMatch('${esc(m.matchKey)}')" style="font-size:12px;color:#dc2626;border-color:#fca5a5">Cancel booking</button>
+      </div>
+      <div id="edit-panel-${safeKey}" style="display:none;margin-top:10px;padding:12px;background:#f8fafc;border:1px solid var(--border);border-radius:10px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:10px">Edit Booking</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Date</label>
+            <input type="date" id="edit-date-${safeKey}" value="${m.booked.date}" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg)">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Time</label>
+            <select id="edit-slot-${safeKey}" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg)">${editSlotOpts}</select>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Court number</label>
+            <input type="text" id="edit-court-${safeKey}" value="${esc(m.booked.courtNumber || '')}" placeholder="e.g. Court 3" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg)">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Notes</label>
+            <input type="text" id="edit-notes-${safeKey}" value="${esc(m.booked.notes || '')}" placeholder="Notes..." style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg)">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="saveBookingEdit('${esc(m.matchKey)}')" style="font-size:12px;flex:1">Save changes</button>
+          <button class="btn btn-secondary btn-sm" onclick="toggleEditBooking('${esc(m.matchKey)}')" style="font-size:12px">Cancel</button>
+        </div>
+      </div>
     </div>`;
     }).join('');
     html += '<div class="divider" style="margin:16px 0"></div>';
@@ -5173,7 +5236,7 @@ function renderMatchFinder() {
         <div style="font-size:13px;color:var(--muted);margin-bottom:8px">${allP.map(p => esc(p)).join(', ')}</div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:4px;font-weight:600">Tap a slot to book it:</div>
         <div class="sug-slots">
-          ${topSlots.map(s => `<span class="sug-slot" onclick="bookMatch('${esc(m.matchKey)}','${s.date}','${s.slot}')">\u{1F4C5} ${fmtFull(s.date)} &middot; ${SLOT_LABELS[s.slot] || s.slot}</span>`).join('')}
+          ${topSlots.map(s => `<span class="sug-slot" onclick="bookMatch('${esc(m.matchKey)}','${s.date}','${s.slot}')">\u{1F4C5} ${fmtFull(s.date)} &middot; ${slotLabel(s.slot)}</span>`).join('')}
           ${m.slots.length > 5 ? `<span class="sug-slot" style="background:#f3f4f6;color:var(--muted);border-color:#e5e7eb;cursor:default">+${m.slots.length - 5} more</span>` : ''}
         </div>
       </div>`;
@@ -5197,12 +5260,12 @@ function renderMatchFinder() {
 }
 
 function bookMatch(matchKey, date, slot) {
-  const slotLabel = SLOT_LABELS[slot] || slot;
+  const slotLbl = slotLabel(slot);
   const d = new Date(date + 'T00:00:00');
   const dateLabel = DAY_NAMES[d.getDay()] + ' ' + d.getDate() + ' ' + MONTH_NAMES[d.getMonth()];
-  if (!confirm('Book this match?\n\n' + dateLabel + ' at ' + slotLabel + '\n\nPlayers will be notified.')) return;
+  if (!confirm('Book this match?\n\n' + dateLabel + ' at ' + slotLbl + '\n\nPlayers will be notified.')) return;
   fbSetBooked(matchKey, { date, slot, notes: '', courtBooked: false, agreed: {} });
-  logAction('book_match', dateLabel + ' at ' + slotLabel);
+  logAction('book_match', dateLabel + ' at ' + slotLbl);
   notifyBooking(matchKey, date, slot);
   renderMatchFinder(); renderMyMatches();
   toast('Match booked! Players will be notified.');
@@ -5233,6 +5296,40 @@ function toggleCourtBooked(matchKey) {
   fbSetBooked(matchKey, booked);
   renderMatchFinder(); renderMyMatches();
   toast(booked.courtBooked ? 'Court marked as booked' : 'Court booking removed');
+}
+
+function toggleEditBooking(matchKey) {
+  const safeKey = matchKey.replace(/[^a-zA-Z0-9]/g,'');
+  const panel = document.getElementById('edit-panel-' + safeKey);
+  if (!panel) return;
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function saveBookingEdit(matchKey) {
+  const safeKey = matchKey.replace(/[^a-zA-Z0-9]/g,'');
+  const booked = L.booked[matchKey];
+  if (!booked) return;
+  const dateInput = document.getElementById('edit-date-' + safeKey);
+  const slotInput = document.getElementById('edit-slot-' + safeKey);
+  const courtInput = document.getElementById('edit-court-' + safeKey);
+  const notesInput = document.getElementById('edit-notes-' + safeKey);
+  if (!dateInput || !slotInput) return;
+  const newDate = dateInput.value;
+  const newSlot = slotInput.value;
+  const newCourt = courtInput ? courtInput.value.trim() : '';
+  const newNotes = notesInput ? notesInput.value.trim() : (booked.notes || '');
+  if (!newDate) { toast('Please select a date'); return; }
+  if (!newSlot) { toast('Please select a time slot'); return; }
+  const changed = newDate !== booked.date || newSlot !== booked.slot || newCourt !== (booked.courtNumber || '') || newNotes !== (booked.notes || '');
+  if (!changed) { toggleEditBooking(matchKey); toast('No changes made'); return; }
+  booked.date = newDate;
+  booked.slot = newSlot;
+  booked.courtNumber = newCourt;
+  booked.notes = newNotes;
+  fbSetBooked(matchKey, booked);
+  logAction('edit_booking', matchKey + ' -> ' + newDate + ' ' + slotLabel(newSlot));
+  renderMatchFinder(); renderMyMatches();
+  toast('Booking updated');
 }
 
 function toggleAgreed(matchKey) {
@@ -5280,7 +5377,7 @@ function getResultsMsg() {
       const gB = L.groups[j];
       const matchKey = [gA.id, gB.id].sort().join('_');
       const booked = L.booked[matchKey];
-      if (booked) msg += `\u2705 ${gA.name} vs ${gB.name} \u2014 ${fmtFull(booked.date)}, ${SLOT_LABELS[booked.slot] || booked.slot}\n`;
+      if (booked) msg += `\u2705 ${gA.name} vs ${gB.name} \u2014 ${fmtFull(booked.date)}, ${slotLabel(booked.slot)}\n`;
     }
   });
   let readyCount = 0;
@@ -5367,12 +5464,12 @@ function renderOpenMatches() {
         const isFull = spots <= 0;
         const mDate = new Date(m.date + 'T00:00:00');
         const dateStr = `${dayNames[mDate.getDay()]} ${mDate.getDate()} ${monthNames[mDate.getMonth()]}`;
-        const slotLabel = SLOT_LABELS[m.slot] || m.slot || '';
+        const slotLbl = slotLabel(m.slot) || '';
         const sportIcon = { tennis:'🎾', padel:'🥎', squash:'🏸', racketball:'🏸', badminton:'🏸' }[m.sport] || '🎾';
         return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid #f3f4f6">
           <div style="flex:1;min-width:0">
             <div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sportIcon} ${esc(m.title || 'Open Game')}</div>
-            <div style="font-size:12px;color:var(--muted)">${dateStr} · ${slotLabel}</div>
+            <div style="font-size:12px;color:var(--muted)">${dateStr} · ${slotLbl}</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
             <span style="font-size:12px;font-weight:700;color:${isFull ? '#dc2626' : '#059669'}">${isFull ? 'Full' : spots + ' slot' + (spots !== 1 ? 's' : '')}</span>
@@ -5418,7 +5515,7 @@ function renderOpenMatches() {
     const isCreator = m.createdBy === (currentUser ? currentUser.email : '');
     const mDate = new Date(m.date + 'T00:00:00');
     const dateStr = `${mDate.getDate()} ${monthNames[mDate.getMonth()]}`;
-    const slotLabel = SLOT_LABELS[m.slot] || m.slot || m.time || '';
+    const slotLbl = slotLabel(m.slot) || m.time || '';
 
     let avatarsHtml = players.map(p => avatarWithPhoto(p)).join('');
     // Empty spots
@@ -5463,7 +5560,7 @@ function renderOpenMatches() {
       <div class="om-card-players">${avatarsHtml}</div>
       ${playerNamesHtml ? `<div class="om-player-names">${playerNamesHtml}</div>` : ''}
       <div class="om-card-footer">
-        <span class="om-meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>${slotLabel}</span>
+        <span class="om-meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>${slotLbl}</span>
         <span class="om-meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>${dateStr}</span>
         <span class="om-spots ${isFull ? 'full' : 'available'}">${isFull ? 'Full' : spotsLeft + '/' + maxP + ' Slots Available'}</span>
       </div>
@@ -5493,12 +5590,12 @@ function buildOpenMatchMsg(matchId) {
   const spotsLeft = maxP - players.length;
   const mDate = new Date(m.date + 'T00:00:00');
   const dateStr = `${DAY_NAMES[mDate.getDay()]} ${mDate.getDate()} ${MONTH_NAMES[mDate.getMonth()]}`;
-  const slotLabel = SLOT_LABELS[m.slot] || m.slot || '';
+  const slotLbl = slotLabel(m.slot) || '';
   const link = mixInMode
     ? window.location.origin + window.location.pathname + '?mixin=1' + (userHomeClub ? '&club=' + userHomeClub.id : '')
     : window.location.origin + window.location.pathname + '?league=' + activeLeagueId;
   const sportLabel = (m.sport || 'tennis').charAt(0).toUpperCase() + (m.sport || 'tennis').slice(1);
-  return `${sportLabel} - ${m.title || 'Open Game'}\n${dateStr} | ${slotLabel}\n${m.venue ? 'Venue: ' + m.venue + '\n' : ''}${m.level ? 'Level: ' + m.level.charAt(0).toUpperCase() + m.level.slice(1) + '\n' : ''}Players: ${players.length}/${maxP}${spotsLeft > 0 ? ' - ' + spotsLeft + ' slot' + (spotsLeft !== 1 ? 's' : '') + ' left!' : ' - FULL'}\n\nJoin here: ${link}`;
+  return `${sportLabel} - ${m.title || 'Open Game'}\n${dateStr} | ${slotLbl}\n${m.venue ? 'Venue: ' + m.venue + '\n' : ''}${m.level ? 'Level: ' + m.level.charAt(0).toUpperCase() + m.level.slice(1) + '\n' : ''}Players: ${players.length}/${maxP}${spotsLeft > 0 ? ' - ' + spotsLeft + ' slot' + (spotsLeft !== 1 ? 's' : '') + ' left!' : ' - FULL'}\n\nJoin here: ${link}`;
 }
 
 function shareOpenMatch(matchId) {
@@ -5529,7 +5626,7 @@ function showCreateOpenMatch() {
   }
   const dayNames = DAY_NAMES;
 
-  const allSlotOpts = SLOTS.map(s => `<option value="${s}">${SLOT_LABELS[s]}</option>`).join('');
+  const allSlotOpts = SLOTS.map(s => `<option value="${s}">${slotLabel(s)}</option>`).join('');
   const dateOptHtml = dateOpts.map(d => {
     const val = ds(d);
     const label = `${dayNames[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}`;
@@ -5624,7 +5721,11 @@ function closeCreateOpenMatch() {
 }
 
 // Map slot IDs to start hours for filtering past slots
-const SLOT_START_HOUR = { '9-1030':9, '1030-12':10.5, '12-130':12, '130-3':13.5, '3-430':15, '430-6':16.5, '6-730':18, '730-9':19.5 };
+const SLOT_START_HOUR = (function() {
+  const o = { '9-1030':9, '1030-12':10.5, '12-130':12, '130-3':13.5, '3-430':15, '430-6':16.5, '6-730':18, '730-9':19.5 };
+  SLOTS.forEach(s => { const h = parseInt(s.slice(0,2)), m = parseInt(s.slice(2)); o[s] = h + m/60; });
+  return o;
+})();
 
 function filterOmSlots() {
   const dateEl = document.getElementById('om-date');
@@ -5637,7 +5738,7 @@ function filterOmSlots() {
   slotEl.innerHTML = SLOTS.filter(s => {
     if (selDate !== today) return true;
     return SLOT_START_HOUR[s] > nowHour;
-  }).map(s => `<option value="${s}"${s === prevSlot ? ' selected' : ''}>${SLOT_LABELS[s]}</option>`).join('');
+  }).map(s => `<option value="${s}"${s === prevSlot ? ' selected' : ''}>${slotLabel(s)}</option>`).join('');
   if (slotEl.options.length === 0) {
     slotEl.innerHTML = '<option value="">No slots left today</option>';
   }
@@ -5800,7 +5901,7 @@ function renderMyOpenGames() {
     const isFull = spotsLeft <= 0;
     const mDate = new Date(m.date + 'T00:00:00');
     const dateStr = `${dayNames[mDate.getDay()]} ${mDate.getDate()} ${monthNames[mDate.getMonth()]}`;
-    const slotLabel = SLOT_LABELS[m.slot] || m.slot || '';
+    const slotLbl = slotLabel(m.slot) || '';
     const avatars = players.map(p => avatarWithPhoto(p)).join('');
 
     return `<div class="my-match ${isFull ? 'ready' : 'blocked'}">
@@ -5808,7 +5909,7 @@ function renderMyOpenGames() {
         <div style="font-size:15px;font-weight:700">${esc(m.title || 'Open Game')}</div>
         <span style="font-size:12px;font-weight:700;padding:3px 8px;border-radius:12px;${isFull ? 'background:#dcfce7;color:#166534' : 'background:#fef3c7;color:#92400e'}">${isFull ? 'Full' : spotsLeft + ' slots left'}</span>
       </div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:6px">${dateStr} &middot; ${slotLabel}</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:6px">${dateStr} &middot; ${slotLbl}</div>
       <div style="display:flex;gap:2px;align-items:center">${avatars}</div>
       <div style="margin-top:6px;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px;${m.courtBooked ? 'background:#f0fdf4;border:1.5px solid #86efac;color:#059669' : 'background:#fef9c3;border:1.5px solid #fde047;color:#a16207'}">
         ${m.courtBooked ? '&#9989; Court Booked' + (m.courtBookedBy ? '<span style="font-weight:500;font-size:11px;opacity:0.8;margin-left:4px">by ' + esc(m.courtBookedBy.split(' ')[0]) + '</span>' : '') : '&#9888;&#65039; Court Not Booked'}
