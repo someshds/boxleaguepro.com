@@ -195,6 +195,17 @@ footer a:hover{text-decoration:underline}
 .mini-avatars{display:flex;gap:-2px;margin-bottom:4px}
 .mini-avatar{width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:5px;font-weight:700;color:#fff;margin-right:-3px;border:1.5px solid #fff}
 
+/* FAQ */
+.faq-list{max-width:700px;margin:0 auto;text-align:left}
+.faq-item{border-bottom:1px solid rgba(255,255,255,0.15);padding:0}
+.faq-q{display:flex;justify-content:space-between;align-items:center;padding:20px 0;cursor:pointer;font-size:17px;font-weight:700;color:#fff;gap:16px}
+.faq-q:hover{opacity:0.8}
+.faq-arrow{font-size:20px;transition:transform 0.3s;flex-shrink:0;color:rgba(255,255,255,0.6)}
+.faq-item.open .faq-arrow{transform:rotate(180deg)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height 0.3s ease;padding:0 0 0 0}
+.faq-item.open .faq-a{max-height:500px;padding:0 0 20px 0}
+.faq-a p{font-size:15px;line-height:1.7;color:rgba(255,255,255,0.8);margin:0}
+
 /* RESPONSIVE */
 @media(max-width:768px){
   .nav-links{display:none}
@@ -642,6 +653,126 @@ footer a:hover{text-decoration:underline}
   <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative;z-index:2">
     <a href="/app.html" class="btn btn-white">Login — It's Free</a>
     <a href="mailto:grant@aifusionautomations.com" class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.4)">Contact Us</a>
+  </div>
+</section>
+
+<!-- FAQ SECTION -->
+<section class="vbg" style="position:relative;overflow:hidden">
+  <video autoplay muted loop playsinline style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.25"><source src="images/bg-video-how.mp4" type="video/mp4"></video>
+  <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,rgba(15,23,42,0.85) 0%,rgba(30,58,138,0.8) 100%);z-index:1"></div>
+  <div class="section-inner" style="position:relative;z-index:2">
+    <div class="section-label">FAQ</div>
+    <h2 class="section-title">Frequently Asked Questions</h2>
+    <p class="section-subtitle">Everything you need to know about BoxLeague Pro.</p>
+
+    <div class="faq-list">
+
+      <!-- General -->
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q">What is BoxLeague Pro?<span class="faq-arrow">&#9660;</span></div>
+        <div class="faq-a"><p>A free web app for organising box league matches and friendly mix-in games for any racquet sport — tennis, padel, squash, racketball, and badminton.</p></div>
+      </div>
+
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q">Is BoxLeague Pro really free?<span class="faq-arrow">&#9660;</span></div>
+        <div class="faq-a"><p>Yes, 100% free forever. No premium tiers, no player limits, no hidden fees. Every feature is available to everyone.</p></div>
+      </div>
+
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q">Do I need to download an app?<span class="faq-arrow">&#9660;</span></div>
+        <div class="faq-a"><p>No. BoxLeague Pro runs in your browser on any device — phone, tablet, or desktop. Just visit boxleaguepro.com and sign in.</p></div>
+      </div>
+
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q">What sports does it support?<span class="faq-arrow">&#9660;</span></div>
+        <div class="faq-a"><p>Tennis, padel, squash, racketball, badminton, and any other racquet sport. It works for both singles and doubles.</p></div>
+      </div>
+
+      <!-- Setting Up -->
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q">How do I create a box league?<span class="faq-arrow">&#9660;</span></div>
+        <div class="faq-a"><p>Sign in, choose your game type (singles or doubles), find or create your club, then create a league. Share the invite link with your players — they sign up and fill in their availability.</p></div>
+      </div>
+
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q">How do players join my league?<span class="faq-arrow">&#9660;</span></div>
+        <div class="faq-a"><p>Share the invite link via WhatsApp, email, or text. When players click it, they're taken straight to your league. They just sign in and they're in.</p></div>
+      </div>
+
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q">Can I run multiple leagues at the same club?<span class="faq-arrow">&#9660;</span></div>
+        <div class="faq-a"><p>Yes. Each club can have unlimited leagues — e.g. Men's Singles Box 1, Mixed Doubles Box 2, Ladies' Box 3, etc.</p></div>
+      </div>
+
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q">What's the difference between Box Leagues and Mix-In Games?<span class="faq-arrow">&#9660;</span></div>
+        <div class="faq-a"><p>Box Leagues are structured competitions with teams, availability matching, and match scheduling. Mix-In Games are casual — post a game, set the date, and let anyone join. No league membership needed.</p></div>
+      </div>
+
+      <!-- Using the App -->
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q">How does the availability grid work?<span class="faq-arrow">&#9660;</span></div>
+        <div class="faq-a"><p>Each player marks their free time slots across 6 daily windows (8–10am, 10–12, 12–2pm, 2–4pm, 4–6pm, 6–8pm). You can tap individual slots, copy last week, or clear the week.</p></div>
+      </div>
+
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q">What is Match Finder?<span class="faq-arrow">&#9660;</span></div>
+        <div class="faq-a"><p>Match Finder automatically compares everyone's availability and shows time slots where all players in a match are free. One tap to book.</p></div>
+      </div>
+
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q">Can I share match details via WhatsApp?<span class="faq-arrow">&#9660;</span></div>
+        <div class="faq-a"><p>Yes. Throughout the app there are WhatsApp share buttons for leagues, matches, availability reminders, and open games. Pre-formatted messages are generated automatically.</p></div>
+      </div>
+
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q">How do I book a court?<span class="faq-arrow">&#9660;</span></div>
+        <div class="faq-a"><p>If your club organiser has added a court booking URL, a "Book a Court" button appears throughout the app linking directly to your club's booking system.</p></div>
+      </div>
+
+      <!-- For Organisers -->
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q">Do I have to manage everything as the organiser?<span class="faq-arrow">&#9660;</span></div>
+        <div class="faq-a"><p>No. BoxLeague Pro is designed for self-service. Players join via link, set their own availability, and book their own matches. The organiser just sets up the league and shares the link.</p></div>
+      </div>
+
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q">Can I see who hasn't filled in their availability?<span class="faq-arrow">&#9660;</span></div>
+        <div class="faq-a"><p>Yes. The Everyone view shows a colour-coded calendar of all players. You can see who's missing and chase them via WhatsApp with one tap.</p></div>
+      </div>
+
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q">Can I set a deadline for availability?<span class="faq-arrow">&#9660;</span></div>
+        <div class="faq-a"><p>Yes. Set a deadline date in the Settings tab. Players see a countdown, and the app highlights who still needs to respond.</p></div>
+      </div>
+
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q">Can I remove a player from the league?<span class="faq-arrow">&#9660;</span></div>
+        <div class="faq-a"><p>Yes. Organisers can remove players from the Members section. Only the organiser has this permission.</p></div>
+      </div>
+
+      <!-- Privacy & Security -->
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q">Who can see my availability?<span class="faq-arrow">&#9660;</span></div>
+        <div class="faq-a"><p>Only members of your league can see your availability. Your data is not shared publicly.</p></div>
+      </div>
+
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q">Is my data secure?<span class="faq-arrow">&#9660;</span></div>
+        <div class="faq-a"><p>Yes. BoxLeague Pro uses Firebase with secure authentication. Your data is encrypted and protected by Google's security infrastructure.</p></div>
+      </div>
+
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q">Can I delete my account?<span class="faq-arrow">&#9660;</span></div>
+        <div class="faq-a"><p>Yes. Contact us at grant@aifusionautomations.com and we'll remove your data.</p></div>
+      </div>
+
+      <div class="faq-item" onclick="this.classList.toggle('open')">
+        <div class="faq-q">Who built BoxLeague Pro?<span class="faq-arrow">&#9660;</span></div>
+        <div class="faq-a"><p>BoxLeague Pro is built by AI Fusion Automations, a UK-based software company. We build custom apps, AI automations, and business software.</p></div>
+      </div>
+
+    </div>
   </div>
 </section>
 

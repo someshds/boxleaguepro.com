@@ -1494,6 +1494,45 @@
 
       <div style="height:1px;background:#e2e8f0;margin:16px 0"></div>
 
+      <!-- FAQs -->
+      <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:12px">Frequently Asked Questions</div>
+      <div id="app-faq-list" style="margin-bottom:20px"></div>
+      <script>
+      (function(){
+        var faqs = [
+          ["What is BoxLeague Pro?", "A free web app for organising box league matches and friendly mix-in games for any racquet sport \u2014 tennis, padel, squash, racketball, and badminton."],
+          ["Is it really free?", "Yes, 100% free forever. No premium tiers, no player limits, no hidden fees. Every feature is available to everyone."],
+          ["Do I need to download an app?", "No. BoxLeague Pro runs in your browser on any device \u2014 phone, tablet, or desktop. Just visit boxleaguepro.com and sign in."],
+          ["What sports does it support?", "Tennis, padel, squash, racketball, badminton, and any other racquet sport. Works for both singles and doubles."],
+          ["How do I create a box league?", "Sign in, choose your game type (singles or doubles), find or create your club, then create a league. Share the invite link with your players."],
+          ["How do players join my league?", "Share the invite link via WhatsApp, email, or text. When players click it, they\u2019re taken straight to your league. They just sign in and they\u2019re in."],
+          ["Can I run multiple leagues?", "Yes. Each club can have unlimited leagues \u2014 e.g. Men\u2019s Singles Box 1, Mixed Doubles Box 2, Ladies\u2019 Box 3, etc."],
+          ["What\u2019s the difference between Box Leagues and Mix-In Games?", "Box Leagues are structured competitions with teams, availability matching, and match scheduling. Mix-In Games are casual \u2014 post a game, set the date, and let anyone join."],
+          ["How does the availability grid work?", "Each player marks their free time slots across 6 daily windows (8\u201310am, 10\u201312, 12\u20132pm, 2\u20134pm, 4\u20136pm, 6\u20138pm). You can tap individual slots, copy last week, or clear the week."],
+          ["What is Match Finder?", "Match Finder automatically compares everyone\u2019s availability and shows time slots where all players in a match are free. One tap to book."],
+          ["Can I share via WhatsApp?", "Yes. Throughout the app there are WhatsApp share buttons for leagues, matches, availability reminders, and open games."],
+          ["Do I have to manage everything as organiser?", "No. Players join via link, set their own availability, and book their own matches. The organiser just sets up the league and shares the link."],
+          ["Can I see who hasn\u2019t filled in availability?", "Yes. The Everyone view shows a colour-coded calendar. You can see who\u2019s missing and chase them via WhatsApp with one tap."],
+          ["Can I set an availability deadline?", "Yes. Set a deadline in Settings. Players see a countdown, and the app highlights who still needs to respond."],
+          ["Can I remove a player?", "Yes. Organisers can remove players from the Members section. Only the organiser has this permission."],
+          ["Who can see my availability?", "Only members of your league can see your availability. Your data is not shared publicly."],
+          ["Is my data secure?", "Yes. BoxLeague Pro uses Firebase with secure authentication. Your data is encrypted and protected by Google\u2019s security infrastructure."],
+          ["Can I delete my account?", "Yes. Contact us at grant@aifusionautomations.com and we\u2019ll remove your data."],
+          ["Who built BoxLeague Pro?", "BoxLeague Pro is built by AI Fusion Automations, a UK-based software company. We build custom apps, AI automations, and business software."],
+          ["How do I book a court?", "If your club organiser has added a court booking URL, a \u201cBook a Court\u201d button appears throughout the app linking directly to your club\u2019s booking system."]
+        ];
+        var html = '';
+        faqs.forEach(function(f){
+          html += '<div style="border-bottom:1px solid #e2e8f0" onclick="var a=this.querySelector(\'.faq-ans\');var ar=this.querySelector(\'.faq-ar\');if(a.style.maxHeight){a.style.maxHeight=null;a.style.padding=\'0\';ar.style.transform=\'rotate(0)\'}else{a.style.maxHeight=a.scrollHeight+20+\'px\';a.style.padding=\'0 0 12px\';ar.style.transform=\'rotate(180deg)\'}">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;cursor:pointer;font-size:14px;font-weight:600;color:#1a1a1a;gap:12px">' + f[0] + '<span class="faq-ar" style="font-size:12px;color:#9ca3af;transition:transform 0.3s;flex-shrink:0">&#9660;</span></div>' +
+            '<div class="faq-ans" style="max-height:0;overflow:hidden;transition:max-height 0.3s ease,padding 0.3s;padding:0"><p style="font-size:13px;line-height:1.6;color:#6b7280;margin:0">' + f[1] + '</p></div></div>';
+        });
+        document.getElementById('app-faq-list').innerHTML = html;
+      })();
+      </script>
+
+      <div style="height:1px;background:#e2e8f0;margin:16px 0"></div>
+
       <!-- AIFA Promo -->
       <div style="background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:12px;padding:20px;color:#fff">
         <div style="font-size:22px;margin-bottom:6px">&#128161;</div>
