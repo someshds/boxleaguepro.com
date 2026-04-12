@@ -424,7 +424,7 @@
     .tour-dot.active { background: #3884F4; }
     .tour-dot.done { background: #00D296; }
     /* ── Help Button ── */
-    .tour-help-btn { position: fixed; bottom: 20px; left: 20px; z-index: 9998; padding: 6px 14px; border-radius: 20px; background: #3884F4; color: #fff; font-size: 13px; font-weight: 700; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(56,132,244,0.4); display: flex; align-items: center; justify-content: center; transition: transform 0.15s; }
+    .tour-help-btn { position: fixed; bottom: 20px; left: 20px; z-index: 9998; padding: 6px; border-radius: 12px; background: rgba(255,255,255,0.95); border: 1px solid #e2e8f0; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.12); display: flex; align-items: stretch; justify-content: center; transition: transform 0.15s; backdrop-filter: blur(8px); }
     .tour-help-btn:hover { transform: scale(1.1); }
     @media (max-width: 480px) {
       .tour-tooltip { max-width: calc(100vw - 24px); padding: 22px 20px 18px; }
@@ -1023,6 +1023,13 @@
 
   <div id="deadline-banner" class="deadline-banner"></div>
 
+  <!-- Dev Notice Banner -->
+  <div id="dev-banner" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1.5px solid #93c5fd;border-radius:12px;margin:8px 16px;padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:13px;color:#1e40af;position:relative">
+    <span style="font-size:18px;flex-shrink:0">&#128679;</span>
+    <div style="flex:1;line-height:1.4"><strong>App in active development!</strong> We're adding new features regularly. <a onclick="openChangelog()" style="color:#2563eb;cursor:pointer;text-decoration:underline;font-weight:700">See what's new</a> &middot; <a onclick="openFeedback()" style="color:#2563eb;cursor:pointer;text-decoration:underline;font-weight:700">Send feedback</a></div>
+    <button onclick="dismissDevBanner()" style="background:none;border:none;font-size:18px;color:#93c5fd;cursor:pointer;padding:2px;flex-shrink:0">&times;</button>
+  </div>
+
   <!-- ── Navigation ── -->
   <div class="nav" id="app-nav" role="tablist"></div>
 
@@ -1370,6 +1377,80 @@
 </div>
 
 <!-- ── Feedback Form Modal ── -->
+<!-- Changelog Modal -->
+<div id="changelog-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeChangelog()">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);position:relative">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e2e8f0;position:sticky;top:0;background:#fff;z-index:1;border-radius:16px 16px 0 0">
+      <div style="font-size:17px;font-weight:700">&#128220; What's New</div>
+      <button onclick="closeChangelog()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
+    </div>
+    <div style="padding:20px" id="changelog-content">
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#dbeafe;color:#1d4ed8;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">12 Apr 2026</span>
+          <span style="background:#dcfce7;color:#15803d;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">NEW</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Edit open/mix-in games</strong> — creators can now edit title, date, time, venue, sport, level and notes after creating a game</li>
+          <li><strong>Add players to games</strong> — add other players to your open games directly without them needing to join themselves</li>
+          <li><strong>Development notice banner</strong> — see what's new and send feedback easily</li>
+          <li><strong>This changelog!</strong> — track all the latest updates in one place</li>
+        </ul>
+      </div>
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#dbeafe;color:#1d4ed8;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">11 Apr 2026</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>30-minute time slots</strong> — book courts in 30-min intervals from 7am to 9pm (was 1.5hr blocks)</li>
+          <li><strong>Edit booked matches</strong> — change date, time, court number and add notes to existing box league bookings</li>
+          <li><strong>Email sharing</strong> — share league invites via email with pre-filled subject and body</li>
+          <li><strong>In-app FAQ</strong> — 20 frequently asked questions in the Help section</li>
+        </ul>
+      </div>
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#dbeafe;color:#1d4ed8;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">10 Apr 2026</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Welcome screen photos</strong> — premium card images for singles, doubles, and mix-in game types</li>
+          <li><strong>Mobile image optimisation</strong> — compressed images load fast on all devices</li>
+          <li><strong>Image fallback text</strong> — cards still show labels when images don't load</li>
+        </ul>
+      </div>
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#dbeafe;color:#1d4ed8;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">Earlier</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Open/Mix-in games</strong> — create casual games, invite players, track court bookings</li>
+          <li><strong>WhatsApp sharing</strong> — share matches and leagues via WhatsApp with one tap</li>
+          <li><strong>Match Finder</strong> — automatic availability matching to find times everyone can play</li>
+          <li><strong>Availability grid</strong> — visual weekly grid for each player's free times</li>
+          <li><strong>Multi-sport support</strong> — tennis, padel, squash, racketball, badminton</li>
+          <li><strong>Club system</strong> — find or create your club, run multiple leagues per club</li>
+          <li><strong>Player photos</strong> — upload a profile photo that shows on avatars</li>
+        </ul>
+      </div>
+      <div style="text-align:center;padding:16px 0;border-top:1px solid #e2e8f0;margin-top:8px">
+        <div style="font-size:13px;color:#6b7280;margin-bottom:10px">Got a feature request or found a bug?</div>
+        <button onclick="closeChangelog();openFeedback()" class="btn btn-primary" style="font-size:14px;padding:10px 24px">&#128172; Send Feedback</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Player to Match Modal -->
+<div id="add-player-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeAddPlayer()">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e2e8f0">
+      <div style="font-size:17px;font-weight:700">Add Player</div>
+      <button onclick="closeAddPlayer()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
+    </div>
+    <div style="padding:20px" id="add-player-content"></div>
+  </div>
+</div>
+
 <div id="feedback-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeFeedback()">
   <div style="background:#fff;border-radius:16px;width:100%;max-width:560px;max-height:90vh;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3);position:relative">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e2e8f0">
@@ -1581,7 +1662,11 @@
     <div class="tour-dots" id="tour-dots"></div>
   </div>
 </div>
-<button id="tour-help-btn" class="tour-help-btn" onclick="openHelp()" title="Help &amp; Info" style="display:none">Help</button>
+<div id="tour-help-btn" class="tour-help-btn" style="display:none;gap:6px;flex-direction:column;align-items:flex-start">
+  <button onclick="openHelp()" style="padding:6px 12px;border-radius:8px;border:none;background:#3884F4;color:#fff;font-size:12px;font-weight:700;cursor:pointer;width:100%">Help</button>
+  <button onclick="openChangelog()" style="padding:6px 12px;border-radius:8px;border:none;background:#dbeafe;color:#1d4ed8;font-size:12px;font-weight:700;cursor:pointer;width:100%">&#128220; New</button>
+  <button onclick="openFeedback()" style="padding:6px 12px;border-radius:8px;border:none;background:#f0fdf4;color:#059669;font-size:12px;font-weight:700;cursor:pointer;width:100%">&#128172; Feedback</button>
+</div>
 
 <!-- ── Toast ── -->
 <div id="toast" class="toast" role="alert" aria-live="polite"></div>
@@ -5539,10 +5624,13 @@ function renderOpenMatches() {
     } else if (isFull && !iJoined) {
       actionsHtml += `<span style="font-size:14px;color:var(--muted);font-weight:700;background:#f1f5f9;padding:8px 14px;border-radius:8px">Game is full</span>`;
     }
+    if ((isCreator || iJoined) && !isFull) {
+      actionsHtml += `<button class="btn btn-sm" onclick="showAddPlayerToMatch('${esc(m.id)}')" style="background:#f0fdf4;color:#059669;border:1px solid #bbf7d0;font-weight:700;padding:8px 14px;font-size:13px">+ Add Player</button>`;
+    }
     actionsHtml += `<button class="btn btn-sm btn-whatsapp" onclick="whatsAppShareMatch('${esc(m.id)}')" style="font-weight:700;padding:8px 14px;font-size:13px">Share to WhatsApp</button>`;
     actionsHtml += `<button class="btn btn-sm" onclick="shareOpenMatch('${esc(m.id)}')" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700;padding:8px 14px;font-size:13px">Copy to Share</button>`;
     if (isCreator) {
-      actionsHtml += `<button class="btn btn-sm" onclick="editOpenMatch('${esc(m.id)}')" style="margin-left:auto;background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700">Edit</button>`;
+      actionsHtml += `<button class="btn btn-sm" onclick="editOpenMatch('${esc(m.id)}')" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700">Edit</button>`;
       actionsHtml += `<button class="btn btn-secondary btn-sm" onclick="deleteOpenMatch('${esc(m.id)}')">Delete</button>`;
     }
     if (!myName) {
@@ -6311,6 +6399,124 @@ function openFeedback() {
 }
 function closeFeedback() {
   document.getElementById('feedback-modal').style.display = 'none';
+}
+
+/* ── Changelog ── */
+function openChangelog() {
+  document.getElementById('changelog-modal').style.display = 'flex';
+  localStorage.setItem('blp_changelog_seen', '2026-04-12');
+}
+function closeChangelog() {
+  document.getElementById('changelog-modal').style.display = 'none';
+}
+
+/* ── Dev Banner ── */
+function dismissDevBanner() {
+  const b = document.getElementById('dev-banner');
+  if (b) b.style.display = 'none';
+  localStorage.setItem('blp_dev_banner_dismissed', '2026-04-12');
+}
+(function() {
+  const dismissed = localStorage.getItem('blp_dev_banner_dismissed');
+  if (dismissed === '2026-04-12') {
+    const b = document.getElementById('dev-banner');
+    if (b) b.style.display = 'none';
+  }
+})();
+
+/* ── Add Player to Open Match ── */
+let _addPlayerMatchId = null;
+
+function showAddPlayerToMatch(matchId) {
+  _addPlayerMatchId = matchId;
+  const m = L.openMatches[matchId];
+  if (!m) { toast('Game not found'); return; }
+  const players = m.players || [];
+  const maxP = m.maxPlayers || 4;
+  const spotsLeft = maxP - players.length;
+  if (spotsLeft <= 0) { toast('Game is full'); return; }
+
+  const allPlayers = getAllPlayers();
+  const content = document.getElementById('add-player-content');
+
+  let html = `<div style="font-size:13px;color:#6b7280;margin-bottom:12px">${spotsLeft} slot${spotsLeft !== 1 ? 's' : ''} available. Select a player or type a name.</div>`;
+
+  // Manual entry
+  html += `<div style="margin-bottom:16px">
+    <input class="fi" id="add-player-name" placeholder="Type player name..." style="margin-bottom:8px">
+    <button class="btn btn-primary btn-sm" onclick="addTypedPlayerToMatch()" style="width:100%">Add Player</button>
+  </div>`;
+
+  // Existing players from league
+  if (allPlayers.length > 0) {
+    const available = allPlayers.filter(p => !players.includes(p));
+    if (available.length > 0) {
+      html += `<div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:8px">Or select from league players:</div>`;
+      html += `<div style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto">`;
+      available.forEach(p => {
+        html += `<button onclick="addExistingPlayerToMatch('${esc(p)}')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:1.5px solid #e2e8f0;background:#fff;cursor:pointer;text-align:left;font-size:14px;font-weight:600;color:#1a1a1a;transition:all 0.15s" onmouseover="this.style.background='#f0fdf4';this.style.borderColor='#86efac'" onmouseout="this.style.background='#fff';this.style.borderColor='#e2e8f0'">${avatarWithPhoto(p)}<span>${esc(p)}</span></button>`;
+      });
+      html += `</div>`;
+    } else {
+      html += `<div style="font-size:13px;color:#9ca3af;text-align:center;padding:12px">All league players are already in this game</div>`;
+    }
+  }
+
+  content.innerHTML = html;
+  document.getElementById('add-player-modal').style.display = 'flex';
+}
+
+function closeAddPlayer() {
+  document.getElementById('add-player-modal').style.display = 'none';
+  _addPlayerMatchId = null;
+}
+
+function addExistingPlayerToMatch(playerName) {
+  if (!_addPlayerMatchId) return;
+  addPlayerToOpenMatch(_addPlayerMatchId, playerName);
+}
+
+function addTypedPlayerToMatch() {
+  const input = document.getElementById('add-player-name');
+  const name = input ? input.value.trim() : '';
+  if (!name) { toast('Enter a player name'); return; }
+  if (!_addPlayerMatchId) return;
+  addPlayerToOpenMatch(_addPlayerMatchId, name);
+}
+
+function addPlayerToOpenMatch(matchId, playerName) {
+  const m = L.openMatches[matchId];
+  if (!m) { toast('Game not found'); closeAddPlayer(); return; }
+  const players = m.players || [];
+  const maxP = m.maxPlayers || 4;
+  if (players.includes(playerName)) { toast(playerName + ' is already in this game'); return; }
+  if (players.length >= maxP) { toast('Game is full'); closeAddPlayer(); return; }
+
+  if (FIREBASE_READY) {
+    const matchRef = db.ref(omPath() + '/' + matchId);
+    matchRef.transaction(current => {
+      if (!current) return current;
+      const arr = current.players || [];
+      if (arr.includes(playerName)) return;
+      if (arr.length >= (current.maxPlayers || maxP)) return;
+      arr.push(playerName);
+      current.players = arr;
+      return current;
+    }, (err, committed) => {
+      if (err) { toast('Error — try again'); return; }
+      if (!committed) { toast('Could not add — game may be full'); return; }
+      logAction('add_player_open_match', playerName + ' → ' + matchId);
+      toast(playerName + ' added!');
+      closeAddPlayer();
+    });
+  } else {
+    players.push(playerName);
+    m.players = players;
+    logAction('add_player_open_match', playerName + ' → ' + matchId);
+    toast(playerName + ' added!');
+    closeAddPlayer();
+    renderOpenMatches();
+  }
 }
 
 /* ══════════════════════════════════════
