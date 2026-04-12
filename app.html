@@ -3866,11 +3866,11 @@ function startWizard(leagueId, leagueName) {
   wizStep = 0;
   wizWeekOff = 0;
   wizAvailability = {};
-  // Detect singles mode from league sport or info
+  // Detect singles mode from league sport, game type selection, or Firebase
   const lg = userLeagues[leagueId];
-  wizIsSingles = false;
-  if (lg && lg.sport) {
-    wizIsSingles = lg.sport.toLowerCase() === 'squash' || lg.sport.toLowerCase() === 'singles';
+  wizIsSingles = selectedGameType === 'singles';
+  if (!wizIsSingles && lg && lg.sport) {
+    wizIsSingles = isSinglesLeague(lg.sport);
   }
   // Also check from Firebase if not in userLeagues yet
   function initWizardUI() {
@@ -3884,10 +3884,10 @@ function startWizard(leagueId, leagueName) {
     renderWizStep();
     renderWizAvailGrid();
   }
-  if (!lg && FIREBASE_READY) {
+  if (!wizIsSingles && !lg && FIREBASE_READY) {
     db.ref('/leagues/' + leagueId + '/info/sport').once('value').then(snap => {
       const sport = snap.val();
-      if (sport && (sport.toLowerCase() === 'squash' || sport.toLowerCase() === 'singles')) {
+      if (sport && isSinglesLeague(sport)) {
         wizIsSingles = true;
       }
       initWizardUI();
