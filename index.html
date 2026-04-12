@@ -20,6 +20,7 @@
 <link rel="canonical" href="https://boxleaguepro.com">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='14' cy='8' r='6'/><path d='M10.5 11.5L3 19'/><path d='M10 4l-1 8'/><path d='M20 4l-8 1'/><path d='M17.4 10.6l-6.8-6.8'/><path d='M5 17l-2 2'/></svg>">
 <link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
 <!-- GA4 -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-41R6M69CBW"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-41R6M69CBW');</script>
@@ -215,8 +216,15 @@ footer a:hover{text-decoration:underline}
 .faq-a p{font-size:15px;line-height:1.7;color:rgba(255,255,255,0.8);margin:0}
 
 /* RESPONSIVE */
+/* HAMBURGER */
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:4px;flex-direction:column;gap:5px}
+.hamburger span{display:block;width:24px;height:2px;background:#fff;border-radius:2px;transition:all .3s}
+
 @media(max-width:768px){
-  .nav-links{display:none}
+  .hamburger{display:flex}
+  .nav-links{display:none;position:absolute;top:100%;left:0;right:0;background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 100%);flex-direction:column;padding:16px 20px;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,0.2)}
+  .nav-links.open{display:flex}
+  .nav-links li{text-align:center}
   .modes{grid-template-columns:1fr}
   .features-grid{grid-template-columns:1fr}
   .steps{grid-template-columns:1fr 1fr;gap:32px}
@@ -245,6 +253,7 @@ footer a:hover{text-decoration:underline}
 <nav class="nav">
   <div class="nav-inner">
     <a href="/" class="nav-logo"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="8" r="6"/><path d="M10.5 11.5L3 19"/><path d="M10 4l-1 8"/><path d="M20 4l-8 1"/><path d="M17.4 10.6l-6.8-6.8"/><path d="M5 17l-2 2"/></svg> Box<span>League</span> Pro</a>
+    <button class="hamburger" aria-label="Toggle navigation" onclick="document.querySelector('.nav-links').classList.toggle('open')"><span></span><span></span><span></span></button>
     <ul class="nav-links">
       <li><a href="#features">Features</a></li>
       <li><a href="#how">How It Works</a></li>
@@ -257,7 +266,7 @@ footer a:hover{text-decoration:underline}
 
 <!-- HERO -->
 <section class="hero">
-  <video class="hero-video" autoplay muted loop playsinline>
+  <video class="hero-video" autoplay muted loop playsinline poster="images/hero-banner-sm.jpg">
     <source src="images/hero-video.mp4" type="video/mp4">
   </video>
   <div class="hero-overlay"></div>
@@ -265,7 +274,7 @@ footer a:hover{text-decoration:underline}
   <p>Arrange your games and matches in minutes — coordinate availability, schedule matches, and post open games. All in one free app. Works for any team sport.</p>
   <div class="hero-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> 100% Free — No Limits, No Catch</div>
   <div class="hero-ctas">
-    <a href="/app.html" class="btn btn-white">Login — It's Free</a>
+    <a href="/app.html" class="btn btn-white">Get Started Free</a>
     <a href="#features" class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.4)">See Features</a>
   </div>
   <div class="hero-sports">
@@ -444,7 +453,7 @@ footer a:hover{text-decoration:underline}
 
 <!-- VIDEO -->
 <section class="vbg" style="padding:60px 20px;text-align:center;background:var(--bg);position:relative;overflow:hidden">
-  <video autoplay muted loop playsinline style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.5"><source src="images/bg-video-how.mp4" type="video/mp4"></video>
+  <video autoplay muted loop playsinline poster="images/hero-banner-sm.jpg" style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.5"><source src="images/bg-video-how.mp4" type="video/mp4"></video>
   <div class="section-inner" style="position:relative;z-index:1">
     <div class="section-label">See It In Action</div>
     <div class="section-title">Watch How It Works</div>
@@ -463,7 +472,7 @@ footer a:hover{text-decoration:underline}
 
 <!-- TWO MODES -->
 <section id="features" class="vbg" style="position:relative;overflow:hidden">
-  <video autoplay muted loop playsinline style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.5"><source src="images/bg-video-features.mp4" type="video/mp4"></video>
+  <video autoplay muted loop playsinline poster="images/hero-banner-sm.jpg" style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.5"><source src="images/bg-video-features.mp4" type="video/mp4"></video>
   <div class="section-inner" style="position:relative;z-index:1">
     <div class="section-label">Two Ways to Play</div>
     <div class="section-title">Competitive Leagues or Friendly Matches</div>
@@ -504,7 +513,7 @@ footer a:hover{text-decoration:underline}
 
 <!-- FEATURES GRID -->
 <section style="background:var(--white);position:relative;overflow:hidden">
-  <video autoplay muted loop playsinline style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.15"><source src="images/bg-video-grid.mp4" type="video/mp4"></video>
+  <video autoplay muted loop playsinline poster="images/hero-banner-sm.jpg" style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.15"><source src="images/bg-video-grid.mp4" type="video/mp4"></video>
   <div class="section-inner" style="position:relative;z-index:1">
     <div class="section-label">Packed with Features</div>
     <div class="section-title">Everything You Need to Run Your League</div>
@@ -590,7 +599,7 @@ footer a:hover{text-decoration:underline}
 
 <!-- SPORTS -->
 <section id="sports" class="vbg" style="background:var(--white);position:relative;overflow:hidden">
-  <video autoplay muted loop playsinline style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.5"><source src="images/bg-video-sports.mp4" type="video/mp4"></video>
+  <video autoplay muted loop playsinline poster="images/hero-banner-sm.jpg" style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.5"><source src="images/bg-video-sports.mp4" type="video/mp4"></video>
   <div class="section-inner" style="text-align:center;position:relative;z-index:1">
     <div class="section-label">Multi-Sport</div>
     <div class="section-title">Works for Any Racquet Sport</div>
@@ -654,19 +663,19 @@ footer a:hover{text-decoration:underline}
 
 <!-- CTA -->
 <section class="cta-banner">
-  <video autoplay muted loop playsinline style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.5"><source src="images/bg-video-cta.mp4" type="video/mp4"></video>
+  <video autoplay muted loop playsinline poster="images/hero-banner-sm.jpg" style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.5"><source src="images/bg-video-cta.mp4" type="video/mp4"></video>
   <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,rgba(30,64,175,0.6) 0%,rgba(37,99,235,0.5) 100%);z-index:1"></div>
   <h2 style="position:relative;z-index:2">Ready to Organise Your League?</h2>
   <p style="position:relative;z-index:2">Join hundreds of players already using BoxLeague Pro. Free forever — no credit card needed.</p>
   <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative;z-index:2">
-    <a href="/app.html" class="btn btn-white">Login — It's Free</a>
+    <a href="/app.html" class="btn btn-white">Get Started Free</a>
     <a href="mailto:grant@aifusionautomations.com" class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.4)">Contact Us</a>
   </div>
 </section>
 
 <!-- FAQ SECTION -->
 <section class="vbg" style="position:relative;overflow:hidden">
-  <video autoplay muted loop playsinline style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.25"><source src="images/bg-video-how.mp4" type="video/mp4"></video>
+  <video autoplay muted loop playsinline poster="images/hero-banner-sm.jpg" style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.25"><source src="images/bg-video-how.mp4" type="video/mp4"></video>
   <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,rgba(15,23,42,0.85) 0%,rgba(30,58,138,0.8) 100%);z-index:1"></div>
   <div class="section-inner" style="position:relative;z-index:2">
     <div class="section-label">FAQ</div>
@@ -676,106 +685,106 @@ footer a:hover{text-decoration:underline}
     <div class="faq-list">
 
       <!-- General -->
-      <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">What is BoxLeague Pro?<span class="faq-arrow">&#9660;</span></div>
         <div class="faq-a"><p>A free web app for organising box league matches and friendly mix-in games for any racquet sport — tennis, padel, squash, racketball, and badminton.</p></div>
       </div>
 
-      <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">Is BoxLeague Pro really free?<span class="faq-arrow">&#9660;</span></div>
         <div class="faq-a"><p>Yes, 100% free forever. No premium tiers, no player limits, no hidden fees. Every feature is available to everyone.</p></div>
       </div>
 
-      <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">Do I need to download an app?<span class="faq-arrow">&#9660;</span></div>
         <div class="faq-a"><p>No. BoxLeague Pro runs in your browser on any device — phone, tablet, or desktop. Just visit boxleaguepro.com and sign in.</p></div>
       </div>
 
-      <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">What sports does it support?<span class="faq-arrow">&#9660;</span></div>
         <div class="faq-a"><p>Tennis, padel, squash, racketball, badminton, and any other racquet sport. It works for both singles and doubles.</p></div>
       </div>
 
       <!-- Setting Up -->
-      <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">How do I create a box league?<span class="faq-arrow">&#9660;</span></div>
         <div class="faq-a"><p>Sign in, choose your game type (singles or doubles), find or create your club, then create a league. Share the invite link with your players — they sign up and fill in their availability.</p></div>
       </div>
 
-      <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">How do players join my league?<span class="faq-arrow">&#9660;</span></div>
         <div class="faq-a"><p>Share the invite link via WhatsApp, email, or text. When players click it, they're taken straight to your league. They just sign in and they're in.</p></div>
       </div>
 
-      <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">Can I run multiple leagues at the same club?<span class="faq-arrow">&#9660;</span></div>
         <div class="faq-a"><p>Yes. Each club can have unlimited leagues — e.g. Men's Singles Box 1, Mixed Doubles Box 2, Ladies' Box 3, etc.</p></div>
       </div>
 
-      <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">What's the difference between Box Leagues and Mix-In Games?<span class="faq-arrow">&#9660;</span></div>
         <div class="faq-a"><p>Box Leagues are structured competitions with teams, availability matching, and match scheduling. Mix-In Games are casual — post a game, set the date, and let anyone join. No league membership needed.</p></div>
       </div>
 
       <!-- Using the App -->
-      <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">How does the availability grid work?<span class="faq-arrow">&#9660;</span></div>
         <div class="faq-a"><p>Each player marks their free time slots across 6 daily windows (8–10am, 10–12, 12–2pm, 2–4pm, 4–6pm, 6–8pm). You can tap individual slots, copy last week, or clear the week.</p></div>
       </div>
 
-      <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">What is Match Finder?<span class="faq-arrow">&#9660;</span></div>
         <div class="faq-a"><p>Match Finder automatically compares everyone's availability and shows time slots where all players in a match are free. One tap to book.</p></div>
       </div>
 
-      <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">Can I share match details via WhatsApp?<span class="faq-arrow">&#9660;</span></div>
         <div class="faq-a"><p>Yes. Throughout the app there are WhatsApp share buttons for leagues, matches, availability reminders, and open games. Pre-formatted messages are generated automatically.</p></div>
       </div>
 
-      <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">How do I book a court?<span class="faq-arrow">&#9660;</span></div>
         <div class="faq-a"><p>If your club organiser has added a court booking URL, a "Book a Court" button appears throughout the app linking directly to your club's booking system.</p></div>
       </div>
 
       <!-- For Organisers -->
-      <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">Do I have to manage everything as the organiser?<span class="faq-arrow">&#9660;</span></div>
         <div class="faq-a"><p>No. BoxLeague Pro is designed for self-service. Players join via link, set their own availability, and book their own matches. The organiser just sets up the league and shares the link.</p></div>
       </div>
 
-      <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">Can I see who hasn't filled in their availability?<span class="faq-arrow">&#9660;</span></div>
         <div class="faq-a"><p>Yes. The Everyone view shows a colour-coded calendar of all players. You can see who's missing and chase them via WhatsApp with one tap.</p></div>
       </div>
 
-      <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">Can I set a deadline for availability?<span class="faq-arrow">&#9660;</span></div>
         <div class="faq-a"><p>Yes. Set a deadline date in the Settings tab. Players see a countdown, and the app highlights who still needs to respond.</p></div>
       </div>
 
-      <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">Can I remove a player from the league?<span class="faq-arrow">&#9660;</span></div>
         <div class="faq-a"><p>Yes. Organisers can remove players from the Members section. Only the organiser has this permission.</p></div>
       </div>
 
       <!-- Privacy & Security -->
-      <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">Who can see my availability?<span class="faq-arrow">&#9660;</span></div>
         <div class="faq-a"><p>Only members of your league can see your availability. Your data is not shared publicly.</p></div>
       </div>
 
-      <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">Is my data secure?<span class="faq-arrow">&#9660;</span></div>
         <div class="faq-a"><p>Yes. BoxLeague Pro uses Firebase with secure authentication. Your data is encrypted and protected by Google's security infrastructure.</p></div>
       </div>
 
-      <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">Can I delete my account?<span class="faq-arrow">&#9660;</span></div>
         <div class="faq-a"><p>Yes. Contact us at grant@aifusionautomations.com and we'll remove your data.</p></div>
       </div>
 
-      <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">Who built BoxLeague Pro?<span class="faq-arrow">&#9660;</span></div>
         <div class="faq-a"><p>BoxLeague Pro is built by AI Fusion Automations, a UK-based software company. We build custom apps, AI automations, and business software.</p></div>
       </div>
@@ -786,7 +795,7 @@ footer a:hover{text-decoration:underline}
 
 <!-- AIFA SECTION -->
 <section class="vbg" style="text-align:center;position:relative;overflow:hidden">
-  <video autoplay muted loop playsinline style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.5"><source src="images/bg-video-aifa.mp4" type="video/mp4"></video>
+  <video autoplay muted loop playsinline poster="images/hero-banner-sm.jpg" style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.5"><source src="images/bg-video-aifa.mp4" type="video/mp4"></video>
   <div class="section-inner" style="position:relative;z-index:1">
     <div style="font-size:32px;margin-bottom:12px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg></div>
     <div class="section-title" style="font-size:24px">Got an Idea for an App?</div>
@@ -813,7 +822,7 @@ footer a:hover{text-decoration:underline}
       <a href="https://www.youtube.com/@BoxLeaguePro" target="_blank">YouTube</a>
     </div>
     <div>BoxLeague Pro v4.5 &middot; Made by <a href="https://aifusionautomations.com" target="_blank">AI Fusion Automations</a></div>
-    <div class="footer-brand">&copy; 2026 AI Fusion Automations &middot; grant@aifusionautomations.com &middot; +44 7480 488817</div>
+    <div class="footer-brand">&copy; 2026 AI Fusion Automations &middot; <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a></div>
   </div>
 </footer>
 

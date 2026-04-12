@@ -435,7 +435,7 @@
     .share-card { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; }
 
     /* ── Toast ── */
-    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--primary-dark); color: #fff; padding: 12px 22px; border-radius: 24px; font-size: 14px; font-weight: 600; z-index: 999; opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: nowrap; }
+    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--primary-dark); color: #fff; padding: 12px 22px; border-radius: 24px; font-size: 14px; font-weight: 600; z-index: 10001; opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: nowrap; }
     .toast.show { opacity: 1; }
 
     /* ── AIFA CTA Banner ── */
@@ -2824,7 +2824,7 @@ function openProfile() {
   document.getElementById('profile-error').style.display = 'none';
   // Hide partner field for singles leagues or mix-in mode
   const lg = activeLeagueId ? userLeagues[activeLeagueId] : null;
-  const isSingles = mixInMode || (lg && lg.sport && (lg.sport.toLowerCase() === 'squash' || lg.sport.toLowerCase() === 'singles'));
+  const isSingles = mixInMode || (lg && lg.sport && isSinglesLeague(lg.sport));
   document.getElementById('profile-partner-wrap').style.display = isSingles ? 'none' : 'block';
   // Show home club
   const clubNameEl = document.getElementById('profile-home-club-name');
@@ -2853,7 +2853,7 @@ function saveProfile() {
   errEl.style.display = 'none';
   if (!newName) { errEl.textContent = 'Please enter your name.'; errEl.style.display = 'block'; return; }
   const lg = activeLeagueId ? userLeagues[activeLeagueId] : null;
-  const isSingles = mixInMode || (lg && lg.sport && (lg.sport.toLowerCase() === 'squash' || lg.sport.toLowerCase() === 'singles'));
+  const isSingles = mixInMode || (lg && lg.sport && isSinglesLeague(lg.sport));
   if (!isSingles && !newPartner) { errEl.textContent = 'Please enter your partner\'s name.'; errEl.style.display = 'block'; return; }
 
   logAction('save_profile', newName + (newPartner ? ' & ' + newPartner : ''));
@@ -3000,7 +3000,7 @@ function addContactToGHL(name, email) {
       marketing: true,
       timestamp: Date.now(),
       source: 'signup'
-    });
+    }).catch(err => { console.error('Consent write failed:', err); });
   }
 }
 
@@ -3944,6 +3944,9 @@ function wizNext(step) {
     if (!partner) { toast('Please enter your partner\'s name'); return; }
   }
   if (step === 2) {
+    // Re-validate name before saving
+    const wizName = val('wiz-name');
+    if (!wizName) { toast('Please enter your name'); return; }
     // Save everything to Firebase, then advance
     wizSaveData().then(() => {
       wizStep = step + 1;
@@ -4092,7 +4095,8 @@ function wizWeekDates() {
 function renderWizAvailGrid() {
   const dates = wizWeekDates();
   const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  const playerName = val('wiz-name') || 'You';
+  const playerName = val('wiz-name');
+  if (!playerName) { toast('Please enter your name first'); return; }
 
   document.getElementById('wiz-wk-label').textContent = `${fmtShort(dates[0])} \u2013 ${fmtShort(dates[6])}`;
 
@@ -4124,7 +4128,8 @@ function renderWizAvailGrid() {
 }
 
 function wizToggleCell(el) {
-  const playerName = val('wiz-name') || 'You';
+  const playerName = val('wiz-name');
+  if (!playerName) { toast('Please enter your name first'); return; }
   const key = avk(playerName, el.dataset.date, el.dataset.slot);
   const newVal = !wizAvailability[key];
   if (newVal) wizAvailability[key] = true; else delete wizAvailability[key];
@@ -4735,40 +4740,57 @@ function removeGroup(id) {
   const playerNames = group.players || [];
   const playerList = playerNames.join(', ') || 'unnamed';
   if (!confirm('Remove team (' + playerList + ')?\n\nThis will also remove their availability and booked matches.')) return;
-  L.groups = L.groups.filter(g => g.id !== id);
-  fbSetGroups();
 
-  // Clean up availability and booked matches for removed players
-  if (playerNames.length > 0) {
-    const availRef = leagueRef('availability');
-    const bookedRef = leagueRef('booked');
+  // Build the new groups list but don't mutate L yet
+  const newGroups = L.groups.filter(g => g.id !== id);
+  const obj = {}; newGroups.forEach(g => { obj[g.id] = g; });
+  const ref = leagueRef('groups');
 
-    // Remove availability entries for these players
-    const availUpdates = {};
-    Object.keys(L.availability).forEach(key => {
-      for (const pn of playerNames) {
-        if (key.startsWith(pn + '|')) {
-          availUpdates[key] = null;
-          delete L.availability[key];
-          break;
+  function applyLocalRemoval() {
+    L.groups = newGroups;
+
+    // Clean up availability and booked matches for removed players
+    if (playerNames.length > 0) {
+      const availRef = leagueRef('availability');
+      const bookedRef = leagueRef('booked');
+
+      const availUpdates = {};
+      Object.keys(L.availability).forEach(key => {
+        for (const pn of playerNames) {
+          if (key.startsWith(pn + '|')) {
+            availUpdates[key] = null;
+            break;
+          }
         }
-      }
-    });
-    if (Object.keys(availUpdates).length > 0 && availRef) availRef.update(availUpdates);
+      });
+      if (Object.keys(availUpdates).length > 0 && availRef) availRef.update(availUpdates);
+      Object.keys(availUpdates).forEach(key => { delete L.availability[key]; });
 
-    // Remove booked matches involving this team (match keys use group IDs like T123_T456)
-    const bookedUpdates = {};
-    Object.entries(L.booked).forEach(([matchKey, slot]) => {
-      if (matchKey.includes(id)) {
-        bookedUpdates[matchKey] = null;
-        delete L.booked[matchKey];
-      }
-    });
-    if (Object.keys(bookedUpdates).length > 0 && bookedRef) bookedRef.update(bookedUpdates);
+      const bookedUpdates = {};
+      Object.entries(L.booked).forEach(([matchKey, slot]) => {
+        if (matchKey.includes(id)) {
+          bookedUpdates[matchKey] = null;
+        }
+      });
+      if (Object.keys(bookedUpdates).length > 0 && bookedRef) bookedRef.update(bookedUpdates);
+      Object.keys(bookedUpdates).forEach(key => { delete L.booked[key]; });
+    }
+
+    logAction('remove_group', playerList);
+    renderGroups(); renderMembers(); renderProgress(); renderAvailGrid(); renderAllAvail(); toast('Team removed');
   }
 
-  logAction('remove_group', playerList);
-  renderGroups(); renderMembers(); renderProgress(); renderAvailGrid(); renderAllAvail(); toast('Team removed');
+  if (ref) {
+    ref.set(obj).then(() => {
+      applyLocalRemoval();
+    }).catch(err => {
+      console.error('Failed to remove group:', err);
+      toast('Failed to remove team. Please try again.');
+    });
+  } else {
+    applyLocalRemoval();
+    localSave();
+  }
 }
 
 /* ── Templates ── */
@@ -5385,6 +5407,8 @@ function renderMatchFinder() {
 }
 
 function bookMatch(matchKey, date, slot) {
+  const lgInfo = activeLeagueId ? userLeagues[activeLeagueId] : null;
+  if (!isAdmin() && !(lgInfo && lgInfo.role === 'organiser')) { toast('Only organisers can book matches'); return; }
   const slotLbl = slotLabel(slot);
   const d = new Date(date + 'T00:00:00');
   const dateLabel = DAY_NAMES[d.getDay()] + ' ' + d.getDate() + ' ' + MONTH_NAMES[d.getMonth()];
@@ -5444,6 +5468,8 @@ function saveBookingEdit(matchKey) {
   const newCourt = courtInput ? courtInput.value.trim() : '';
   const newNotes = notesInput ? notesInput.value.trim() : (booked.notes || '');
   if (!newDate) { toast('Please select a date'); return; }
+  const today = new Date(); today.setHours(0,0,0,0);
+  if (new Date(newDate + 'T00:00:00') < today) { toast('Cannot book in the past'); return; }
   if (!newSlot) { toast('Please select a time slot'); return; }
   const changed = newDate !== booked.date || newSlot !== booked.slot || newCourt !== (booked.courtNumber || '') || newNotes !== (booked.notes || '');
   if (!changed) { toggleEditBooking(matchKey); toast('No changes made'); return; }

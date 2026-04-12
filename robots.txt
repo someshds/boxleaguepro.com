@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://boxleaguepro.com/sitemap.xml
