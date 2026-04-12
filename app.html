@@ -2545,7 +2545,7 @@ const GROUP_COLORS = ['#1d4ed8','#0891b2','#dc2626','#d97706','#7c3aed','#059669
 const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function getPlayerColor(name) {
-  const idx = L.groups.findIndex(g => g.players.includes(name));
+  const idx = L.groups.findIndex(g => (g.players || []).includes(name));
   return GROUP_COLORS[idx >= 0 ? idx % GROUP_COLORS.length : 0];
 }
 function getInitials(name) {
@@ -2561,7 +2561,7 @@ function getAllPlayers() {
   const key = L.groups.map(g => g.id).join(',');
   if (key === _allPlayersCacheKey && _allPlayersCache) return _allPlayersCache;
   _allPlayersCacheKey = key;
-  _allPlayersCache = L.groups.flatMap(g => g.players);
+  _allPlayersCache = L.groups.flatMap(g => g.players || []);
   return _allPlayersCache;
 }
 
@@ -2791,11 +2791,21 @@ function signOut() {
   userPreferredSport = '';
   mixInMode = false;
   activeLeagueId = null;
-  selectedClubId = '';
+  selectedClubId = null;
   selectedClubName = '';
   clubBookingUrl = '';
   userLeagues = {};
   allClubs = {};
+  selectedGameType = '';
+  wizWeekOff = 0;
+  wizAvailability = {};
+  onboardClubId = null;
+  onboardClubName = '';
+  onboardSport = '';
+  createdLeagueId = null;
+  consentModalActive = false;
+  pendingGoogleUser = null;
+  _addPlayerMatchId = null;
   L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {} };
   if (FIREBASE_READY) {
     auth.signOut();
@@ -2996,9 +3006,15 @@ function addContactToGHL(name, email) {
 
 function notifyBooking(matchKey, date, slot) {
   // Get team names and player emails from the match
-  const parts = matchKey.split('_');
-  const teamA = L.groups.find(g => g.id === parts[0]);
-  const teamB = L.groups.find(g => g.id === parts[1]);
+  const parts = matchKey.split('~~');
+  let teamA = parts.length === 2 ? L.groups.find(g => g.id === parts[0]) : null;
+  let teamB = parts.length === 2 ? L.groups.find(g => g.id === parts[1]) : null;
+  // Legacy fallback for old '_' delimiter
+  if (!teamA || !teamB) {
+    for (const gA of L.groups) { for (const gB of L.groups) {
+      if (gA.id !== gB.id && ([gA.id, gB.id].sort().join('_') === matchKey || [gA.id, gB.id].sort().join('~~') === matchKey)) { teamA = gA; teamB = gB; break; }
+    } if (teamA) break; }
+  }
   if (!teamA || !teamB) return;
   // Collect player emails — find members whose playerName is in either team's players list
   const playerEmails = [];
@@ -3095,6 +3111,7 @@ function onAuthSuccess() {
         // Look up club name and set as home club
         if (FIREBASE_READY) {
           db.ref('/clubs/' + sharedClub).once('value', snap => {
+            if (!currentUser) return; // Auth state may have changed
             const c = snap.val();
             if (c) {
               userHomeClub = { id: sharedClub, name: c.name, bookingUrl: c.bookingUrl || '' };
@@ -3779,6 +3796,8 @@ async function createLeagueInClub() {
   const name = val('inp-create-league-name');
   const sport = val('inp-create-league-sport');
   if (!name) { toast('Enter a league name'); return; }
+  if (!selectedClubId) { toast('Please select a club first'); return; }
+  if (!sport) { toast('Please select a sport'); return; }
 
   const code = await genUniqueCode();
   const deadline = val('inp-create-league-deadline') || '';
@@ -4437,7 +4456,22 @@ function clearDeadline() {
 function fbSetBooked(matchKey, slotData) {
   if (slotData) L.booked[matchKey] = slotData; else delete L.booked[matchKey];
   const ref = leagueRef('booked');
-  if (ref) ref.child(matchKey).set(slotData); else localSave();
+  if (ref) {
+    if (slotData) {
+      // Use transaction to prevent double-booking
+      ref.child(matchKey).transaction(current => {
+        if (current) return; // Already booked — abort
+        return slotData;
+      }, (err, committed) => {
+        if (err) { toast('Booking error — try again'); return; }
+        if (!committed) { toast('This match was already booked by someone else'); delete L.booked[matchKey]; renderMatchFinder(); renderMyMatches(); }
+      });
+    } else {
+      ref.child(matchKey).set(null); // Unbooking
+    }
+  } else {
+    localSave();
+  }
 }
 
 /* ══════════════════════════════════════
@@ -4665,7 +4699,7 @@ function renderGroups() {
       <div class="team-hdr">
         <div class="team-name" style="color:${color}">${esc(g.name)}</div>
         <div style="display:flex;gap:6px;align-items:center">
-          <span class="team-count">${g.players.length} player${g.players.length!==1?'s':''}</span>
+          <span class="team-count">${(g.players||[]).length} player${(g.players||[]).length!==1?'s':''}</span>
           <button class="btn btn-danger btn-sm" onclick="removeGroup('${esc(g.id)}')" style="padding:5px 10px;font-size:12px">Remove</button>
         </div>
       </div>
@@ -5018,14 +5052,14 @@ function renderMyMatches() {
   const body = document.getElementById('my-matches-body');
   const blEl = document.getElementById('mm-booking-link');
   if (!player || L.groups.length < 2) { card.style.display = 'none'; return; }
-  const myGroup = L.groups.find(g => g.players.includes(player));
+  const myGroup = L.groups.find(g => (g.players || []).includes(player));
   if (!myGroup) { card.style.display = 'none'; return; }
   const opponents = L.groups.filter(g => g.id !== myGroup.id);
   if (opponents.length === 0) { card.style.display = 'none'; return; }
 
   card.style.display = 'block';
   body.innerHTML = opponents.map(opp => {
-    const matchKey = [myGroup.id, opp.id].sort().join('_');
+    const matchKey = [myGroup.id, opp.id].sort().join('~~');
     const booked = L.booked[matchKey];
     if (booked) {
       const allPlayers = [...(myGroup.players || []), ...(opp.players || [])];
@@ -5201,12 +5235,12 @@ let _findSlotsCacheKey = '';
 function invalidateSlotsCache() { _findSlotsCache = {}; _findSlotsCacheKey = ''; }
 function findSlots(groupA, groupB) {
   // Cache key based on availability state (invalidated when availability changes)
-  const cacheId = [groupA.id, groupB.id].sort().join('_');
+  const cacheId = [groupA.id, groupB.id].sort().join('~~');
   const availKey = Object.keys(L.availability).length + '_' + ds(new Date());
   if (availKey !== _findSlotsCacheKey) { _findSlotsCache = {}; _findSlotsCacheKey = availKey; }
   if (_findSlotsCache[cacheId]) return _findSlotsCache[cacheId];
 
-  const players = [...groupA.players, ...groupB.players];
+  const players = [...(groupA.players || []), ...(groupB.players || [])];
   const result = [];
   const today = new Date(); today.setHours(0,0,0,0);
   for (let i = 0; i < 42; i++) {
@@ -5239,7 +5273,7 @@ function renderMatchFinder() {
   for (let i = 0; i < L.groups.length; i++) {
     for (let j = i+1; j < L.groups.length; j++) {
       const gA = L.groups[i], gB = L.groups[j];
-      const matchKey = [gA.id, gB.id].sort().join('_');
+      const matchKey = [gA.id, gB.id].sort().join('~~');
       const booked = L.booked[matchKey];
       const slots = booked ? [] : findSlots(gA, gB);
       matchups.push({ gA, gB, slots, matchKey, booked });
@@ -5435,9 +5469,25 @@ function toggleAgreed(matchKey) {
 }
 
 function getAgreedHtml(matchKey, booked) {
-  const parts = matchKey.split('_');
-  const teamA = L.groups.find(g => g.id === parts[0]);
-  const teamB = L.groups.find(g => g.id === parts[1]);
+  const parts = matchKey.split('~~');
+  // Fallback: try legacy '_' delimiter if '~~' didn't split into 2 parts and groups match
+  let teamA, teamB;
+  if (parts.length === 2) {
+    teamA = L.groups.find(g => g.id === parts[0]);
+    teamB = L.groups.find(g => g.id === parts[1]);
+  }
+  if (!teamA || !teamB) {
+    // Legacy fallback: try to find two group IDs in the matchKey
+    for (let i = 0; i < L.groups.length; i++) {
+      for (let j = i + 1; j < L.groups.length; j++) {
+        const testKey = [L.groups[i].id, L.groups[j].id].sort().join('~~');
+        if (testKey === matchKey || [L.groups[i].id, L.groups[j].id].sort().join('_') === matchKey) {
+          teamA = L.groups[i]; teamB = L.groups[j]; break;
+        }
+      }
+      if (teamA && teamB) break;
+    }
+  }
   if (!teamA || !teamB) return '';
   const allPlayers = [...(teamA.players || []), ...(teamB.players || [])];
   const agreed = booked.agreed || {};
@@ -5466,7 +5516,7 @@ function getResultsMsg() {
   L.groups.forEach((gA, i) => {
     for (let j = i+1; j < L.groups.length; j++) {
       const gB = L.groups[j];
-      const matchKey = [gA.id, gB.id].sort().join('_');
+      const matchKey = [gA.id, gB.id].sort().join('~~');
       const booked = L.booked[matchKey];
       if (booked) msg += `\u2705 ${gA.name} vs ${gB.name} \u2014 ${fmtFull(booked.date)}, ${slotLabel(booked.slot)}\n`;
     }
@@ -5475,7 +5525,7 @@ function getResultsMsg() {
   L.groups.forEach((gA, i) => {
     for (let j = i+1; j < L.groups.length; j++) {
       const gB = L.groups[j];
-      const matchKey = [gA.id, gB.id].sort().join('_');
+      const matchKey = [gA.id, gB.id].sort().join('~~');
       if (L.booked[matchKey]) continue;
       const slots = findSlots(gA, gB);
       if (slots.length > 0) {
