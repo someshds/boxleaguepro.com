@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="UTF-8">
   <!-- Google Analytics (GA4) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-41R6M69CBW"></script>
   <script>
@@ -9,7 +10,6 @@
     gtag('js', new Date());
     gtag('config', 'G-41R6M69CBW');
   </script>
-  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BoxLeague Pro</title>
   <meta name="description" content="Free app for organising box league matches. Find times, book matches, share with your club.">
@@ -54,7 +54,7 @@
     .auth-title { font-size: 32px; font-weight: 800; color: #fff; letter-spacing: -0.5px; margin-bottom: 6px; }
     .auth-subtitle { font-size: 18px; color: rgba(255,255,255,0.85); font-weight: 500; margin-bottom: 36px; }
     .auth-features { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 36px; max-width: 400px; }
-    .auth-chip { background: rgba(255,255,255,0.15); color: #fff; padding: 8px 16px; border-radius: 24px; font-size: 15px; font-weight: 600; backdrop-filter: blur(4px); }
+    .auth-chip { background: rgba(255,255,255,0.15); color: #fff; padding: 8px 16px; border-radius: 24px; font-size: 15px; font-weight: 600; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
     .btn-google { display: inline-flex; align-items: center; gap: 12px; background: #fff; color: #1a1a1a; padding: 14px 32px; border-radius: 12px; font-size: 17px; font-weight: 700; border: none; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.15); transition: transform 0.15s, box-shadow 0.15s; }
     .btn-google:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
     .btn-google:active { transform: scale(0.98); }
@@ -148,7 +148,7 @@
     .nav-badge { background: var(--red); color: #fff; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; margin-left: 4px; vertical-align: top; }
 
     /* ── Content ── */
-    .content { padding: 18px; max-width: 680px; margin: 0 auto; padding-bottom: 40px; }
+    .content { padding: 18px; max-width: 680px; margin: 0 auto; padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
     .section { display: none; }
     .section.active { display: block; }
 
@@ -424,7 +424,7 @@
     .tour-dot.active { background: #3884F4; }
     .tour-dot.done { background: #00D296; }
     /* ── Help Button ── */
-    .tour-help-btn { position: fixed; bottom: 20px; left: 20px; z-index: 9998; padding: 6px; border-radius: 12px; background: rgba(255,255,255,0.95); border: 1px solid #e2e8f0; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.12); display: flex; align-items: stretch; justify-content: center; transition: transform 0.15s; backdrop-filter: blur(8px); }
+    .tour-help-btn { position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 20px; z-index: 9998; padding: 6px; border-radius: 12px; background: rgba(255,255,255,0.95); border: 1px solid #e2e8f0; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.12); display: flex; align-items: stretch; justify-content: center; transition: transform 0.15s; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
     .tour-help-btn:hover { transform: scale(1.1); }
     @media (max-width: 480px) {
       .tour-tooltip { max-width: calc(100vw - 24px); padding: 22px 20px 18px; }
@@ -435,7 +435,7 @@
     .share-card { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; }
 
     /* ── Toast ── */
-    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--primary-dark); color: #fff; padding: 12px 22px; border-radius: 24px; font-size: 14px; font-weight: 600; z-index: 10001; opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: nowrap; }
+    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--primary-dark); color: #fff; padding: 12px 22px; border-radius: 24px; font-size: 14px; font-weight: 600; z-index: 10001; opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: normal; max-width: calc(100vw - 32px); text-align: center; }
     .toast.show { opacity: 1; }
 
     /* ── AIFA CTA Banner ── */
@@ -521,7 +521,7 @@
 <div id="screen-loading" class="screen auth-screen active">
   <div class="auth-logo">&#127934;</div>
   <div class="auth-title">BoxLeague Pro</div>
-  <div style="margin-top:20px"><div class="spinner"></div></div>
+  <div style="margin-top:20px" role="status" aria-label="Loading"><div class="spinner"></div></div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════
@@ -671,7 +671,7 @@
         </div>
         <div style="margin-top:8px">
           <div style="font-size:12px;color:#6b7280;margin-bottom:4px">Court booking URL (optional)</div>
-          <input class="fi" id="inp-onboard-booking-url" placeholder="e.g. mycourts.co.uk/yourclub" style="font-size:14px">
+          <input class="fi" id="inp-onboard-booking-url" placeholder="e.g. mycourts.co.uk/yourclub" style="font-size:16px">
         </div>
       </div>
       <div id="onboard-selected-club" style="display:none;margin-top:12px;padding:14px 16px;background:#eff6ff;border:2px solid #2563eb;border-radius:12px">
@@ -723,7 +723,7 @@
         </div>
       </div>
       <button class="user-pill" onclick="signOut()" title="Sign out">
-        <img id="browse-user-photo" src="" alt="" onerror="this.style.display='none'">
+        <img id="browse-user-photo" alt="" onerror="this.style.display='none'">
         <span>Sign out</span>
       </button>
     </div>
@@ -754,10 +754,10 @@
         </div>
         <div id="admin-log-filter" style="display:none;margin-bottom:8px">
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <select id="admin-log-action-filter" onchange="adminFilterLogs()" style="padding:6px 10px;border-radius:6px;border:1px solid #d1d5db;font-size:12px">
+            <select id="admin-log-action-filter" onchange="adminFilterLogs()" style="padding:6px 10px;border-radius:6px;border:1px solid #d1d5db;font-size:16px">
               <option value="">All actions</option>
             </select>
-            <select id="admin-log-user-filter" onchange="adminFilterLogs()" style="padding:6px 10px;border-radius:6px;border:1px solid #d1d5db;font-size:12px">
+            <select id="admin-log-user-filter" onchange="adminFilterLogs()" style="padding:6px 10px;border-radius:6px;border:1px solid #d1d5db;font-size:16px">
               <option value="">All users</option>
             </select>
             <span id="admin-log-count" style="font-size:12px;color:#6b7280"></span>
@@ -803,7 +803,7 @@
       <div id="club-create-option" style="display:none">
         <div class="fg" style="margin-bottom:8px">
           <label class="fl">Court Booking URL <span style="font-weight:400;color:#9ca3af">(optional)</span></label>
-          <input class="fi" id="inp-club-booking-url" placeholder="e.g. https://yourclub.mycourts.co.uk/" style="font-size:14px">
+          <input class="fi" id="inp-club-booking-url" placeholder="e.g. https://yourclub.mycourts.co.uk/" style="font-size:16px">
         </div>
         <div class="option-card" onclick="createClubFromSearch()">
           <div style="display:flex;align-items:center;gap:12px">
@@ -843,7 +843,7 @@
         <div id="create-club-create-option" style="display:none">
           <div class="fg" style="margin-bottom:8px">
             <label class="fl">Court Booking URL <span style="font-weight:400;color:#9ca3af">(optional)</span></label>
-            <input class="fi" id="inp-create-club-booking-url" placeholder="e.g. https://yourclub.mycourts.co.uk/" style="font-size:14px">
+            <input class="fi" id="inp-create-club-booking-url" placeholder="e.g. https://yourclub.mycourts.co.uk/" style="font-size:16px">
           </div>
           <div class="option-card" onclick="createClubFromCreate()">
             <div style="display:flex;align-items:center;gap:12px">
@@ -1006,7 +1006,7 @@
     <div class="app-header-top">
       <button class="app-back" onclick="goToHub()">&larr; Home</button>
       <button class="user-pill" onclick="openProfile()">
-        <img id="app-user-photo" src="" alt="" onerror="this.style.display='none'">
+        <img id="app-user-photo" alt="" onerror="this.style.display='none'">
         <span id="app-user-first"></span>
       </button>
     </div>
@@ -1180,7 +1180,7 @@
         <div id="fill-in-for" style="display:none;margin-bottom:12px">
           <div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:12px 14px">
             <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:6px">&#128100; Fill in availability for another player</div>
-            <select id="fill-in-select" class="fi" onchange="switchFillInPlayer()" style="font-size:14px;padding:8px 12px">
+            <select id="fill-in-select" class="fi" onchange="switchFillInPlayer()" style="font-size:16px;padding:8px 12px">
               <option value="">Myself</option>
             </select>
             <div id="fill-in-label" style="display:none;font-size:12px;color:#b45309;margin-top:4px;font-weight:600"></div>
@@ -1366,13 +1366,13 @@
     <div class="aifa-footer-sub">Helping clubs &amp; players organise matches with AI</div>
     <div class="aifa-footer-links">
       <a href="https://aifusionautomations.com" target="_blank">&#127760; Website</a>
-      <a href="javascript:void(0)" onclick="try{document.querySelector('[data-widget-id] button, .lc_text-widget-open, .chat-widget-open-btn').click()}catch(e){toast('Look for the chat bubble in the corner!')}" title="Open support chat">&#129302; Support Chatbot</a>
-      <a href="javascript:void(0)" onclick="openFeedback()">&#128172; Feedback &amp; Support</a>
+      <button type="button" onclick="try{document.querySelector('[data-widget-id] button, .lc_text-widget-open, .chat-widget-open-btn').click()}catch(e){toast('Look for the chat bubble in the corner!')}" title="Open support chat" style="background:none;border:none;color:inherit;font:inherit;cursor:pointer;padding:0">&#129302; Support Chatbot</button>
+      <button type="button" onclick="openFeedback()" style="background:none;border:none;color:inherit;font:inherit;cursor:pointer;padding:0">&#128172; Feedback &amp; Support</button>
     </div>
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.5 · Build 20260402</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.6 · Build 20260412</div>
   </div>
 </div>
 
@@ -1487,7 +1487,7 @@
     <div style="padding:20px">
       <div style="text-align:center;margin-bottom:16px">
         <div id="profile-photo-preview" style="width:72px;height:72px;border-radius:50%;margin:0 auto 10px;overflow:hidden;background:#e5e7eb;display:flex;align-items:center;justify-content:center;border:3px solid var(--primary-light)">
-          <img id="profile-photo-img" src="" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <img id="profile-photo-img" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
           <span id="profile-photo-initials" style="font-size:24px;font-weight:800;color:#fff;background:var(--primary);width:100%;height:100%;display:flex;align-items:center;justify-content:center"></span>
         </div>
         <label class="btn btn-secondary btn-sm" style="font-size:12px;padding:6px 14px;cursor:pointer">
@@ -1509,7 +1509,7 @@
           <button onclick="changeHomeClub()" style="background:none;border:none;color:#2563eb;font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline">Change</button>
         </div>
         <div id="profile-home-club-search" style="display:none;margin-top:8px">
-          <input class="fi" id="inp-profile-club" placeholder="Search for a club..." oninput="searchProfileClubs()" style="font-size:14px;margin-bottom:6px">
+          <input class="fi" id="inp-profile-club" placeholder="Search for a club..." oninput="searchProfileClubs()" style="font-size:16px;margin-bottom:6px">
           <div id="profile-club-results" style="max-height:120px;overflow-y:auto"></div>
         </div>
       </div>
@@ -1536,7 +1536,7 @@
     </label>
     <div style="display:flex;gap:10px">
       <button onclick="declineGoogleConsent()" style="flex:1;padding:12px;border-radius:10px;border:1.5px solid #e2e8f0;background:#fff;font-size:15px;font-weight:600;cursor:pointer;color:#6b7280">No thanks</button>
-      <button onclick="if(document.getElementById('google-consent-check').checked){acceptGoogleConsent()}else{declineGoogleConsent()}" style="flex:1;padding:12px;border-radius:10px;border:none;background:#2563eb;color:#fff;font-size:15px;font-weight:700;cursor:pointer">I agree</button>
+      <button onclick="if(document.getElementById('google-consent-check').checked){acceptGoogleConsent()}else{toast('Please check the consent box to continue')}" style="flex:1;padding:12px;border-radius:10px;border:none;background:#2563eb;color:#fff;font-size:15px;font-weight:700;cursor:pointer">I agree</button>
     </div>
   </div>
 </div>
@@ -1576,7 +1576,7 @@
       <!-- Feedback & Support -->
       <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:10px">Feedback &amp; Support</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-        <a href="javascript:void(0)" onclick="closeHelp();openFeedback()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#f1f5f9;border-radius:8px;font-size:13px;font-weight:600;color:#1e293b;text-decoration:none;border:1px solid #e2e8f0">&#128172; Feedback</a>
+        <button type="button" onclick="closeHelp();openFeedback()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#f1f5f9;border-radius:8px;font-size:13px;font-weight:600;color:#1e293b;border:1px solid #e2e8f0;cursor:pointer">&#128172; Feedback</button>
         <a href="mailto:grant@aifusionautomations.com" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#f1f5f9;border-radius:8px;font-size:13px;font-weight:600;color:#1e293b;text-decoration:none;border:1px solid #e2e8f0">&#9993; Email Us</a>
         <a href="tel:+447950964670" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#f1f5f9;border-radius:8px;font-size:13px;font-weight:600;color:#1e293b;text-decoration:none;border:1px solid #e2e8f0">&#128222; Call</a>
       </div>
@@ -1855,6 +1855,9 @@ function toggleAdminConsole() {
 }
 
 function openAdminAction(fnName) {
+  // M7: Allowlist of valid admin functions to prevent arbitrary function invocation
+  const ALLOWED_ADMIN_FNS = ['adminLoadAllUsers','adminLoadLeagues','adminLoadClubs','adminRebuildIndex','adminLoadLogs','adminClearLogs','adminDeleteLeague','adminDeleteUser','adminDeleteClub'];
+  if (!ALLOWED_ADMIN_FNS.includes(fnName)) { console.warn('Blocked unknown admin action:', fnName); return; }
   // Navigate to browse screen, expand admin console, then run the action
   goToBrowse();
   const body = document.getElementById('admin-console-body');
@@ -1999,6 +2002,8 @@ function renderAdminLeagueList(el, leagues) {
 }
 
 function adminDeleteLeague(leagueId, leagueName, clubId, code) {
+  // TODO [M8]: Reads ALL /userLeagues to find members — doesn't scale. Should use league's members
+  // list to find UIDs instead of scanning the entire userLeagues tree.
   if (!isAdmin()) return;
   if (!confirm('Delete "' + leagueName + '"? This removes the league and all its data permanently.')) return;
 
@@ -2241,6 +2246,8 @@ function adminRemoveUserFromLeague(emailKey, leagueId, uid) {
 }
 
 function adminDeleteUser(email) {
+  // TODO [M9]: Reads every league individually to find user — doesn't scale. Should use a
+  // userLeagues lookup for the target user's UID instead of scanning all leagues.
   if (!isAdmin()) return;
   if (!confirm('Remove ' + email + ' from ALL leagues globally? This cannot be undone.')) return;
 
@@ -2296,6 +2303,8 @@ function adminDeleteUser(email) {
 }
 
 function adminRebuildIndex() {
+  // TODO [M10]: Reads all /leagues to rebuild index — admin-only but could be slow at scale.
+  // Consider a Cloud Function or batched approach for large deployments.
   if (!isAdmin() || !FIREBASE_READY) return;
   const el = document.getElementById('admin-league-list');
   el.innerHTML = '<div style="color:#7c3aed;font-size:13px;padding:8px 0">Rebuilding league index...</div>';
@@ -2415,7 +2424,7 @@ function adminClearLogs() {
     document.getElementById('admin-log-list').innerHTML = '<div style="color:#059669;font-size:13px;padding:8px 0">Logs cleared.</div>';
     document.getElementById('admin-log-filter').style.display = 'none';
     toast('Activity logs cleared');
-  });
+  }).catch(err => { toast('Failed to clear logs: ' + err.message); }); // M12
 }
 
 /* ── Club Admin ── */
@@ -2711,6 +2720,7 @@ function emailSignIn() {
   errEl.style.display = 'none';
 
   if (!email) { showAuthError('Please enter your email address.'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showAuthError('Please enter a valid email address'); return; }
   if (!password) { showAuthError('Please enter a password.'); return; }
   if (password.length < 6) { showAuthError('Password must be at least 6 characters.'); return; }
 
@@ -2847,8 +2857,8 @@ function closeProfile() {
 }
 
 function saveProfile() {
-  const newName = val('profile-name');
-  const newPartner = val('profile-partner');
+  const newName = val('profile-name').replace(/\|/g, ''); // L12: Strip pipe chars
+  const newPartner = val('profile-partner').replace(/\|/g, '');
   const errEl = document.getElementById('profile-error');
   errEl.style.display = 'none';
   if (!newName) { errEl.textContent = 'Please enter your name.'; errEl.style.display = 'block'; return; }
@@ -3219,8 +3229,10 @@ function omPath() {
 
 function goToMixIn() {
   if (!userHomeClub) {
-    showScreen('onboarding');
-    toast('Please select your home club first');
+    // M5: Instead of bouncing to onboarding (which causes a dead-end loop after skipOnboarding),
+    // show the browse screen so the user can pick a club naturally.
+    showScreen('browse');
+    toast('Select a club to find games');
     return;
   }
   mixInMode = true;
@@ -3515,6 +3527,7 @@ function loadUserLeagues() {
 }
 
 let createdLeagueId = null; // Track league just created for the share flow
+let createdLeagueName = null; // Track league name separately to avoid parsing display text
 
 function filterLeaguesByGameType(leagueEntries) {
   if (!selectedGameType || selectedGameType === 'mixin') return leagueEntries;
@@ -3658,6 +3671,7 @@ function resetCreateClub() {
 
 function showCreateShareStep(leagueId, leagueName) {
   createdLeagueId = leagueId;
+  createdLeagueName = leagueName;
   document.getElementById('create-step-club').style.display = 'none';
   document.getElementById('create-step-details').style.display = 'none';
   document.getElementById('create-step-share').style.display = 'block';
@@ -3688,7 +3702,11 @@ function shareCreateEmail() {
 
 function enterCreatedLeague() {
   if (createdLeagueId) {
-    startWizard(createdLeagueId, document.getElementById('create-share-league-name').textContent.split(' at ')[0]);
+    const lid = createdLeagueId;
+    const lname = createdLeagueName || document.getElementById('create-share-league-name').textContent.split(' at ')[0];
+    createdLeagueId = null; // L2: Reset to prevent stale re-entry
+    createdLeagueName = null;
+    startWizard(lid, lname);
   }
 }
 
@@ -4095,7 +4113,7 @@ function wizWeekDates() {
 function renderWizAvailGrid() {
   const dates = wizWeekDates();
   const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  const playerName = val('wiz-name');
+  let playerName = val('wiz-name').replace(/\|/g, ''); // L12: Strip pipe chars to protect key parsing
   if (!playerName) { toast('Please enter your name first'); return; }
 
   document.getElementById('wiz-wk-label').textContent = `${fmtShort(dates[0])} \u2013 ${fmtShort(dates[6])}`;
@@ -4410,6 +4428,9 @@ function saveSettings() {
   renderHeader(); renderDeadline();
 
   // Also update league name in userLeagues and hub
+  // TODO [M4]: This only updates the current organiser's userLeagues entry. Other members who
+  // have this league in their userLeagues will still see the old name until they reload. Fixing
+  // this requires iterating all members' userLeagues refs, which is a Firebase architecture change.
   if (FIREBASE_READY && activeLeagueId && L.settings.leagueName) {
     db.ref('/userLeagues/' + currentUser.uid + '/' + activeLeagueId + '/name').set(L.settings.leagueName);
     db.ref('/leagues/' + activeLeagueId + '/info/name').set(L.settings.leagueName);
@@ -4874,6 +4895,13 @@ function renderMembers() {
 
 function linkMember(memberKey, playerName) {
   if (!playerName) return;
+  // M3: Check if this playerName is already linked to another member
+  for (const [key, m] of Object.entries(L.members || {})) {
+    if (key !== memberKey && m.playerName === playerName) {
+      toast('This player is already linked to another account');
+      return;
+    }
+  }
   const ref = leagueRef('members/' + memberKey + '/playerName');
   if (ref) ref.set(playerName);
   else { L.members[memberKey].playerName = playerName; localSave(); renderMembers(); }
@@ -5030,7 +5058,9 @@ function copyLastWeek() {
   const dates = weekDates();
   const updates = {};
   let copied = 0;
+  const today = new Date(); today.setHours(0,0,0,0); // M11: guard against past-day slots
   dates.forEach(d => {
+    if (d < today) return; // M11: skip past dates when copying
     const prevWeek = new Date(d); prevWeek.setDate(prevWeek.getDate() - 7);
     SLOTS.forEach(slot => {
       const prevKey = avk(player, prevWeek, slot);
@@ -5407,6 +5437,9 @@ function renderMatchFinder() {
 }
 
 function bookMatch(matchKey, date, slot) {
+  // TODO [M1]: No re-check of slot availability at confirmation time. If two organisers book
+  // simultaneously, the second booking will overwrite the first. To fix properly, re-run
+  // findSlots() here and verify the slot is still available before calling fbSetBooked.
   const lgInfo = activeLeagueId ? userLeagues[activeLeagueId] : null;
   if (!isAdmin() && !(lgInfo && lgInfo.role === 'organiser')) { toast('Only organisers can book matches'); return; }
   const slotLbl = slotLabel(slot);
@@ -5433,6 +5466,7 @@ function updateBookingNotes(matchKey) {
   if (!input) return;
   const booked = L.booked[matchKey];
   if (!booked) return;
+  if (input.value === (booked.notes || '')) return; // M2: skip write if notes unchanged
   booked.notes = input.value;
   fbSetBooked(matchKey, booked);
   toast('Notes saved');
@@ -5615,7 +5649,7 @@ function renderOpenMatches() {
     const upcoming = matches.filter(m => {
       const mDate = new Date(m.date + 'T00:00:00');
       return mDate >= today || isSameDay(mDate, today);
-    }).sort((a, b) => a.date.localeCompare(b.date));
+    }).sort((a, b) => (a.date || '').localeCompare(b.date || '')); // M31: fallback for missing date
     if (upcoming.length > 0) {
       const available = upcoming.filter(m => (m.players || []).length < (m.maxPlayers || 4)).length;
       const full = upcoming.length - available;
@@ -6010,6 +6044,7 @@ function leaveOpenMatch(matchId) {
 }
 
 function toggleOmCourtBooked(matchId) {
+  if (!currentUser) { toast('Please sign in'); return; } // M26: null check
   const match = L.openMatches[matchId];
   if (!match) return;
   const newVal = !match.courtBooked;
@@ -6157,6 +6192,7 @@ function filterOmeSlots() {
 }
 
 function saveOpenMatchEdit(matchId) {
+  if (!currentUser) { toast('Please sign in'); return; } // M26: null check
   const title = document.getElementById('ome-title').value.trim() || 'Open Game';
   const sport = document.getElementById('ome-sport').value;
   const level = document.getElementById('ome-level').value;
@@ -6206,7 +6242,7 @@ function renderMyOpenGames() {
       const mDate = new Date(m.date + 'T00:00:00');
       return mDate >= today;
     })
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .sort((a, b) => (a.date || '').localeCompare(b.date || '')); // M31: fallback
 
   if (myGames.length === 0) { container.style.display = 'none'; return; }
   container.style.display = 'block';
@@ -6445,14 +6481,21 @@ function clearAllComments() {
   if (!confirm('Delete ALL messages? This cannot be undone.')) return;
   const path = commentsPath();
   if (!path) return;
+  const backup = { ...L.comments }; // M30: backup before clearing
   L.comments = {};
   renderComments();
   if (FIREBASE_READY) {
-    db.ref(path).remove();
+    db.ref(path).remove().then(() => {
+      toast('All messages cleared');
+    }).catch(err => {
+      L.comments = backup; // Restore on failure
+      renderComments();
+      toast('Failed to clear messages: ' + err.message);
+    });
   } else {
     localSave();
+    toast('All messages cleared');
   }
-  toast('All messages cleared');
 }
 
 function getTimeAgo(isoStr) {
@@ -6750,6 +6793,7 @@ function qSelectClub(id, name, bookingUrl) {
 function qCreateClub() {
   const name = (document.getElementById('q-club-input').value || '').trim();
   if (!name) return;
+  if (!currentUser) { toast('Please sign in'); return; } // M35: null check
   if (FIREBASE_READY) {
     const ref = db.ref('/clubs').push();
     const clubData = { name, createdBy: currentUser.uid, createdAt: Date.now() };
@@ -7300,6 +7344,7 @@ function endTour(markComplete) {
 }
 
 function renderTourStep() {
+  if (tourStep < 0 || tourStep >= TOUR_STEPS.length) { endTour(true); return; } // M33: bounds check
   const step = TOUR_STEPS[tourStep];
   const tooltip = document.getElementById('tour-tooltip');
   const backdrop = document.getElementById('tour-backdrop');
@@ -7376,6 +7421,7 @@ let _deadlineInterval = setInterval(renderDeadline, 60000);
 
 <!-- BoxLeague Pro Support Chatbot -->
 <script
+  async
   src="https://widgets.leadconnectorhq.com/loader.js"
   data-resources-url="https://widgets.leadconnectorhq.com/chat-widget/loader.js"
   data-widget-id="69c2d44d510b6031cc38ed0e">
