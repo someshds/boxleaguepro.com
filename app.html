@@ -3158,7 +3158,18 @@ function topBarNav(action) {
       return;
     }
     if (action === 'admin') {
-      if (typeof toggleAdminConsole === 'function') toggleAdminConsole();
+      // Admin console lives on the Browse screen — navigate there first, then expand.
+      if (typeof goToBrowse === 'function') { goToBrowse(); }
+      setTimeout(function() {
+        const wrap = document.getElementById('admin-tools');
+        const body = document.getElementById('admin-console-body');
+        const btn = document.getElementById('admin-toggle-btn');
+        if (wrap) wrap.style.display = 'block';
+        if (body) body.style.display = 'block';
+        if (btn) btn.textContent = 'Collapse';
+        // Scroll it into view so the user immediately sees it
+        if (wrap && wrap.scrollIntoView) { wrap.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      }, 120);
       return;
     }
     if (action === 'help') {
