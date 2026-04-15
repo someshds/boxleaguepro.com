@@ -2434,98 +2434,150 @@ function adminClearLogs() {
    Diagnostic view of every booked match across every league. Added after the
    Bill Rolfe data-loss incident (15 Apr 2026) where a legacy match-key
    delimiter made a match invisible in-app even though the data was still in
-   Firebase. This view reads directly from /leagues/{id}/booked — so if a
-   match exists anywhere it shows here regardless of delimiter format.
-   Highlights legacy '_' delimiter keys in amber so the pattern is obvious. */
+   Firebase. Discovers league IDs via the same multi-source pattern as
+   adminLoadLeagues (Firebase rules block a direct /leagues read), then
+   fetches each league individually. Highlights legacy '_' delimiter keys
+   in amber so the pattern is obvious. */
 function adminLoadBookings() {
   if (!isAdmin() || !FIREBASE_READY) return;
   const el = document.getElementById('admin-booking-list');
-  el.innerHTML = '<div style="color:#be185d;font-size:13px;padding:8px 0">Loading bookings across all leagues...</div>';
+  el.innerHTML = '<div style="color:#be185d;font-size:13px;padding:8px 0">Discovering leagues...</div>';
 
-  db.ref('/leagues').once('value').then(snap => {
-    const leagues = snap.val() || {};
+  // Phase 1 — collect every known league ID from 4 sources (same pattern as adminLoadLeagues)
+  const leagueIdSet = new Set(Object.keys(userLeagues || {}));
+  let sourcesChecked = 0;
+  const totalSources = 4;
+
+  function sourceChecked() {
+    sourcesChecked++;
+    if (sourcesChecked >= totalSources) fetchBookingsForLeagues();
+  }
+
+  db.ref('/codes').once('value', snap => {
+    const codes = snap.val() || {};
+    Object.values(codes).forEach(lid => { if (typeof lid === 'string') leagueIdSet.add(lid); });
+    sourceChecked();
+  }, () => sourceChecked());
+
+  db.ref('/leagueIndex').once('value', snap => {
+    const idx = snap.val() || {};
+    Object.keys(idx).forEach(lid => leagueIdSet.add(lid));
+    sourceChecked();
+  }, () => sourceChecked());
+
+  db.ref('/leagues').once('value', snap => {
+    const all = snap.val() || {};
+    Object.keys(all).forEach(lid => leagueIdSet.add(lid));
+    sourceChecked();
+  }, () => sourceChecked()); // silently fall back on permission denied
+
+  db.ref('/clubLeagues').once('value', snap => {
+    const allClubLeagues = snap.val() || {};
+    Object.values(allClubLeagues).forEach(clubLgs => {
+      if (clubLgs && typeof clubLgs === 'object') Object.keys(clubLgs).forEach(lid => leagueIdSet.add(lid));
+    });
+    sourceChecked();
+  }, () => sourceChecked());
+
+  // Phase 2 — for each league ID, read booked/groups/settings individually
+  function fetchBookingsForLeagues() {
+    const leagueIds = Array.from(leagueIdSet);
+    if (leagueIds.length === 0) {
+      el.innerHTML = '<div style="color:#6b7280;font-size:13px;padding:8px 0">No leagues found.</div>';
+      return;
+    }
+    el.innerHTML = '<div style="color:#be185d;font-size:13px;padding:8px 0">Loading bookings from ' + leagueIds.length + ' leagues...</div>';
+
     const rows = [];
-    Object.entries(leagues).forEach(([lid, league]) => {
-      if (!league || typeof league !== 'object') return;
-      const booked = league.booked || {};
-      const groups = league.groups || {};
-      const leagueName = (league.settings && league.settings.leagueName) || (league.info && league.info.name) || 'Unnamed';
-      // Build group-id → players lookup for resolving match keys
-      const groupMap = {};
-      Object.values(groups).forEach(g => { if (g && g.id) groupMap[g.id] = (g.players || []).join(' & ') || 'Unknown team'; });
-      Object.entries(booked).forEach(([matchKey, slot]) => {
-        if (!slot || typeof slot !== 'object') return;
-        // Figure out which two teams this key belongs to
-        let teamA = null, teamB = null;
-        const groupIds = Object.keys(groupMap);
-        for (let i = 0; i < groupIds.length && !teamA; i++) {
-          for (let j = i + 1; j < groupIds.length && !teamA; j++) {
-            const a = groupIds[i], b = groupIds[j];
-            const legacy = [a, b].sort().join('_');
-            const modern = [a, b].sort().join('~~');
-            if (legacy === matchKey || modern === matchKey) { teamA = a; teamB = b; }
-          }
+    let loaded = 0;
+    let readErrors = 0;
+
+    leagueIds.forEach(lid => {
+      db.ref('/leagues/' + lid).once('value', snap => {
+        const league = snap.val();
+        if (league && typeof league === 'object') {
+          const booked = league.booked || {};
+          const groups = league.groups || {};
+          const leagueName = (league.settings && league.settings.leagueName) || (league.info && league.info.name) || 'Unnamed';
+          const groupMap = {};
+          Object.values(groups).forEach(g => { if (g && g.id) groupMap[g.id] = (g.players || []).join(' & ') || 'Unknown team'; });
+          Object.entries(booked).forEach(([matchKey, slot]) => {
+            if (!slot || typeof slot !== 'object') return;
+            let teamA = null, teamB = null;
+            const groupIds = Object.keys(groupMap);
+            for (let i = 0; i < groupIds.length && !teamA; i++) {
+              for (let j = i + 1; j < groupIds.length && !teamA; j++) {
+                const a = groupIds[i], b = groupIds[j];
+                if ([a, b].sort().join('_') === matchKey || [a, b].sort().join('~~') === matchKey) { teamA = a; teamB = b; }
+              }
+            }
+            rows.push({
+              leagueId: lid,
+              leagueName,
+              matchKey,
+              legacyDelimiter: matchKey.indexOf('~~') === -1,
+              teamAName: teamA ? groupMap[teamA] : null,
+              teamBName: teamB ? groupMap[teamB] : null,
+              date: slot.date || '',
+              slot: slot.slot || '',
+              courtBooked: !!slot.courtBooked,
+              notes: slot.notes || '',
+              agreedCount: slot.agreed ? Object.keys(slot.agreed).length : 0,
+              agreedNames: slot.agreed ? Object.keys(slot.agreed).join(', ') : ''
+            });
+          });
         }
-        rows.push({
-          leagueId: lid,
-          leagueName,
-          matchKey,
-          legacyDelimiter: matchKey.indexOf('~~') === -1,
-          teamAName: teamA ? groupMap[teamA] : null,
-          teamBName: teamB ? groupMap[teamB] : null,
-          date: slot.date || '',
-          slot: slot.slot || '',
-          courtBooked: !!slot.courtBooked,
-          notes: slot.notes || '',
-          agreedCount: slot.agreed ? Object.keys(slot.agreed).length : 0,
-          agreedNames: slot.agreed ? Object.keys(slot.agreed).join(', ') : ''
-        });
+        loaded++;
+        if (loaded >= leagueIds.length) renderBookings();
+      }, err => {
+        readErrors++;
+        loaded++;
+        if (loaded >= leagueIds.length) renderBookings();
       });
     });
 
-    // Sort by date ascending, then by league
-    rows.sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.leagueName.localeCompare(b.leagueName));
-
-    if (rows.length === 0) {
-      el.innerHTML = '<div style="color:#6b7280;font-size:13px;padding:8px 0">No bookings found across any league.</div>';
-      return;
-    }
-
-    const legacyCount = rows.filter(r => r.legacyDelimiter).length;
-    const header = '<div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:8px">'
-      + rows.length + ' booking' + (rows.length === 1 ? '' : 's') + ' across ' + Object.keys(leagues).length + ' leagues'
-      + (legacyCount > 0 ? ' <span style="color:#d97706">&middot; ' + legacyCount + ' with legacy \'_\' delimiter</span>' : '')
-      + '</div>';
-
-    el.innerHTML = header + rows.map(r => {
-      const teams = (r.teamAName && r.teamBName)
-        ? esc(r.teamAName) + ' <span style="color:#9ca3af">vs</span> ' + esc(r.teamBName)
-        : '<span style="color:#dc2626">⚠ could not resolve teams from key</span>';
-      const border = r.legacyDelimiter ? '#fbbf24' : '#e5e7eb';
-      const bg = r.legacyDelimiter ? '#fffbeb' : '#fff';
-      const courtPill = r.courtBooked
-        ? '<span style="background:#dcfce7;color:#166534;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700">COURT BOOKED</span>'
-        : '<span style="background:#fee2e2;color:#991b1b;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700">NO COURT</span>';
-      const legacyPill = r.legacyDelimiter
-        ? ' <span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700">LEGACY KEY</span>'
-        : '';
-      return '<div style="padding:10px 12px;margin-bottom:6px;background:' + bg + ';border:1px solid ' + border + ';border-radius:8px;font-size:12px">'
-        + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">'
-        +   '<div style="font-weight:700;font-size:13px">' + teams + '</div>'
-        +   '<div style="white-space:nowrap">' + courtPill + legacyPill + '</div>'
-        + '</div>'
-        + '<div style="color:#374151;margin-bottom:4px"><strong>' + esc(r.date) + '</strong> @ ' + esc(r.slot)
-        +   (r.agreedCount > 0 ? ' &middot; <span style="color:#059669">agreed by ' + esc(r.agreedNames) + '</span>' : ' &middot; <span style="color:#9ca3af">not yet agreed</span>')
-        + '</div>'
-        + '<div style="color:#9ca3af;font-size:10px;font-family:monospace;word-break:break-all">'
-        +   esc(r.leagueName) + ' &middot; ' + esc(r.leagueId) + ' &middot; key: ' + esc(r.matchKey)
-        + '</div>'
-        + (r.notes ? '<div style="color:#6b7280;font-size:11px;margin-top:4px;font-style:italic">' + esc(r.notes) + '</div>' : '')
+    function renderBookings() {
+      if (rows.length === 0) {
+        el.innerHTML = '<div style="color:#6b7280;font-size:13px;padding:8px 0">No bookings found across ' + leagueIds.length + ' leagues'
+          + (readErrors > 0 ? ' (' + readErrors + ' unreadable)' : '') + '.</div>';
+        return;
+      }
+      // Sort by date ascending, then by league
+      rows.sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.leagueName.localeCompare(b.leagueName));
+      const legacyCount = rows.filter(r => r.legacyDelimiter).length;
+      const header = '<div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:8px">'
+        + rows.length + ' booking' + (rows.length === 1 ? '' : 's') + ' across ' + leagueIds.length + ' leagues'
+        + (legacyCount > 0 ? ' <span style="color:#d97706">&middot; ' + legacyCount + ' with legacy \'_\' delimiter</span>' : '')
+        + (readErrors > 0 ? ' <span style="color:#9ca3af">&middot; ' + readErrors + ' unreadable</span>' : '')
         + '</div>';
-    }).join('');
-  }).catch(err => {
-    el.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:8px 0">Error loading bookings: ' + err.message + '</div>';
-  });
+      el.innerHTML = header + rows.map(r => {
+        const teams = (r.teamAName && r.teamBName)
+          ? esc(r.teamAName) + ' <span style="color:#9ca3af">vs</span> ' + esc(r.teamBName)
+          : '<span style="color:#dc2626">&#9888; could not resolve teams from key</span>';
+        const border = r.legacyDelimiter ? '#fbbf24' : '#e5e7eb';
+        const bg = r.legacyDelimiter ? '#fffbeb' : '#fff';
+        const courtPill = r.courtBooked
+          ? '<span style="background:#dcfce7;color:#166534;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700">COURT BOOKED</span>'
+          : '<span style="background:#fee2e2;color:#991b1b;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700">NO COURT</span>';
+        const legacyPill = r.legacyDelimiter
+          ? ' <span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700">LEGACY KEY</span>'
+          : '';
+        return '<div style="padding:10px 12px;margin-bottom:6px;background:' + bg + ';border:1px solid ' + border + ';border-radius:8px;font-size:12px">'
+          + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">'
+          +   '<div style="font-weight:700;font-size:13px">' + teams + '</div>'
+          +   '<div style="white-space:nowrap">' + courtPill + legacyPill + '</div>'
+          + '</div>'
+          + '<div style="color:#374151;margin-bottom:4px"><strong>' + esc(r.date) + '</strong> @ ' + esc(r.slot)
+          +   (r.agreedCount > 0 ? ' &middot; <span style="color:#059669">agreed by ' + esc(r.agreedNames) + '</span>' : ' &middot; <span style="color:#9ca3af">not yet agreed</span>')
+          + '</div>'
+          + '<div style="color:#9ca3af;font-size:10px;font-family:monospace;word-break:break-all">'
+          +   esc(r.leagueName) + ' &middot; ' + esc(r.leagueId) + ' &middot; key: ' + esc(r.matchKey)
+          + '</div>'
+          + (r.notes ? '<div style="color:#6b7280;font-size:11px;margin-top:4px;font-style:italic">' + esc(r.notes) + '</div>' : '')
+          + '</div>';
+      }).join('');
+    }
+  }
 }
 
 /* ── Club Admin ── */
