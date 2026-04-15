@@ -1434,7 +1434,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.6.9 · Build 20260415</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.7.0 · Build 20260415</div>
   </div>
 </div>
 
@@ -1453,6 +1453,7 @@
           <span style="background:#dcfce7;color:#15803d;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">NEW</span>
         </div>
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Doubles + Mixed Doubles partners</strong> — your profile now remembers both a doubles partner and a mixed doubles partner, so you don't have to retype when you join a new league</li>
           <li><strong>New sticky top menu bar</strong> — always visible at the top of the app so you can see where you are and jump anywhere in one tap</li>
           <li><strong>Full menu system</strong> — Home, Browse leagues, all league tabs, Add a match, My profile, Help, What's new, Feedback &amp; Sign out all in one place</li>
           <li><strong>Add a match arranged outside the app</strong> — if you've agreed a game face-to-face or on WhatsApp, record it here so reminders, WhatsApp sharing and calendar invites all still work</li>
@@ -1586,8 +1587,18 @@
       <div style="font-size:13px;font-weight:600;color:#6b7280;margin-bottom:4px">Player Name</div>
       <input class="fi" id="profile-name" placeholder="Your full name (e.g. Grant de Swardt)" style="margin-bottom:12px">
       <div id="profile-partner-wrap">
-        <div style="font-size:13px;font-weight:600;color:#6b7280;margin-bottom:4px">Partner Name</div>
-        <input class="fi" id="profile-partner" placeholder="Your partner's name" style="margin-bottom:12px">
+        <!-- v4.7.0: two partner fields — doubles vs mixed doubles -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <div style="font-size:13px;font-weight:600;color:#6b7280">&#129489;&#8205;&#129489; Doubles Partner</div>
+          <div id="profile-partner-doubles-badge" style="display:none;font-size:10px;font-weight:800;color:#15803d;background:#dcfce7;padding:2px 8px;border-radius:10px">USED IN THIS LEAGUE</div>
+        </div>
+        <input class="fi" id="profile-partner" placeholder="Your doubles partner's name" style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <div style="font-size:13px;font-weight:600;color:#6b7280">&#129489;&#8205;&#129491; Mixed Doubles Partner</div>
+          <div id="profile-partner-mixed-badge" style="display:none;font-size:10px;font-weight:800;color:#15803d;background:#dcfce7;padding:2px 8px;border-radius:10px">USED IN THIS LEAGUE</div>
+        </div>
+        <input class="fi" id="profile-partner-mixed" placeholder="Your mixed doubles partner's name" style="margin-bottom:4px">
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:12px">Fill in whichever applies. We&rsquo;ll remember both so you don&rsquo;t have to retype when you join a new league.</div>
       </div>
       <!-- Home Club -->
       <div id="profile-home-club-wrap" style="margin-bottom:12px;padding:12px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0">
@@ -3353,10 +3364,35 @@ function openProfile() {
   const emailKey = sanitizeEmail(currentUser.email);
   const member = L.members[emailKey];
   document.getElementById('profile-name').value = member ? member.playerName || '' : (mixInMode ? currentUser.displayName || '' : '');
-  document.getElementById('profile-partner').value = member ? member.partnerName || '' : '';
   document.getElementById('profile-error').style.display = 'none';
-  // Hide partner field for singles leagues or mix-in mode
+
+  // v4.7.0: populate two partner fields. The "active" one for this league
+  // is whichever matches the league type (doubles vs mixed doubles).
   const lg = activeLeagueId ? userLeagues[activeLeagueId] : null;
+  const leagueName = (L && L.settings && L.settings.leagueName) || (lg && lg.name) || '';
+  const isMixed = isMixedDoublesLeague(leagueName);
+  // If this league is mixed, partnerName holds the mixed partner; otherwise doubles.
+  const savedActivePartner = member ? member.partnerName || '' : '';
+  const savedOtherPartner = member ? member.otherPartnerName || '' : '';
+  // Also try to read user-level memory of both partners as a fallback
+  const savedUserDoubles = window._userProfileCache && window._userProfileCache.doublesPartner || '';
+  const savedUserMixed = window._userProfileCache && window._userProfileCache.mixedPartner || '';
+  const doublesField = document.getElementById('profile-partner');
+  const mixedField = document.getElementById('profile-partner-mixed');
+  if (isMixed) {
+    mixedField.value = savedActivePartner || savedUserMixed || '';
+    doublesField.value = savedOtherPartner || savedUserDoubles || '';
+  } else {
+    doublesField.value = savedActivePartner || savedUserDoubles || '';
+    mixedField.value = savedOtherPartner || savedUserMixed || '';
+  }
+  // Show the "used in this league" badge next to the active field
+  const doublesBadge = document.getElementById('profile-partner-doubles-badge');
+  const mixedBadge = document.getElementById('profile-partner-mixed-badge');
+  if (doublesBadge) doublesBadge.style.display = (!isMixed && activeLeagueId && !mixInMode) ? 'inline-block' : 'none';
+  if (mixedBadge) mixedBadge.style.display = (isMixed && activeLeagueId && !mixInMode) ? 'inline-block' : 'none';
+
+  // Hide both partner fields for singles leagues or mix-in mode
   const isSingles = mixInMode || (lg && lg.sport && isSinglesLeague(lg.sport));
   document.getElementById('profile-partner-wrap').style.display = isSingles ? 'none' : 'block';
   // Show home club
@@ -3381,13 +3417,36 @@ function closeProfile() {
 
 function saveProfile() {
   const newName = val('profile-name').replace(/\|/g, ''); // L12: Strip pipe chars
-  const newPartner = val('profile-partner').replace(/\|/g, '');
+  // v4.7.0: two partner fields — pick the one that matches this league's type
+  const rawDoubles = val('profile-partner').replace(/\|/g, '');
+  const rawMixed = (val('profile-partner-mixed') || '').replace(/\|/g, '');
   const errEl = document.getElementById('profile-error');
   errEl.style.display = 'none';
   if (!newName) { errEl.textContent = 'Please enter your name.'; errEl.style.display = 'block'; return; }
   const lg = activeLeagueId ? userLeagues[activeLeagueId] : null;
   const isSingles = mixInMode || (lg && lg.sport && isSinglesLeague(lg.sport));
-  if (!isSingles && !newPartner) { errEl.textContent = 'Please enter your partner\'s name.'; errEl.style.display = 'block'; return; }
+  const leagueName = (L && L.settings && L.settings.leagueName) || (lg && lg.name) || '';
+  const isMixed = isMixedDoublesLeague(leagueName);
+  // Active partner drives the team name in this league; other partner is memory only.
+  const newPartner = isMixed ? rawMixed : rawDoubles;
+  const otherPartner = isMixed ? rawDoubles : rawMixed;
+  if (!isSingles && !newPartner) {
+    errEl.textContent = 'Please enter your ' + (isMixed ? 'mixed doubles' : 'doubles') + ' partner\'s name.';
+    errEl.style.display = 'block';
+    return;
+  }
+  // Persist user-level memory of both partner names (so they prefill next league)
+  try {
+    window._userProfileCache = window._userProfileCache || {};
+    window._userProfileCache.doublesPartner = isMixed ? otherPartner : newPartner;
+    window._userProfileCache.mixedPartner = isMixed ? newPartner : otherPartner;
+    if (FIREBASE_READY && currentUser && currentUser.uid && currentUser.uid !== 'demo') {
+      db.ref('/users/' + currentUser.uid + '/partners').set({
+        doubles: window._userProfileCache.doublesPartner || '',
+        mixed: window._userProfileCache.mixedPartner || ''
+      }).catch(function(e) { console.warn('[profile] save user-level partners failed', e); });
+    }
+  } catch (e) { console.warn('[profile] user-level partners cache error', e); }
 
   logAction('save_profile', newName + (newPartner ? ' & ' + newPartner : ''));
   // Mix-in mode: no league member record to update
@@ -3418,6 +3477,9 @@ function saveProfile() {
   const updates = {};
   updates['/leagues/' + activeLeagueId + '/members/' + emailKey + '/playerName'] = newName;
   updates['/leagues/' + activeLeagueId + '/members/' + emailKey + '/partnerName'] = newPartner;
+  // v4.7.0: also remember the "other" partner name on this member record so the
+  // profile modal can re-display it next time the user opens it.
+  updates['/leagues/' + activeLeagueId + '/members/' + emailKey + '/otherPartnerName'] = otherPartner || '';
 
   // Save photo if changed
   const pendingPhoto = document.getElementById('profile-photo-input').dataset.pending;
@@ -3688,7 +3750,14 @@ function loadUserHomeClub(callback) {
     // Also load preferred sport
     db.ref('/users/' + currentUser.uid + '/preferredSport').once('value', ssnap => {
       userPreferredSport = ssnap.val() || '';
-      if (callback) callback();
+      // v4.7.0: load user-level partner memory (doubles + mixed doubles)
+      db.ref('/users/' + currentUser.uid + '/partners').once('value', psnap => {
+        const p = psnap.val() || {};
+        window._userProfileCache = window._userProfileCache || {};
+        window._userProfileCache.doublesPartner = p.doubles || '';
+        window._userProfileCache.mixedPartner = p.mixed || '';
+        if (callback) callback();
+      }, function() { if (callback) callback(); });
     });
   });
 }
@@ -4306,6 +4375,15 @@ function isSinglesLeague(sport) {
   if (!sport) return false;
   const s = sport.toLowerCase();
   return s === 'singles' || s === 'squash' || s === 'racketball';
+}
+
+// v4.7.0: Heuristic to detect mixed doubles leagues from the league name.
+// Looks for "mixed", "mix doubles", "mxd", "xd" tokens, case-insensitive.
+// Used by the profile modal to decide which partner field drives the team name.
+function isMixedDoublesLeague(leagueName) {
+  if (!leagueName) return false;
+  const n = String(leagueName).toLowerCase();
+  return /(\bmixed\b|\bmix\s*doubles?\b|\bmxd\b|\bxd\b)/.test(n);
 }
 
 function renderClubLeagues(leagues) {
