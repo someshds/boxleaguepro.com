@@ -671,10 +671,14 @@
       </div>
 
       <div id="scoped-admin-actions" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:12px;padding:12px 14px;margin-bottom:16px">
-        <div style="font-size:12px;font-weight:700;color:#92400e;letter-spacing:0.5px;margin-bottom:8px">&#128272; CLUB ORGANISER TOOLS</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:700;color:#92400e;letter-spacing:0.5px">&#128272; CLUB ORGANISER TOOLS</div>
+          <div id="scoped-super-admin-badge" style="display:none;background:#7c3aed;color:#fff;font-size:10px;font-weight:800;letter-spacing:0.8px;padding:3px 8px;border-radius:10px">SUPER ADMIN</div>
+        </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button onclick="scopedCreateLeague()" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">+ New League</button>
           <button onclick="scopedBulkAddPlayers()" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">&#128101; Bulk Add Players</button>
+          <button onclick="scopedManageAdmins()" style="background:#f59e0b;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">&#128100; Manage Organisers</button>
           <button onclick="scopedShareInvite()" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">&#128279; Share Club Link</button>
         </div>
       </div>
@@ -1519,7 +1523,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.8.0 · Build 20260415</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.9.0 · Build 20260415</div>
   </div>
 </div>
 
@@ -1532,6 +1536,17 @@
       <button onclick="closeChangelog()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <div style="padding:20px" id="changelog-content">
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#dbeafe;color:#1d4ed8;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.9.0 &middot; 15 Apr 2026</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Player onboarding on scoped club links</strong> &mdash; when you land on a <code>?club=</code> link for the first time, your league list is split into <em>Your Leagues</em> (with a green &#10003; JOINED tag) and <em>Join a League</em>. Brand-new players see a &#128075; welcome card prompting them to tap and join. No more hunting for the right league or not knowing whether your organiser has added you already</li>
+          <li><strong>Club admins can now delete leagues in their club</strong> &mdash; every league card in the scoped welcome has a small &#128465; button when you're a club organiser. Delete still asks for two confirmations and cascades through <code>/leagues</code>, <code>/clubLeagues</code>, <code>/userLeagues</code>, <code>/leagueIndex</code> and <code>/codes</code> properly</li>
+          <li><strong>Manage Organisers modal</strong> &mdash; new button in the Club Organiser Tools panel. Lists every current club admin for your club, lets you add new ones by email, and remove any organiser (except yourself). Promotes or demotes are live &mdash; the next time that person signs in they get the Club Organiser Tools panel automatically. All changes are logged to the activity feed</li>
+          <li><strong>Super admin badge</strong> &mdash; the scoped welcome now shows a purple <em>SUPER ADMIN</em> pill when you're signed in as a global admin (grantdeswardt@gmail.com or grant@aifusionautomations.com). Makes it obvious when you're viewing someone's club with full override rights vs. just as a club organiser</li>
+        </ul>
+      </div>
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="background:#dbeafe;color:#1d4ed8;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.8.0 &middot; 15 Apr 2026</span>
@@ -1943,6 +1958,32 @@
   <div id="scoped-ba-msg" style="font-size:13px;margin-top:10px"></div>
 </div>
 
+<!-- v4.9.0: Manage Organisers modal — club admins can add/remove other club organisers by email. -->
+<div id="scoped-manage-admins-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;padding:24px;width:calc(100% - 40px);max-width:480px;max-height:90vh;overflow-y:auto;z-index:9999;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div style="font-size:18px;font-weight:800">Manage club organisers</div>
+    <button onclick="closeScopedModal()" style="background:#f3f4f6;border:none;border-radius:8px;width:32px;height:32px;font-size:18px;cursor:pointer">&times;</button>
+  </div>
+  <div id="scoped-ma-club-hint" style="font-size:12px;color:#6b7280;margin-bottom:14px;padding:8px 12px;background:#f0f9ff;border-radius:8px"></div>
+
+  <div style="font-size:12px;font-weight:700;color:#334155;margin-bottom:8px;letter-spacing:0.3px">CURRENT ORGANISERS</div>
+  <div id="scoped-ma-list" style="margin-bottom:16px;border:1px solid #e5e7eb;border-radius:10px;max-height:200px;overflow-y:auto">
+    <div style="padding:14px;color:#6b7280;font-size:13px;text-align:center">Loading&hellip;</div>
+  </div>
+
+  <div style="font-size:12px;font-weight:700;color:#334155;margin-bottom:4px">Add a new organiser by email</div>
+  <div style="display:flex;gap:8px;margin-bottom:6px">
+    <input type="email" id="scoped-ma-email" placeholder="organiser@club.com" style="flex:1;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px" autocomplete="email">
+    <button onclick="scopedAddAdmin()" style="padding:10px 16px;border:none;background:#059669;color:#fff;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap">+ Add</button>
+  </div>
+  <div style="font-size:11px;color:#6b7280;margin-bottom:14px">The organiser will get the full Club Organiser Tools panel next time they sign in with this email.</div>
+
+  <div style="display:flex;gap:10px">
+    <button onclick="closeScopedModal()" style="flex:1;padding:12px;border:1.5px solid #e2e8f0;background:#fff;color:#334155;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">Done</button>
+  </div>
+  <div id="scoped-ma-msg" style="font-size:13px;margin-top:10px"></div>
+</div>
+
 <!-- ══════════════════════════════════════════════════════
      FIREBASE SDK
      ══════════════════════════════════════════════════════ -->
@@ -2024,27 +2065,32 @@ function logAction(action, details) {
 }
 
 function deleteLeague(leagueId, event) {
-  event.stopPropagation();
+  if (event && event.stopPropagation) event.stopPropagation();
+  // v4.9.0: permission check — super admin OR club admin of the league's club
+  if (!canDeleteLeague(leagueId)) { toast('You don\'t have permission to delete this league'); return; }
   const lg = userLeagues[leagueId];
-  const name = lg ? lg.name : leagueId;
+  // Try to get the name from userLeagues, else fall back to a Firebase lookup
+  // (club admins may be deleting leagues they aren't members of).
+  let name = (lg && lg.name) || leagueId;
   if (!confirm('DELETE league "' + name + '"?\n\nThis will permanently remove:\n- All teams and players\n- All availability data\n- All booked matches\n\nThis cannot be undone.')) return;
   if (!confirm('Are you absolutely sure? This cannot be undone.')) return;
   if (!FIREBASE_READY) { toast('Cannot delete in demo mode'); return; }
-  // Read members BEFORE deleting so we can clean up their userLeagues
-  db.ref('/leagues/' + leagueId + '/members').once('value', membersSnap => {
-    const members = membersSnap.val() || {};
+
+  // Read league info + members BEFORE deleting so we can clean up their userLeagues
+  Promise.all([
+    db.ref('/leagues/' + leagueId + '/info').once('value'),
+    db.ref('/leagues/' + leagueId + '/members').once('value')
+  ]).then(function(snaps) {
+    const info = snaps[0].val() || {};
+    const members = snaps[1].val() || {};
+    const clubId = (lg && lg.clubId) || info.clubId || (window._scopedClub && window._scopedClub.id) || null;
+    const code = (lg && lg.code) || info.code || null;
     const updates = {};
     updates['/leagues/' + leagueId] = null;
     updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = null;
     updates['/leagueIndex/' + leagueId] = null;
-    // Remove from clubLeagues
-    if (lg && lg.clubId) {
-      updates['/clubLeagues/' + lg.clubId + '/' + leagueId] = null;
-    }
-    // Remove league code
-    if (lg && lg.code) {
-      updates['/codes/' + lg.code] = null;
-    }
+    if (clubId) updates['/clubLeagues/' + clubId + '/' + leagueId] = null;
+    if (code)   updates['/codes/' + code] = null;
     // Remove from all members' userLeagues
     Object.values(members).forEach(m => {
       if (m.uid && m.uid !== currentUser.uid) {
@@ -2054,10 +2100,15 @@ function deleteLeague(leagueId, event) {
     db.ref().update(updates).then(() => {
       logAction('delete_league', name);
       toast('League deleted');
+      // Refresh scoped view if we're in one
+      if (window._scopedClub) { renderScopedLeagueList(window._scopedClub.id); }
     }).catch(err => {
       console.error('Delete failed:', err);
       toast('Delete failed: ' + err.message);
     });
+  }).catch(err => {
+    console.error('Delete lookup failed:', err);
+    toast('Delete failed: ' + err.message);
   });
 }
 
@@ -4429,6 +4480,13 @@ function renderScopedWelcome() {
   if (adminBox) {
     adminBox.style.display = isClubAdminFor(scope.id) ? '' : 'none';
   }
+  // v4.9.0: Show SUPER ADMIN badge for global admins (grantdeswardt@gmail.com,
+  // grant@aifusionautomations.com) so the distinction from a club admin is
+  // visually obvious.
+  var superBadge = document.getElementById('scoped-super-admin-badge');
+  if (superBadge) {
+    superBadge.style.display = isAdmin() ? '' : 'none';
+  }
 
   // Fetch and render leagues + mix-ins
   if (!FIREBASE_READY) return;
@@ -4436,41 +4494,104 @@ function renderScopedWelcome() {
   renderScopedMixInList(scope.id);
 }
 
-// v4.8.0: Populate #scoped-leagues-list with this club's box leagues.
+// v4.9.0: Populate #scoped-leagues-list with this club's box leagues, split
+// into "Your leagues" (already a member) and "Join a league" (available).
+// First-time players see a friendly welcome prompt. Club admins get a delete
+// button on every league card.
 function renderScopedLeagueList(clubId) {
   var box = document.getElementById('scoped-leagues-list');
   if (!box) return;
   box.innerHTML = '<div style="color:#6b7280;font-size:13px;padding:10px">Loading leagues&hellip;</div>';
+
+  var isAdminHere = isClubAdminFor(clubId);
+
   db.ref('/clubLeagues/' + clubId).once('value').then(function(snap) {
     var leagues = snap.val() || {};
     var ids = Object.keys(leagues);
+
+    // Build a fast-lookup of which leagues the current user is already in.
+    // userLeagues is keyed by leagueId and loaded at sign-in.
+    var memberMap = (window.userLeagues || {});
+
+    // Empty-state: no leagues in the club at all
     if (ids.length === 0) {
-      box.innerHTML = '<div style="color:#6b7280;font-size:13px;padding:14px;text-align:center;background:#f9fafb;border-radius:10px">No leagues yet. ' +
-        (isClubAdminFor(clubId) ? '<a onclick="scopedCreateLeague()" style="color:#1d4ed8;cursor:pointer;font-weight:600">Create the first one &rarr;</a>' : 'Check back soon.') +
+      box.innerHTML = '<div style="color:#6b7280;font-size:13px;padding:18px;text-align:center;background:#f9fafb;border:1px dashed #d1d5db;border-radius:10px">' +
+        (isAdminHere
+          ? '<div style="margin-bottom:8px">No leagues yet.</div><a onclick="scopedCreateLeague()" style="color:#1d4ed8;cursor:pointer;font-weight:700;font-size:14px">+ Create the first league &rarr;</a>'
+          : 'No leagues in this club yet. Ask your club organiser to set one up.') +
         '</div>';
       return;
     }
-    var html = '';
+
+    // Sort: player's own leagues first (alpha), then other leagues (alpha)
+    var yourIds = [];
+    var otherIds = [];
     ids.forEach(function(lid) {
+      if (memberMap[lid]) yourIds.push(lid);
+      else otherIds.push(lid);
+    });
+    function byName(a, b) {
+      var an = String((leagues[a] && leagues[a].name) || '').toLowerCase();
+      var bn = String((leagues[b] && leagues[b].name) || '').toLowerCase();
+      return an < bn ? -1 : an > bn ? 1 : 0;
+    }
+    yourIds.sort(byName);
+    otherIds.sort(byName);
+
+    function fmtBadge(fmt) {
+      fmt = String(fmt || '').toLowerCase();
+      if (fmt === 'singles') return '<span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px">SINGLES</span>';
+      if (fmt === 'mixed')   return '<span style="background:#fce7f3;color:#be185d;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px">MIXED DOUBLES</span>';
+      return '<span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px">DOUBLES</span>';
+    }
+
+    function cardHtml(lid, isMember) {
       var lg = leagues[lid] || {};
       var lgName = lg.name || lg.leagueName || '(unnamed)';
-      var fmt = String(lg.format || '').toLowerCase();
-      var fmtBadge = '';
-      if (fmt === 'singles') {
-        fmtBadge = '<span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px">SINGLES</span>';
-      } else if (fmt === 'mixed') {
-        fmtBadge = '<span style="background:#fce7f3;color:#be185d;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px">MIXED DOUBLES</span>';
-      } else {
-        fmtBadge = '<span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px">DOUBLES</span>';
+      var badges = fmtBadge(lg.format);
+      if (isMember) {
+        badges += ' <span style="background:#ecfdf5;color:#047857;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px;border:1px solid #a7f3d0">&#10003; JOINED</span>';
       }
-      html += '<div onclick="joinAndEnterLeague(\'' + lid + '\')" style="cursor:pointer;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:flex;align-items:center;justify-content:space-between;gap:10px" onmouseover="this.style.borderColor=\'#1d4ed8\';this.style.boxShadow=\'0 4px 12px rgba(29,78,216,0.12)\'" onmouseout="this.style.borderColor=\'#e5e7eb\';this.style.boxShadow=\'0 1px 2px rgba(0,0,0,0.04)\'">' +
+      var deleteBtn = '';
+      if (isAdminHere) {
+        deleteBtn = '<button onclick="event.stopPropagation();deleteLeague(\'' + lid + '\', event)" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-right:6px" title="Delete league">&#128465;</button>';
+      }
+      var action = isMember ? 'enterLeague' : 'joinAndEnterLeague';
+      return '<div onclick="' + action + '(\'' + lid + '\')" style="cursor:pointer;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:flex;align-items:center;justify-content:space-between;gap:10px" onmouseover="this.style.borderColor=\'#1d4ed8\';this.style.boxShadow=\'0 4px 12px rgba(29,78,216,0.12)\'" onmouseout="this.style.borderColor=\'#e5e7eb\';this.style.boxShadow=\'0 1px 2px rgba(0,0,0,0.04)\'">' +
         '<div style="flex:1;min-width:0">' +
           '<div style="font-weight:700;font-size:15px;color:#0f172a;margin-bottom:4px">' + esc(lgName) + '</div>' +
-          '<div>' + fmtBadge + '</div>' +
+          '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">' + badges + '</div>' +
         '</div>' +
+        deleteBtn +
         '<div style="color:#9ca3af;font-size:20px;font-weight:700">&rsaquo;</div>' +
       '</div>';
-    });
+    }
+
+    var html = '';
+
+    // First-time player welcome prompt — shown when the player is in 0 leagues
+    // in this club. Club admins get a different message if the leagues exist
+    // but they haven't joined any personally.
+    if (yourIds.length === 0 && !isAdminHere) {
+      html += '<div style="background:linear-gradient(135deg,#ecfdf5,#dbeafe);border:1px solid #a7f3d0;border-radius:12px;padding:14px 16px;margin-bottom:12px">' +
+        '<div style="font-weight:700;color:#065f46;font-size:14px;margin-bottom:4px">&#128075; Welcome to the club!</div>' +
+        '<div style="color:#374151;font-size:13px">Tap a league below to join. If your organiser has already added you, you\'ll see it here tagged <strong style="color:#047857">&#10003; JOINED</strong>.</div>' +
+      '</div>';
+    }
+
+    // "Your leagues" section
+    if (yourIds.length > 0) {
+      html += '<div style="font-size:11px;font-weight:800;color:#059669;letter-spacing:0.8px;margin:4px 2px 8px">YOUR LEAGUES</div>';
+      yourIds.forEach(function(lid) { html += cardHtml(lid, true); });
+    }
+
+    // "Join a league" / "Other leagues" section
+    if (otherIds.length > 0) {
+      var heading = yourIds.length > 0 ? 'OTHER LEAGUES IN THIS CLUB' : 'JOIN A LEAGUE';
+      html += '<div style="font-size:11px;font-weight:800;color:#6b7280;letter-spacing:0.8px;margin:' + (yourIds.length > 0 ? '16px' : '4px') + ' 2px 8px">' + heading + '</div>';
+      otherIds.forEach(function(lid) { html += cardHtml(lid, false); });
+    }
+
     box.innerHTML = html;
   }).catch(function(e) {
     console.warn('[scoped-welcome] league list error', e);
@@ -4580,6 +4701,8 @@ function closeScopedModal(ev) {
   document.getElementById('scoped-modal-backdrop').style.display = 'none';
   document.getElementById('scoped-create-league-modal').style.display = 'none';
   document.getElementById('scoped-bulk-add-modal').style.display = 'none';
+  var ma = document.getElementById('scoped-manage-admins-modal');
+  if (ma) ma.style.display = 'none';
 }
 
 // v4.8.0: Auto-detect format from league name in scoped create modal.
@@ -4798,6 +4921,135 @@ function scopedShareInvite() {
   } else {
     prompt('Copy this club link:', url);
   }
+}
+
+/* ══════════════════════════════════════
+   v4.9.0: Club Organiser management
+   Club admins can add/remove other club admins by email.
+   Writes to /clubAdmins/{clubId}/{sanitizedEmail} = true.
+   ══════════════════════════════════════ */
+function scopedManageAdmins() {
+  var scope = window._scopedClub;
+  if (!scope) { toast('No club scope'); return; }
+  if (!isClubAdminFor(scope.id)) { toast('Club organisers only'); return; }
+  openScopedModal('scoped-manage-admins-modal');
+  var hint = document.getElementById('scoped-ma-club-hint');
+  if (hint) {
+    hint.innerHTML = '&#128272; Managing organisers for <strong>' + esc(scope.info.name || '') + '</strong>';
+  }
+  document.getElementById('scoped-ma-email').value = '';
+  document.getElementById('scoped-ma-msg').innerHTML = '';
+  scopedLoadAdmins();
+}
+
+function scopedLoadAdmins() {
+  var scope = window._scopedClub;
+  if (!scope || !FIREBASE_READY) return;
+  var list = document.getElementById('scoped-ma-list');
+  list.innerHTML = '<div style="padding:14px;color:#6b7280;font-size:13px;text-align:center">Loading&hellip;</div>';
+
+  // Read /clubAdmins/{clubId}
+  db.ref('/clubAdmins/' + scope.id).once('value').then(function(snap) {
+    var admins = snap.val() || {};
+    var keys = Object.keys(admins).filter(function(k) { return admins[k]; });
+    if (keys.length === 0) {
+      list.innerHTML = '<div style="padding:14px;color:#6b7280;font-size:13px;text-align:center">No organisers yet. Add the first one below.</div>';
+      return;
+    }
+    // sanitizeEmail replaces "." with ",". Reverse it for display.
+    var html = '';
+    keys.sort().forEach(function(emailKey) {
+      var displayEmail = emailKey.replace(/,/g, '.');
+      var isMe = currentUser && sanitizeEmail(currentUser.email) === emailKey;
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #f1f5f9;gap:10px">' +
+        '<div style="flex:1;min-width:0;overflow:hidden">' +
+          '<div style="font-size:14px;color:#0f172a;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(displayEmail) + (isMe ? ' <span style="color:#059669;font-size:11px;font-weight:700">(you)</span>' : '') + '</div>' +
+        '</div>' +
+        (isMe ? '<span style="color:#9ca3af;font-size:11px">&mdash;</span>' : '<button onclick="scopedRemoveAdmin(\'' + emailKey + '\')" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">Remove</button>') +
+      '</div>';
+    });
+    list.innerHTML = html;
+  }).catch(function(e) {
+    console.warn('[manage-admins] load error', e);
+    list.innerHTML = '<div style="padding:14px;color:#b91c1c;font-size:13px;text-align:center">Could not load organisers.</div>';
+  });
+}
+
+function scopedAddAdmin() {
+  var scope = window._scopedClub;
+  if (!scope) return;
+  if (!isClubAdminFor(scope.id)) { toast('Club organisers only'); return; }
+  var email = String(document.getElementById('scoped-ma-email').value || '').trim().toLowerCase();
+  var msg = document.getElementById('scoped-ma-msg');
+  if (!email) { msg.innerHTML = '<span style="color:#b91c1c">Enter an email first</span>'; return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { msg.innerHTML = '<span style="color:#b91c1c">That doesn\'t look like a valid email</span>'; return; }
+  var emailKey = sanitizeEmail(email);
+  msg.innerHTML = '<span style="color:#6b7280">Adding&hellip;</span>';
+  var updates = {};
+  updates['/clubAdmins/' + scope.id + '/' + emailKey] = true;
+  // Activity log entry
+  var logKey = db.ref('/activityLog').push().key;
+  updates['/activityLog/' + logKey] = {
+    action: 'add_club_admin',
+    clubId: scope.id,
+    clubName: scope.info.name || '',
+    addedEmail: email,
+    addedBy: currentUser.email,
+    timestamp: firebase.database.ServerValue.TIMESTAMP
+  };
+  db.ref().update(updates).then(function() {
+    msg.innerHTML = '<span style="color:#059669">&#10003; Added ' + esc(email) + '</span>';
+    document.getElementById('scoped-ma-email').value = '';
+    scopedLoadAdmins();
+    // If the current user just added themselves, refresh their membership map
+    if (currentUser && sanitizeEmail(currentUser.email) === emailKey) {
+      loadClubAdminMemberships();
+    }
+  }).catch(function(e) {
+    console.error('[manage-admins] add error', e);
+    msg.innerHTML = '<span style="color:#b91c1c">Could not add: ' + esc(e.message || 'unknown error') + '</span>';
+  });
+}
+
+function scopedRemoveAdmin(emailKey) {
+  var scope = window._scopedClub;
+  if (!scope) return;
+  if (!isClubAdminFor(scope.id)) { toast('Club organisers only'); return; }
+  var displayEmail = emailKey.replace(/,/g, '.');
+  if (!confirm('Remove ' + displayEmail + ' as an organiser for ' + (scope.info.name || 'this club') + '?\n\nThey will lose access to the Club Organiser Tools, but they keep any league memberships.')) return;
+  var msg = document.getElementById('scoped-ma-msg');
+  msg.innerHTML = '<span style="color:#6b7280">Removing&hellip;</span>';
+  var updates = {};
+  updates['/clubAdmins/' + scope.id + '/' + emailKey] = null;
+  var logKey = db.ref('/activityLog').push().key;
+  updates['/activityLog/' + logKey] = {
+    action: 'remove_club_admin',
+    clubId: scope.id,
+    clubName: scope.info.name || '',
+    removedEmail: displayEmail,
+    removedBy: currentUser.email,
+    timestamp: firebase.database.ServerValue.TIMESTAMP
+  };
+  db.ref().update(updates).then(function() {
+    msg.innerHTML = '<span style="color:#059669">&#10003; Removed ' + esc(displayEmail) + '</span>';
+    scopedLoadAdmins();
+  }).catch(function(e) {
+    console.error('[manage-admins] remove error', e);
+    msg.innerHTML = '<span style="color:#b91c1c">Could not remove: ' + esc(e.message || 'unknown error') + '</span>';
+  });
+}
+
+/* v4.9.0: Unified delete-league permission check.
+   Returns true for global admins OR club admins of the league's parent club. */
+function canDeleteLeague(leagueId) {
+  if (!leagueId) return false;
+  if (isAdmin()) return true; // global super admin
+  // userLeagues has clubId for leagues the current user is a member of; for
+  // scoped views we also need to check scoped club membership.
+  var lg = userLeagues[leagueId];
+  var clubId = (lg && lg.clubId) || (window._scopedClub && window._scopedClub.id) || null;
+  if (!clubId) return false;
+  return isClubAdminFor(clubId);
 }
 
 function mixInPath() {
