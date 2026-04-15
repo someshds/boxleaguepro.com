@@ -699,9 +699,16 @@
     <div id="normal-welcome-content">
       <img src="images/hero-banner-sm.jpg" alt="BoxLeague Pro" style="width:100%;border-radius:16px;margin-bottom:10px">
 
-      <!-- v4.7.1: simplified to 2 choices. Singles vs doubles is shown on each league card instead. -->
-      <div class="wc-card wc-card-img" onclick="selectGameType('box')" aria-label="Box Leagues" style="background-image:url('images/doubles-card-sm.jpg')">
-        <div class="wc-card-badge" style="background:rgba(0,0,0,0.5);color:#fff">Box Leagues</div>
+      <!-- v4.9.5: the welcome hero now shows both singles and doubles box league imagery,
+           so players see upfront that both formats are supported. Both cards route to the
+           same goToBrowse() flow — the per-league cards in Browse already carry a
+           SINGLES/DOUBLES/MIXED DOUBLES badge so no filtering is needed. -->
+      <div class="wc-card wc-card-img" onclick="selectGameType('box')" aria-label="Singles Box Leagues" style="background-image:url('images/singles-card-sm.jpg')">
+        <div class="wc-card-badge" style="background:rgba(0,0,0,0.5);color:#fff">Box Leagues &middot; Singles</div>
+      </div>
+
+      <div class="wc-card wc-card-img" onclick="selectGameType('box')" aria-label="Doubles Box Leagues" style="background-image:url('images/doubles-card-sm.jpg')">
+        <div class="wc-card-badge" style="background:rgba(0,0,0,0.5);color:#fff">Box Leagues &middot; Doubles</div>
       </div>
 
       <div class="wc-card wc-card-img" onclick="selectGameType('mixin')" id="mixin-card" aria-label="Friendly Mix-In Games" style="background-image:url('images/mixin-card-sm.jpg')">
@@ -1523,7 +1530,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.9.4 · Build 20260415</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.9.5 · Build 20260415</div>
   </div>
 </div>
 
@@ -1536,6 +1543,16 @@
       <button onclick="closeChangelog()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <div style="padding:20px" id="changelog-content">
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#fce7f3;color:#9d174d;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.9.5 &middot; 15 Apr 2026</span>
+          <span style="background:#dbeafe;color:#1d4ed8;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">WELCOME CARDS</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Welcome screen now shows both Singles AND Doubles box league cards</strong> &mdash; the hero previously had one &ldquo;Box Leagues&rdquo; card with a doubles-only photo, so new players could think the app was doubles-only. The welcome now shows <em>Box Leagues &middot; Singles</em> above <em>Box Leagues &middot; Doubles</em>, followed by <em>Friendly Mix-Ins</em>. Both box-league cards route straight to the Browse page (same as before) &mdash; there&rsquo;s no extra filter step since every league card already carries a SINGLES/DOUBLES/MIXED DOUBLES badge</li>
+          <li><strong>Non-breaking</strong> &mdash; no Firebase changes, no permission changes, no data migration. Club-scoped welcome (<code>?club=&lt;slug&gt;</code>) is unchanged because it already lists every league explicitly</li>
+        </ul>
+      </div>
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="background:#e0f2fe;color:#075985;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.9.4 &middot; 15 Apr 2026</span>
