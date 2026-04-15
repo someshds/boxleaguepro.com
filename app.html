@@ -921,7 +921,16 @@
         </div>
         <div class="fg">
           <label class="fl">League Name</label>
-          <input class="fi" id="inp-create-league-name" placeholder="e.g. Men's Doubles Box 3" style="font-size:16px">
+          <input class="fi" id="inp-create-league-name" placeholder="e.g. Men's Doubles Box 3" style="font-size:16px" oninput="autoDetectLeagueFormat()">
+        </div>
+        <div class="fg">
+          <label class="fl">Format</label>
+          <select class="fi" id="inp-create-league-format" style="font-size:16px" onchange="onLeagueFormatChange()">
+            <option value="singles">Singles (1 vs 1)</option>
+            <option value="doubles" selected>Doubles (2 vs 2)</option>
+            <option value="mixed">Mixed Doubles (1 male + 1 female per team)</option>
+          </select>
+          <div style="font-size:11px;color:#6b7280;margin-top:4px">Singles leagues won't ask players for a partner when they join.</div>
         </div>
         <div class="fg">
           <label class="fl">Sport</label>
@@ -931,7 +940,6 @@
             <option value="squash">Squash</option>
             <option value="racketball">Racketball</option>
             <option value="badminton">Badminton</option>
-            <option value="singles">Singles (any sport)</option>
             <option value="other">Other</option>
           </select>
         </div>
@@ -1436,7 +1444,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.7.2 · Build 20260415</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.7.3 · Build 20260415</div>
   </div>
 </div>
 
@@ -1455,6 +1463,8 @@
           <span style="background:#dcfce7;color:#15803d;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">NEW</span>
         </div>
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Fix: singles leagues stop asking for a doubles partner</strong> — Create League now has an explicit Format picker (Singles / Doubles / Mixed Doubles). When a singles league is created the join wizard and profile no longer prompt for a partner. Legacy leagues still work: if the name contains "Singles" the app now treats it as singles automatically</li>
+          <li><strong>Format auto-detect</strong> — typing "Men's Singles Box 3" into the League Name field automatically flips the Format picker to Singles. Typing "Mixed Doubles" flips it to Mixed. You can override at any time</li>
           <li><strong>Admin: spot league-named "clubs"</strong> — the admin club list now flags entries that look like league names (e.g. "Mens Singles Box 5") and sorts them to the top so they're easy to clean up</li>
           <li><strong>Warn before creating a league-named club</strong> — if someone types "Box League 5" into the club field, the app now explains the difference and asks them to confirm</li>
           <li><strong>Clearer club placeholder</strong> — "Search for your club (venue)" makes it obvious this is the place, not the competition</li>
@@ -3413,7 +3423,8 @@ function openProfile() {
   // is whichever matches the league type (doubles vs mixed doubles).
   const lg = activeLeagueId ? userLeagues[activeLeagueId] : null;
   const leagueName = (L && L.settings && L.settings.leagueName) || (lg && lg.name) || '';
-  const isMixed = isMixedDoublesLeague(leagueName);
+  // v4.7.3: prefer object-form so explicit format field wins over name heuristic
+  const isMixed = lg ? isMixedDoublesLeague(lg) : isMixedDoublesLeague(leagueName);
   // If this league is mixed, partnerName holds the mixed partner; otherwise doubles.
   const savedActivePartner = member ? member.partnerName || '' : '';
   const savedOtherPartner = member ? member.otherPartnerName || '' : '';
@@ -3436,7 +3447,8 @@ function openProfile() {
   if (mixedBadge) mixedBadge.style.display = (isMixed && activeLeagueId && !mixInMode) ? 'inline-block' : 'none';
 
   // Hide both partner fields for singles leagues or mix-in mode
-  const isSingles = mixInMode || (lg && lg.sport && isSinglesLeague(lg.sport));
+  // v4.7.3: pass whole league object so format/name are considered
+  const isSingles = mixInMode || (lg && isSinglesLeague(lg));
   document.getElementById('profile-partner-wrap').style.display = isSingles ? 'none' : 'block';
   // Show home club
   const clubNameEl = document.getElementById('profile-home-club-name');
@@ -3467,9 +3479,10 @@ function saveProfile() {
   errEl.style.display = 'none';
   if (!newName) { errEl.textContent = 'Please enter your name.'; errEl.style.display = 'block'; return; }
   const lg = activeLeagueId ? userLeagues[activeLeagueId] : null;
-  const isSingles = mixInMode || (lg && lg.sport && isSinglesLeague(lg.sport));
+  // v4.7.3: object-form checks so format + name are considered
+  const isSingles = mixInMode || (lg && isSinglesLeague(lg));
   const leagueName = (L && L.settings && L.settings.leagueName) || (lg && lg.name) || '';
-  const isMixed = isMixedDoublesLeague(leagueName);
+  const isMixed = lg ? isMixedDoublesLeague(lg) : isMixedDoublesLeague(leagueName);
   // Active partner drives the team name in this league; other partner is memory only.
   const newPartner = isMixed ? rawMixed : rawDoubles;
   const otherPartner = isMixed ? rawDoubles : rawMixed;
@@ -4412,28 +4425,53 @@ function clubSearchGeneric(query, resultsEl, createEl, onSelect, opts) {
   if (createEl) createEl.style.display = 'block';
 }
 
-function isSinglesLeague(sport) {
-  if (!sport) return false;
-  const s = sport.toLowerCase();
+// v4.7.3: Accepts either a sport string (legacy) or a league object.
+// Priority: explicit lg.format → lg.sport → name-based heuristic.
+// This is the single source of truth for "does this league ask for a partner".
+function isSinglesLeague(sportOrLeague) {
+  if (!sportOrLeague) return false;
+  // League object
+  if (typeof sportOrLeague === 'object') {
+    const lg = sportOrLeague;
+    if (lg.format === 'singles') return true;
+    if (lg.format === 'doubles' || lg.format === 'mixed') return false;
+    // No explicit format — fall back to sport then name
+    if (lg.sport) {
+      const s = String(lg.sport).toLowerCase();
+      if (s === 'singles' || s === 'squash' || s === 'racketball') return true;
+    }
+    // Last-resort: infer from league name
+    const name = String(lg.name || '').toLowerCase();
+    if (/\bsingles?\b/.test(name)) return true;
+    if (/(\bdoubles?\b|\bmixed\b|\bmxd\b|\bxd\b)/.test(name)) return false;
+    return false;
+  }
+  // Legacy: raw sport string
+  const s = String(sportOrLeague).toLowerCase();
   return s === 'singles' || s === 'squash' || s === 'racketball';
 }
 
-// v4.7.0: Heuristic to detect mixed doubles leagues from the league name.
-// Looks for "mixed", "mix doubles", "mxd", "xd" tokens, case-insensitive.
-// Used by the profile modal to decide which partner field drives the team name.
-function isMixedDoublesLeague(leagueName) {
-  if (!leagueName) return false;
-  const n = String(leagueName).toLowerCase();
+// v4.7.0 / v4.7.3: Detect mixed doubles.
+// Priority: explicit lg.format === 'mixed' → name-based heuristic (legacy).
+// Accepts either a league name string (legacy) or a league object.
+function isMixedDoublesLeague(leagueOrName) {
+  if (!leagueOrName) return false;
+  if (typeof leagueOrName === 'object') {
+    const lg = leagueOrName;
+    if (lg.format === 'mixed') return true;
+    if (lg.format === 'singles' || lg.format === 'doubles') return false;
+    return isMixedDoublesLeague(lg.name || '');
+  }
+  const n = String(leagueOrName).toLowerCase();
   return /(\bmixed\b|\bmix\s*doubles?\b|\bmxd\b|\bxd\b)/.test(n);
 }
 
-// v4.7.1: Build the SINGLES/DOUBLES/MIXED badge shown on league cards.
-// `lg` is a league record with .sport and .name fields.
+// v4.7.1 / v4.7.3: Build the SINGLES/DOUBLES/MIXED badge shown on league cards.
+// Uses the full league object so format/sport/name are all considered.
 function leagueFormatBadge(lg) {
   if (!lg) return '';
-  const isMixed = isMixedDoublesLeague(lg.name || '');
-  if (isMixed) return '<span class="league-format-badge mixed">MIXED DOUBLES</span>';
-  if (isSinglesLeague(lg.sport)) return '<span class="league-format-badge singles">SINGLES</span>';
+  if (isMixedDoublesLeague(lg)) return '<span class="league-format-badge mixed">MIXED DOUBLES</span>';
+  if (isSinglesLeague(lg)) return '<span class="league-format-badge singles">SINGLES</span>';
   return '<span class="league-format-badge doubles">DOUBLES</span>';
 }
 
@@ -4485,21 +4523,42 @@ function clearClubSelection() {
   document.getElementById('club-create-option').style.display = 'none';
 }
 
+// v4.7.3: auto-pick Format dropdown based on what the user typed in League Name.
+// Only fires if the user hasn't manually touched the dropdown yet.
+function autoDetectLeagueFormat() {
+  const sel = document.getElementById('inp-create-league-format');
+  if (!sel || sel.dataset.userTouched === '1') return;
+  const name = (document.getElementById('inp-create-league-name').value || '').toLowerCase();
+  if (/(\bmixed\b|\bmix\s*doubles?\b|\bmxd\b|\bxd\b)/.test(name)) {
+    sel.value = 'mixed';
+  } else if (/\bsingles?\b/.test(name)) {
+    sel.value = 'singles';
+  } else if (/\bdoubles?\b/.test(name)) {
+    sel.value = 'doubles';
+  }
+}
+function onLeagueFormatChange() {
+  const sel = document.getElementById('inp-create-league-format');
+  if (sel) sel.dataset.userTouched = '1';
+}
+
 async function createLeagueInClub() {
   const name = val('inp-create-league-name');
   const sport = val('inp-create-league-sport');
+  const format = val('inp-create-league-format') || 'doubles'; // v4.7.3
   if (!name) { toast('Enter a league name'); return; }
   if (!selectedClubId) { toast('Please select a club first'); return; }
   if (!sport) { toast('Please select a sport'); return; }
+  if (!format) { toast('Please select a format'); return; }
 
   const code = await genUniqueCode();
   const deadline = val('inp-create-league-deadline') || '';
 
   if (!FIREBASE_READY) {
     const id = 'L' + Date.now();
-    userLeagues[id] = { name, sport, code, role: 'organiser', clubId: selectedClubId, clubName: selectedClubName };
+    userLeagues[id] = { name, sport, format, code, role: 'organiser', clubId: selectedClubId, clubName: selectedClubName };
     localStorage.setItem('blp_leagues', JSON.stringify(userLeagues));
-    const leagueData = { info: { name, sport, code, clubId: selectedClubId, clubName: selectedClubName, organiserUid: 'demo', createdAt: Date.now() }, groups: {}, availability: {}, settings: { leagueName: name, deadline: deadline }, booked: {}, members: {} };
+    const leagueData = { info: { name, sport, format, code, clubId: selectedClubId, clubName: selectedClubName, organiserUid: 'demo', createdAt: Date.now() }, groups: {}, availability: {}, settings: { leagueName: name, deadline: deadline }, booked: {}, members: {} };
     localStorage.setItem('blp_league_' + id, JSON.stringify(leagueData));
     showCreateShareStep(id, name);
     return;
@@ -4509,14 +4568,14 @@ async function createLeagueInClub() {
   const leagueId = leagueRef.key;
   const updates = {};
   updates['/leagues/' + leagueId] = {
-    info: { name, sport, code, clubId: selectedClubId, clubName: selectedClubName, organiserUid: currentUser.uid, createdAt: Date.now() },
+    info: { name, sport, format, code, clubId: selectedClubId, clubName: selectedClubName, organiserUid: currentUser.uid, createdAt: Date.now() },
     groups: {}, availability: {}, settings: { leagueName: name, deadline: deadline }, booked: {},
     members: { [sanitizeEmail(currentUser.email)]: { uid: currentUser.uid, name: currentUser.displayName, email: currentUser.email, role: 'organiser', playerName: '', partnerName: '', joinedAt: Date.now() } }
   };
-  updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = { name, sport, code, role: 'organiser', clubId: selectedClubId, clubName: selectedClubName };
-  updates['/clubLeagues/' + selectedClubId + '/' + leagueId] = { name, sport };
+  updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = { name, sport, format, code, role: 'organiser', clubId: selectedClubId, clubName: selectedClubName };
+  updates['/clubLeagues/' + selectedClubId + '/' + leagueId] = { name, sport, format };
   updates['/codes/' + code] = leagueId;
-  updates['/leagueIndex/' + leagueId] = { name, sport, clubId: selectedClubId, clubName: selectedClubName, createdAt: Date.now() };
+  updates['/leagueIndex/' + leagueId] = { name, sport, format, clubId: selectedClubId, clubName: selectedClubName, createdAt: Date.now() };
 
   db.ref().update(updates).then(() => {
     logAction('create_league', name + ' at ' + selectedClubName);
@@ -4549,8 +4608,9 @@ function joinAndEnterLeague(leagueId) {
       uid: currentUser.uid, name: currentUser.displayName, email: currentUser.email,
       role: 'player', playerName: '', partnerName: '', joinedAt: Date.now()
     };
+    // v4.7.3: carry format through to userLeagues so singles leagues stay singles on re-entry
     updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = {
-      name: info.name, sport: info.sport, code: info.code, role: 'player', clubId: info.clubId, clubName: info.clubName
+      name: info.name, sport: info.sport, format: info.format || '', code: info.code, role: 'player', clubId: info.clubId, clubName: info.clubName
     };
 
     db.ref().update(updates).then(() => {
@@ -4578,13 +4638,12 @@ function startWizard(leagueId, leagueName) {
   wizStep = 0;
   wizWeekOff = 0;
   wizAvailability = {};
-  // Detect singles mode from league sport, game type selection, or Firebase
+  // v4.7.3: Detect singles mode from the whole league object (format → sport → name).
   const lg = userLeagues[leagueId];
   wizIsSingles = selectedGameType === 'singles';
-  if (!wizIsSingles && lg && lg.sport) {
-    wizIsSingles = isSinglesLeague(lg.sport);
+  if (!wizIsSingles && lg) {
+    wizIsSingles = isSinglesLeague(lg);
   }
-  // Also check from Firebase if not in userLeagues yet
   function initWizardUI() {
     document.getElementById('wizard-league-name').textContent = leagueName;
     const displayName = currentUser.displayName || '';
@@ -4596,10 +4655,14 @@ function startWizard(leagueId, leagueName) {
     renderWizStep();
     renderWizAvailGrid();
   }
+  // v4.7.3: if we don't have the league cached yet, fetch the whole info node
+  // so we can read format + sport + name together.
   if (!wizIsSingles && !lg && FIREBASE_READY) {
-    db.ref('/leagues/' + leagueId + '/info/sport').once('value').then(snap => {
-      const sport = snap.val();
-      if (sport && isSinglesLeague(sport)) {
+    db.ref('/leagues/' + leagueId + '/info').once('value').then(snap => {
+      const info = snap.val() || {};
+      // Build a league-shaped object for isSinglesLeague
+      const pseudoLeague = { name: info.name || leagueName, sport: info.sport, format: info.format };
+      if (isSinglesLeague(pseudoLeague)) {
         wizIsSingles = true;
       }
       initWizardUI();
@@ -5503,7 +5566,8 @@ function renderGroups() {
   const el = document.getElementById('groups-list');
   if (!el) return;
   if (L.groups.length === 0) {
-    const singlesLeague = activeLeagueId && userLeagues[activeLeagueId] && isSinglesLeague(userLeagues[activeLeagueId].sport);
+    // v4.7.3: pass whole league object so format field is honoured
+    const singlesLeague = activeLeagueId && userLeagues[activeLeagueId] && isSinglesLeague(userLeagues[activeLeagueId]);
     const emptyMsg = singlesLeague ? 'Add your players to get started' : 'Add your doubles pairs to get started';
     el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted)"><div style="font-size:46px;margin-bottom:10px">&#128101;</div><h3 style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px">No teams yet</h3><p style="font-size:15px">${emptyMsg}</p></div>`;
     return;
