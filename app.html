@@ -1372,7 +1372,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.6.3 · Build 20260415</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.6.4 · Build 20260415</div>
   </div>
 </div>
 
@@ -2748,7 +2748,9 @@ const SLOT_SHORT = (function() {
   SLOTS.forEach(s => {
     const h = parseInt(s.slice(0,2)), m = s.slice(2);
     const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-    o[s] = h12 + ':' + m;
+    const suffix = h < 12 ? 'am' : 'pm';
+    // Compact: "7am" for whole hours, "7:30am" for half hours
+    o[s] = (m === '00' ? h12 : h12 + ':' + m) + suffix;
   });
   return o;
 })();
