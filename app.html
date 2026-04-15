@@ -656,25 +656,59 @@
   <div class="welcome-header" style="position:relative">
     <div style="font-size:36px;margin-bottom:8px">&#127934;</div>
     <div class="welcome-title">BoxLeague Pro</div>
-    <div class="welcome-subtitle">What would you like to play?</div>
+    <div class="welcome-subtitle" id="welcome-subtitle">What would you like to play?</div>
     <div id="welcome-home-club" style="display:none;margin-top:8px;font-size:13px;color:rgba(255,255,255,0.8)">&#127968; <span id="welcome-home-club-name"></span> &middot; <a onclick="showScreen('onboarding')" style="color:#93c5fd;cursor:pointer;text-decoration:underline">change</a></div>
   </div>
   <div class="welcome-body">
-    <img src="images/hero-banner-sm.jpg" alt="BoxLeague Pro" style="width:100%;border-radius:16px;margin-bottom:10px">
+    <!-- v4.8.0: Scoped-club content — shown when ?club=<slug> is in the URL.
+         Replaces the generic welcome UI with a direct list of the club's
+         leagues and mix-ins. Hidden in normal (multi-club) mode. -->
+    <div id="scoped-welcome-content" style="display:none">
+      <div style="background:linear-gradient(135deg,#1d4ed8,#0891b2);color:#fff;border-radius:16px;padding:20px 22px;margin-bottom:16px;box-shadow:0 10px 30px rgba(29,78,216,0.25)">
+        <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.75);letter-spacing:1.5px;margin-bottom:4px">YOUR CLUB</div>
+        <div id="scoped-club-name" style="font-size:22px;font-weight:800;line-height:1.2"></div>
+        <div id="scoped-club-sub" style="font-size:13px;color:rgba(255,255,255,0.85);margin-top:6px"></div>
+      </div>
 
-    <!-- v4.7.1: simplified to 2 choices. Singles vs doubles is shown on each league card instead. -->
-    <div class="wc-card wc-card-img" onclick="selectGameType('box')" aria-label="Box Leagues" style="background-image:url('images/doubles-card-sm.jpg')">
-      <div class="wc-card-badge" style="background:rgba(0,0,0,0.5);color:#fff">Box Leagues</div>
+      <div id="scoped-admin-actions" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:12px;padding:12px 14px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:700;color:#92400e;letter-spacing:0.5px;margin-bottom:8px">&#128272; CLUB ORGANISER TOOLS</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button onclick="scopedCreateLeague()" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">+ New League</button>
+          <button onclick="scopedBulkAddPlayers()" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">&#128101; Bulk Add Players</button>
+          <button onclick="scopedShareInvite()" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">&#128279; Share Club Link</button>
+        </div>
+      </div>
+
+      <div class="welcome-heading" style="margin-bottom:10px">&#127942; Box Leagues</div>
+      <div id="scoped-leagues-list" style="margin-bottom:20px"></div>
+
+      <div class="welcome-heading" style="margin-bottom:10px">&#129309; Friendly Mix-In Games</div>
+      <div id="scoped-mixins-list" style="margin-bottom:20px"></div>
+
+      <div style="text-align:center;padding:12px 0;font-size:12px;color:#6b7280">
+        Not a member of <span id="scoped-club-name-inline"></span>?
+        <a href="/app.html" style="color:#1d4ed8;font-weight:600;text-decoration:underline">Go to main app</a>
+      </div>
     </div>
 
-    <div class="wc-card wc-card-img" onclick="selectGameType('mixin')" id="mixin-card" aria-label="Friendly Mix-In Games" style="background-image:url('images/mixin-card-sm.jpg')">
-      <div class="wc-card-badge" style="background:rgba(0,0,0,0.5);color:#fff">Friendly Mix-Ins</div>
-    </div>
+    <!-- Normal multi-club welcome — hidden when ?club=<slug> is set -->
+    <div id="normal-welcome-content">
+      <img src="images/hero-banner-sm.jpg" alt="BoxLeague Pro" style="width:100%;border-radius:16px;margin-bottom:10px">
 
-    <div id="welcome-my-leagues" style="display:none">
-      <div class="divider" style="margin:20px 0"></div>
-      <div class="welcome-heading" style="margin-bottom:10px">Your Leagues</div>
-      <div id="welcome-leagues-list"></div>
+      <!-- v4.7.1: simplified to 2 choices. Singles vs doubles is shown on each league card instead. -->
+      <div class="wc-card wc-card-img" onclick="selectGameType('box')" aria-label="Box Leagues" style="background-image:url('images/doubles-card-sm.jpg')">
+        <div class="wc-card-badge" style="background:rgba(0,0,0,0.5);color:#fff">Box Leagues</div>
+      </div>
+
+      <div class="wc-card wc-card-img" onclick="selectGameType('mixin')" id="mixin-card" aria-label="Friendly Mix-In Games" style="background-image:url('images/mixin-card-sm.jpg')">
+        <div class="wc-card-badge" style="background:rgba(0,0,0,0.5);color:#fff">Friendly Mix-Ins</div>
+      </div>
+
+      <div id="welcome-my-leagues" style="display:none">
+        <div class="divider" style="margin:20px 0"></div>
+        <div class="welcome-heading" style="margin-bottom:10px">Your Leagues</div>
+        <div id="welcome-leagues-list"></div>
+      </div>
     </div>
 
     <!-- Admin tools on welcome screen -->
@@ -807,7 +841,48 @@
           <button onclick="adminLoadLogs()" style="background:#0891b2;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Activity Log</button>
           <button onclick="adminLoadBookings()" style="background:#be185d;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Bookings</button>
           <button onclick="adminClearLogs()" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Clear Logs</button>
+          <button onclick="adminToggleProvision()" style="background:#0f766e;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">&#127959; Provision Club</button>
+          <button onclick="adminLoadApplications()" style="background:#4f46e5;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">&#128221; Applications</button>
         </div>
+
+        <!-- v4.8.0: Club Provisioning Panel — hidden by default -->
+        <div id="admin-provision-panel" style="display:none;background:#ecfdf5;border:1.5px solid #10b981;border-radius:12px;padding:14px 16px;margin-bottom:12px">
+          <div style="font-size:14px;font-weight:800;color:#065f46;margin-bottom:8px">&#127959; Club Provisioning</div>
+          <div style="font-size:12px;color:#047857;margin-bottom:12px">Creates a slug-keyed club sandbox. The organiser gets a link like <code>?club=east-grinstead-tennis</code> that drops their players straight into their club.</div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:#065f46;display:block;margin-bottom:3px">Club slug (URL-safe)</label>
+              <input type="text" id="prov-slug" placeholder="east-grinstead-tennis" style="width:100%;padding:8px 10px;border:1px solid #a7f3d0;border-radius:6px;font-size:14px" oninput="provSlugNormalise(this)">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:#065f46;display:block;margin-bottom:3px">Club name</label>
+              <input type="text" id="prov-name" placeholder="East Grinstead Tennis Club" style="width:100%;padding:8px 10px;border:1px solid #a7f3d0;border-radius:6px;font-size:14px">
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:#065f46;display:block;margin-bottom:3px">Organiser email (clubAdmin)</label>
+              <input type="email" id="prov-email" placeholder="organiser@club.com" style="width:100%;padding:8px 10px;border:1px solid #a7f3d0;border-radius:6px;font-size:14px">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:#065f46;display:block;margin-bottom:3px">Court booking URL (optional)</label>
+              <input type="url" id="prov-booking" placeholder="https://..." style="width:100%;padding:8px 10px;border:1px solid #a7f3d0;border-radius:6px;font-size:14px">
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+            <button onclick="adminProvisionClub()" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer">&#9989; Create Club Sandbox</button>
+            <button onclick="adminAttachSlugToExistingClub()" style="background:#0891b2;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer">&#128279; Add Slug to Existing Club</button>
+            <button onclick="adminToggleProvision()" style="background:#64748b;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer">Close</button>
+          </div>
+
+          <div id="admin-provision-result" style="font-size:13px"></div>
+        </div>
+
+        <div id="admin-applications-list" style="margin-bottom:8px"></div>
+
         <div id="admin-log-filter" style="display:none;margin-bottom:8px">
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <select id="admin-log-action-filter" onchange="adminFilterLogs()" style="padding:6px 10px;border-radius:6px;border:1px solid #d1d5db;font-size:16px">
@@ -1444,7 +1519,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.7.3 · Build 20260415</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.8.0 · Build 20260415</div>
   </div>
 </div>
 
@@ -1459,8 +1534,22 @@
     <div style="padding:20px" id="changelog-content">
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="background:#dbeafe;color:#1d4ed8;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">15 Apr 2026</span>
-          <span style="background:#dcfce7;color:#15803d;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">NEW</span>
+          <span style="background:#dbeafe;color:#1d4ed8;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.8.0 &middot; 15 Apr 2026</span>
+          <span style="background:#dcfce7;color:#15803d;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">BIG ONE</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Club sandbox links</strong> — every club now gets its own short link like <code>?club=east-grinstead-tennis</code>. Players who click it land straight in their club's welcome screen with their box leagues and mix-ins listed and nothing from other clubs in the way. No more hunting through the clubs list</li>
+          <li><strong>Apply to add your club</strong> — a new public form at <a href="/apply.html">/apply.html</a> lets organisers request a club sandbox in 30 seconds. We review the application and send a dedicated link back by email</li>
+          <li><strong>Club organiser tools</strong> — if you're a designated clubAdmin, the scoped welcome shows a <em>Club Organiser Tools</em> panel with one-tap <em>New League</em>, <em>Bulk Add Players</em> and <em>Share Club Link</em> buttons. No need to understand the admin console</li>
+          <li><strong>Bulk add players</strong> — paste a list of players (or doubles teams with <code>&amp;</code>) into a league in one go. Supports name-only, name+email, and team pairings like <code>Jane, jane@x.com &amp; Bob, bob@x.com</code></li>
+          <li><strong>Admin: club provisioning panel</strong> — create new slug-keyed club sandboxes, assign clubAdmins by email, and attach slugs to existing push-key clubs (so Bill's existing league keeps working with a friendlier share link)</li>
+          <li><strong>Admin: application queue</strong> — pending club applications show up in Admin &rarr; Applications. One-click <em>Approve &amp; Provision</em> pre-fills the provisioning form from the application</li>
+          <li><strong>Zero data loss rebuild</strong> — v4.8.0 is fully backwards compatible. Existing clubs, leagues, users and bookings are untouched. Your old bookmark still works exactly as before. Bill's league, East Grinstead, and the 10 International pilot are all safe</li>
+        </ul>
+      </div>
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#dbeafe;color:#1d4ed8;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.7.3 &middot; 15 Apr 2026</span>
         </div>
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
           <li><strong>Fix: singles leagues stop asking for a doubles partner</strong> — Create League now has an explicit Format picker (Singles / Doubles / Mixed Doubles). When a singles league is created the join wizard and profile no longer prompt for a partner. Legacy leagues still work: if the name contains "Singles" the app now treats it as singles automatically</li>
@@ -1788,6 +1877,71 @@
 
 <!-- ── Toast ── -->
 <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+<!-- ══════════════════════════════════════════════════════
+     v4.8.0 — SCOPED CLUB MODALS
+     Shown only when ?club=<slug> is active and user is a clubAdmin.
+     ══════════════════════════════════════════════════════ -->
+<div id="scoped-modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:9998;backdrop-filter:blur(2px)" onclick="closeScopedModal(event)"></div>
+
+<!-- Create-league modal -->
+<div id="scoped-create-league-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;padding:24px;width:calc(100% - 40px);max-width:440px;max-height:90vh;overflow-y:auto;z-index:9999;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div style="font-size:18px;font-weight:800">Create a new league</div>
+    <button onclick="closeScopedModal()" style="background:#f3f4f6;border:none;border-radius:8px;width:32px;height:32px;font-size:18px;cursor:pointer">&times;</button>
+  </div>
+  <div id="scoped-create-league-club-hint" style="font-size:12px;color:#6b7280;margin-bottom:14px;padding:8px 12px;background:#f0f9ff;border-radius:8px"></div>
+
+  <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px">League name <span style="color:#b91c1c">*</span></label>
+  <input type="text" id="scoped-cl-name" placeholder="e.g. Men's Doubles Box 3" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;margin-bottom:10px" oninput="scopedAutoDetectFormat()">
+
+  <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px">Format <span style="color:#b91c1c">*</span></label>
+  <select id="scoped-cl-format" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;margin-bottom:10px" onchange="this.dataset.userTouched='1'">
+    <option value="singles">Singles (1 vs 1)</option>
+    <option value="doubles" selected>Doubles (2 vs 2)</option>
+    <option value="mixed">Mixed Doubles (1 male + 1 female per team)</option>
+  </select>
+
+  <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px">Sport</label>
+  <select id="scoped-cl-sport" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;margin-bottom:10px">
+    <option value="tennis">Tennis</option>
+    <option value="padel">Padel</option>
+    <option value="squash">Squash</option>
+    <option value="racketball">Racketball</option>
+    <option value="badminton">Badminton</option>
+  </select>
+
+  <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px">Availability deadline (optional)</label>
+  <input type="date" id="scoped-cl-deadline" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;margin-bottom:16px">
+
+  <div style="display:flex;gap:10px">
+    <button onclick="closeScopedModal()" style="flex:1;padding:12px;border:1.5px solid #e2e8f0;background:#fff;color:#334155;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">Cancel</button>
+    <button onclick="scopedSubmitCreateLeague()" style="flex:2;padding:12px;border:none;background:#059669;color:#fff;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">Create League</button>
+  </div>
+  <div id="scoped-cl-msg" style="font-size:13px;margin-top:10px"></div>
+</div>
+
+<!-- Bulk-add-players modal -->
+<div id="scoped-bulk-add-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;padding:24px;width:calc(100% - 40px);max-width:520px;max-height:90vh;overflow-y:auto;z-index:9999;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div style="font-size:18px;font-weight:800">Bulk add players</div>
+    <button onclick="closeScopedModal()" style="background:#f3f4f6;border:none;border-radius:8px;width:32px;height:32px;font-size:18px;cursor:pointer">&times;</button>
+  </div>
+  <div style="font-size:12px;color:#6b7280;margin-bottom:14px">Pick a league, then paste your players one per line. Each line can be just a name, or <code>name, email</code> for players you also want to invite.</div>
+
+  <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px">League <span style="color:#b91c1c">*</span></label>
+  <select id="scoped-ba-league" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;margin-bottom:12px"></select>
+
+  <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px">Players <span style="color:#b91c1c">*</span></label>
+  <textarea id="scoped-ba-text" placeholder="Jane Doe, jane@example.com&#10;Bob Smith&#10;Alice Johnson, alice@example.com" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:monospace;min-height:160px;margin-bottom:10px"></textarea>
+  <div style="font-size:11px;color:#6b7280;margin-bottom:14px">For doubles leagues, you can enter teams as <code>Jane &amp; Bob</code> or <code>Jane, jane@x.com &amp; Bob, bob@x.com</code>.</div>
+
+  <div style="display:flex;gap:10px">
+    <button onclick="closeScopedModal()" style="flex:1;padding:12px;border:1.5px solid #e2e8f0;background:#fff;color:#334155;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">Cancel</button>
+    <button onclick="scopedSubmitBulkAdd()" style="flex:2;padding:12px;border:none;background:#1d4ed8;color:#fff;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">Add Players</button>
+  </div>
+  <div id="scoped-ba-msg" style="font-size:13px;margin-top:10px"></div>
+</div>
 
 <!-- ══════════════════════════════════════════════════════
      FIREBASE SDK
@@ -2782,6 +2936,286 @@ function adminDeleteClub(clubId, clubName, leagueCount) {
   });
 }
 
+/* ══════════════════════════════════════
+   v4.8.0 — CLUB PROVISIONING (admin)
+   ══════════════════════════════════════ */
+
+function adminToggleProvision() {
+  if (!isAdmin()) return;
+  const panel = document.getElementById('admin-provision-panel');
+  if (!panel) return;
+  panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? '' : 'none';
+  const res = document.getElementById('admin-provision-result');
+  if (res) res.innerHTML = '';
+}
+
+// Normalise slug input as user types: lowercase, strip anything that isn't
+// a-z 0-9 or hyphen, collapse runs of hyphens.
+function provSlugNormalise(input) {
+  const raw = String(input.value || '').toLowerCase();
+  const clean = raw.replace(/[^a-z0-9-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  if (clean !== raw) input.value = clean;
+}
+
+// Validate a slug — must be URL-safe, 3-40 chars, not start/end with hyphen.
+function provValidateSlug(slug) {
+  if (!slug) return 'Slug required';
+  if (slug.length < 3) return 'Slug must be at least 3 chars';
+  if (slug.length > 40) return 'Slug must be under 40 chars';
+  if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(slug)) return 'Slug: lowercase letters, digits, hyphens only (no leading/trailing hyphen)';
+  // Reserve names that collide with push-key shapes or system paths
+  if (/^-/.test(slug)) return 'Slug cannot start with a hyphen';
+  const reserved = ['admin', 'api', 'clubs', 'leagues', 'users', 'null', 'undefined', 'true', 'false'];
+  if (reserved.indexOf(slug) !== -1) return '"' + slug + '" is reserved';
+  return null;
+}
+
+function provValidateEmail(email) {
+  if (!email) return 'Email required';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Invalid email';
+  return null;
+}
+
+// v4.8.0: Create a brand-new club sandbox.
+// Writes:
+//   /clubs/{slug}          → { name, bookingUrl, createdAt, createdBy, sandbox:true }
+//   /clubsBySlug/{slug}    → {slug}                         (identity map)
+//   /clubAdmins/{slug}/{sanitizedEmail} → true
+//   /activityLog/{push}    → { action:'provision_club', ... }
+// This is additive — it does NOT touch existing push-key clubs or leagues,
+// so Bill's data is completely unaffected.
+function adminProvisionClub() {
+  if (!isAdmin() || !FIREBASE_READY) { toast('Admin only'); return; }
+  const slug    = val('prov-slug');
+  const name    = val('prov-name');
+  const email   = val('prov-email');
+  const booking = val('prov-booking');
+  const res     = document.getElementById('admin-provision-result');
+
+  const slugErr  = provValidateSlug(slug);
+  if (slugErr)  { res.innerHTML = '<div style="color:#b91c1c">' + esc(slugErr) + '</div>'; return; }
+  if (!name)    { res.innerHTML = '<div style="color:#b91c1c">Club name required</div>'; return; }
+  const emailErr = provValidateEmail(email);
+  if (emailErr) { res.innerHTML = '<div style="color:#b91c1c">' + esc(emailErr) + '</div>'; return; }
+
+  res.innerHTML = '<div style="color:#0f766e">Checking slug availability&hellip;</div>';
+
+  // Check if slug is already taken in either /clubs/{slug} or /clubsBySlug/{slug}
+  Promise.all([
+    db.ref('/clubs/' + slug).once('value'),
+    db.ref('/clubsBySlug/' + slug).once('value')
+  ]).then(function(snaps) {
+    if (snaps[0].exists() || snaps[1].exists()) {
+      res.innerHTML = '<div style="color:#b91c1c">Slug "' + esc(slug) + '" is already taken. Pick another.</div>';
+      return;
+    }
+    const emailKey = sanitizeEmail(email);
+    const updates = {};
+    updates['/clubs/' + slug] = {
+      name: name,
+      bookingUrl: booking || '',
+      createdAt: firebase.database.ServerValue.TIMESTAMP,
+      createdBy: currentUser.email,
+      sandbox: true,
+      organiserEmail: email
+    };
+    updates['/clubsBySlug/' + slug] = slug; // identity map — slug is also the push key
+    updates['/clubAdmins/' + slug + '/' + emailKey] = true;
+    const logKey = db.ref('/activityLog').push().key;
+    updates['/activityLog/' + logKey] = {
+      action: 'provision_club',
+      slug: slug,
+      clubName: name,
+      organiserEmail: email,
+      actor: currentUser.email,
+      ts: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    db.ref().update(updates).then(function() {
+      const shareUrl = window.location.origin + window.location.pathname + '?club=' + encodeURIComponent(slug);
+      res.innerHTML =
+        '<div style="background:#d1fae5;border:1px solid #10b981;border-radius:8px;padding:10px 12px">' +
+          '<div style="font-weight:700;color:#065f46;margin-bottom:6px">&#9989; Club sandbox created!</div>' +
+          '<div style="font-size:12px;color:#047857;margin-bottom:8px">Send this link to ' + esc(email) + ' &mdash; their players will land straight in the ' + esc(name) + ' sandbox:</div>' +
+          '<div style="background:#fff;border:1px solid #a7f3d0;border-radius:6px;padding:8px 10px;font-family:monospace;font-size:12px;word-break:break-all;margin-bottom:8px">' + esc(shareUrl) + '</div>' +
+          '<div style="display:flex;gap:8px">' +
+            '<button onclick="provCopyUrl(\'' + esc(shareUrl).replace(/&#39;/g, "\\'") + '\')" style="background:#059669;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">Copy link</button>' +
+            '<button onclick="window.open(\'' + esc(shareUrl).replace(/&#39;/g, "\\'") + '\',\'_blank\')" style="background:#0891b2;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">Open</button>' +
+          '</div>' +
+        '</div>';
+      // Clear form
+      document.getElementById('prov-slug').value = '';
+      document.getElementById('prov-name').value = '';
+      document.getElementById('prov-email').value = '';
+      document.getElementById('prov-booking').value = '';
+      toast('Club "' + name + '" provisioned');
+    }).catch(function(err) {
+      res.innerHTML = '<div style="color:#b91c1c">Write failed: ' + esc(err.message || String(err)) + '</div>';
+    });
+  }).catch(function(err) {
+    res.innerHTML = '<div style="color:#b91c1c">Lookup failed: ' + esc(err.message || String(err)) + '</div>';
+  });
+}
+
+// Copy helper for the result panel.
+function provCopyUrl(url) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(function() { toast('Link copied'); })
+      .catch(function() { prompt('Copy this link:', url); });
+  } else {
+    prompt('Copy this link:', url);
+  }
+}
+
+// v4.8.0: Attach a slug to an existing push-key club so its members can use
+// a friendly share link without us having to migrate any data.
+// Writes /clubsBySlug/{slug} = {existingPushKey}
+// Also seeds /clubAdmins if an email is provided.
+function adminAttachSlugToExistingClub() {
+  if (!isAdmin() || !FIREBASE_READY) { toast('Admin only'); return; }
+  const slug  = val('prov-slug');
+  const email = val('prov-email');
+  const res   = document.getElementById('admin-provision-result');
+
+  const slugErr = provValidateSlug(slug);
+  if (slugErr) { res.innerHTML = '<div style="color:#b91c1c">' + esc(slugErr) + '</div>'; return; }
+
+  const pushKey = prompt('Enter the EXISTING club push-key (e.g. -Opqb56SWNahVrr3jc1X) to attach slug "' + slug + '" to:');
+  if (!pushKey) return;
+  const cleanKey = pushKey.trim();
+  if (!cleanKey) return;
+
+  res.innerHTML = '<div style="color:#0f766e">Looking up existing club&hellip;</div>';
+
+  Promise.all([
+    db.ref('/clubs/' + cleanKey).once('value'),
+    db.ref('/clubsBySlug/' + slug).once('value')
+  ]).then(function(snaps) {
+    if (!snaps[0].exists()) {
+      res.innerHTML = '<div style="color:#b91c1c">No club found at /clubs/' + esc(cleanKey) + '</div>';
+      return;
+    }
+    if (snaps[1].exists()) {
+      res.innerHTML = '<div style="color:#b91c1c">Slug "' + esc(slug) + '" already taken.</div>';
+      return;
+    }
+    const club = snaps[0].val();
+    const updates = {};
+    updates['/clubsBySlug/' + slug] = cleanKey;
+    if (email) {
+      const eErr = provValidateEmail(email);
+      if (eErr) { res.innerHTML = '<div style="color:#b91c1c">' + esc(eErr) + '</div>'; return; }
+      updates['/clubAdmins/' + cleanKey + '/' + sanitizeEmail(email)] = true;
+    }
+    const logKey = db.ref('/activityLog').push().key;
+    updates['/activityLog/' + logKey] = {
+      action: 'attach_slug',
+      slug: slug,
+      clubId: cleanKey,
+      clubName: club.name || '',
+      actor: currentUser.email,
+      ts: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    db.ref().update(updates).then(function() {
+      const shareUrl = window.location.origin + window.location.pathname + '?club=' + encodeURIComponent(slug);
+      res.innerHTML =
+        '<div style="background:#d1fae5;border:1px solid #10b981;border-radius:8px;padding:10px 12px">' +
+          '<div style="font-weight:700;color:#065f46;margin-bottom:6px">&#9989; Slug attached to ' + esc(club.name || cleanKey) + '</div>' +
+          '<div style="font-size:12px;color:#047857;margin-bottom:8px">Share link:</div>' +
+          '<div style="background:#fff;border:1px solid #a7f3d0;border-radius:6px;padding:8px 10px;font-family:monospace;font-size:12px;word-break:break-all;margin-bottom:8px">' + esc(shareUrl) + '</div>' +
+          '<button onclick="provCopyUrl(\'' + esc(shareUrl).replace(/&#39;/g, "\\'") + '\')" style="background:#059669;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">Copy link</button>' +
+        '</div>';
+      toast('Slug "' + slug + '" attached');
+    }).catch(function(err) {
+      res.innerHTML = '<div style="color:#b91c1c">Write failed: ' + esc(err.message || String(err)) + '</div>';
+    });
+  }).catch(function(err) {
+    res.innerHTML = '<div style="color:#b91c1c">Lookup failed: ' + esc(err.message || String(err)) + '</div>';
+  });
+}
+
+// v4.8.0: List club applications awaiting approval.
+// Step 3 adds the apply.html form that writes into /clubApplications/.
+function adminLoadApplications() {
+  if (!isAdmin() || !FIREBASE_READY) return;
+  const el = document.getElementById('admin-applications-list');
+  if (!el) return;
+  el.innerHTML = '<div style="color:#4f46e5;font-size:13px;padding:8px 0">Loading applications&hellip;</div>';
+  db.ref('/clubApplications').once('value').then(function(snap) {
+    const apps = snap.val() || {};
+    const entries = Object.entries(apps).sort(function(a, b) {
+      return (b[1].submittedAt || 0) - (a[1].submittedAt || 0);
+    });
+    if (entries.length === 0) {
+      el.innerHTML = '<div style="color:#6b7280;font-size:13px;padding:8px 0;background:#f9fafb;border-radius:8px;text-align:center">No pending applications.</div>';
+      return;
+    }
+    let html = '<div style="font-size:13px;font-weight:700;color:#4338ca;margin-bottom:8px">' + entries.length + ' application' + (entries.length === 1 ? '' : 's') + '</div>';
+    entries.forEach(function(pair) {
+      const id = pair[0];
+      const app = pair[1] || {};
+      const status = app.status || 'pending';
+      const statusColor = status === 'approved' ? '#059669' : (status === 'rejected' ? '#b91c1c' : '#d97706');
+      html += '<div style="padding:12px 14px;margin-bottom:8px;background:#fff;border:1px solid #c7d2fe;border-radius:10px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px">' +
+          '<div style="font-weight:700;font-size:14px">' + esc(app.clubName || '(no name)') + '</div>' +
+          '<div style="font-size:10px;font-weight:700;color:#fff;background:' + statusColor + ';padding:2px 8px;border-radius:10px;text-transform:uppercase">' + esc(status) + '</div>' +
+        '</div>' +
+        '<div style="font-size:12px;color:#6b7280;line-height:1.5">' +
+          '<div><strong>Organiser:</strong> ' + esc(app.organiserName || '') + ' &lt;' + esc(app.organiserEmail || '') + '&gt;</div>' +
+          (app.clubLocation ? '<div><strong>Location:</strong> ' + esc(app.clubLocation) + '</div>' : '') +
+          (app.leagueCount ? '<div><strong>Leagues planned:</strong> ' + esc(String(app.leagueCount)) + '</div>' : '') +
+          (app.notes ? '<div style="margin-top:4px;padding:6px 8px;background:#f9fafb;border-radius:6px"><em>' + esc(app.notes) + '</em></div>' : '') +
+        '</div>' +
+        (status === 'pending' ? '<div style="display:flex;gap:6px;margin-top:8px"><button onclick="adminApproveApplication(\'' + esc(id) + '\')" style="background:#059669;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">&#9989; Approve &amp; Provision</button><button onclick="adminRejectApplication(\'' + esc(id) + '\')" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">Reject</button></div>' : '') +
+      '</div>';
+    });
+    el.innerHTML = html;
+  }).catch(function(err) {
+    el.innerHTML = '<div style="color:#b91c1c;font-size:13px">Load failed: ' + esc(err.message || String(err)) + '</div>';
+  });
+}
+
+// Approve an application → pre-fill the provisioning form from it.
+function adminApproveApplication(appId) {
+  if (!isAdmin() || !FIREBASE_READY) return;
+  db.ref('/clubApplications/' + appId).once('value').then(function(snap) {
+    const app = snap.val();
+    if (!app) { toast('Application not found'); return; }
+    // Open the provisioning panel and pre-fill
+    const panel = document.getElementById('admin-provision-panel');
+    if (panel) panel.style.display = '';
+    // Suggest a slug from the club name
+    const slugGuess = String(app.clubName || '').toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+    document.getElementById('prov-slug').value    = slugGuess;
+    document.getElementById('prov-name').value    = app.clubName || '';
+    document.getElementById('prov-email').value   = app.organiserEmail || '';
+    document.getElementById('prov-booking').value = app.bookingUrl || '';
+    // Mark application as in-review so we know it's been seen
+    db.ref('/clubApplications/' + appId + '/status').set('in_review');
+    db.ref('/clubApplications/' + appId + '/reviewedAt').set(firebase.database.ServerValue.TIMESTAMP);
+    toast('Form pre-filled — review the slug and click Create Club Sandbox');
+    // Scroll panel into view
+    if (panel && panel.scrollIntoView) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+}
+
+function adminRejectApplication(appId) {
+  if (!isAdmin() || !FIREBASE_READY) return;
+  const reason = prompt('Reject reason (shown to organiser in activity log):');
+  if (reason === null) return;
+  const updates = {};
+  updates['/clubApplications/' + appId + '/status'] = 'rejected';
+  updates['/clubApplications/' + appId + '/rejectedAt'] = firebase.database.ServerValue.TIMESTAMP;
+  updates['/clubApplications/' + appId + '/rejectedReason'] = reason || '';
+  db.ref().update(updates).then(function() {
+    toast('Application rejected');
+    adminLoadApplications();
+  });
+}
+
 function esc(s) { if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/\\/g,'&#92;').replace(/`/g,'&#96;'); }
 function val(id) { return document.getElementById(id).value.trim(); }
 function toast(msg, duration) {
@@ -2971,6 +3405,23 @@ function showScreen(id) {
         hcWrap.style.display = 'none';
       }
     }
+    // v4.8.0: if scoped to a club (?club=<slug>), render the scoped sandbox
+    // welcome instead of the normal multi-club welcome. Safe to call on every
+    // welcome-show — renderScopedWelcome() is idempotent and handles both
+    // toggle and repopulation.
+    try {
+      if (window._scopedClub) {
+        renderScopedWelcome();
+      } else {
+        // Make sure normal content is visible (in case scope was cleared)
+        const sc = document.getElementById('scoped-welcome-content');
+        const nc = document.getElementById('normal-welcome-content');
+        const sub = document.getElementById('welcome-subtitle');
+        if (sc) sc.style.display = 'none';
+        if (nc) nc.style.display = '';
+        if (sub) sub.style.display = '';
+      }
+    } catch (e) { console.warn('[scoped-welcome] render error', e); }
   }
   // Trigger screen explainers (slight delay so screen renders first)
   if (id === 'welcome' || id === 'browse') {
@@ -3747,6 +4198,11 @@ function onAuthSuccess() {
   logAction('sign_in', currentUser.email);
   loadUserLeagues();
   loadUserHomeClub(() => {
+    // v4.8.0: load clubAdmin memberships once per session so scoped-welcome
+    // organiser tools know whether to show. Non-blocking — fires in parallel
+    // with the URL-param routing below.
+    loadClubAdminMemberships();
+
     // Check URL params for shared league link
     const params = new URLSearchParams(window.location.search);
     const sharedLeagueId = params.get('league');
@@ -3776,6 +4232,31 @@ function onAuthSuccess() {
       } else {
         setTimeout(() => { goToMixIn(); }, 500);
       }
+    } else if (sharedClub) {
+      // v4.8.0: scoped-club sandbox. We DO NOT strip the ?club= param —
+      // keeping it in the URL means a browser refresh keeps the scope.
+      resolveScopedClub(sharedClub, function(result) {
+        if (!result) {
+          // Bad link. Fall through to normal welcome with a toast so the
+          // user isn't stranded — their bookmark will still show the app.
+          toast('Club link not found — showing main app');
+          showScreen('welcome');
+          return;
+        }
+        window._scopedClub = { id: result.id, info: result.info };
+        // Also set as homeClub for mix-in scope consistency (in-memory only —
+        // we don't persist this to /users/... because we don't want to
+        // silently overwrite a user's real home club with a shared-link club).
+        if (!userHomeClub) {
+          userHomeClub = {
+            id: result.id,
+            name: result.info.name,
+            bookingUrl: result.info.bookingUrl || ''
+          };
+        }
+        showScreen('welcome');
+        renderScopedWelcome();
+      });
     } else {
       // Check Firebase for guided setup completion (per-user, not localStorage)
       if (FIREBASE_READY) {
@@ -3865,6 +4346,459 @@ let wizWeekOff = 0;
 let wizAvailability = {};  // Temporary availability during wizard
 let userHomeClub = null;     // { id, name, bookingUrl } — user's home club for mix-in games
 let userPreferredSport = ''; // tennis, padel, squash, etc.
+
+// v4.8.0: when the app is loaded with ?club=<slug-or-pushkey> we enter a
+// "scoped club sandbox" — the welcome screen shows ONLY this club's leagues
+// and mix-ins, all club-creation UI is hidden, and the user can't navigate
+// to other clubs. Null = normal multi-club flow.
+window._scopedClub = null;   // { id, info, isAdmin } or null
+window._clubAdminFor = [];   // slugs/ids of clubs where this user is a clubAdmin
+
+// v4.8.0: Resolve a ?club= URL param to a club record.
+// Tries /clubs/{param} first (direct push-key or slug-as-key),
+// then /clubsBySlug/{param} (legacy index for push-key clubs with a slug).
+// Calls cb({ id, info }) on success or cb(null) on miss.
+function resolveScopedClub(param, cb) {
+  if (!param || !FIREBASE_READY) { cb(null); return; }
+  db.ref('/clubs/' + param).once('value').then(function(snap) {
+    if (snap.exists()) { cb({ id: param, info: snap.val() }); return; }
+    // Fallback: slug index → push key
+    db.ref('/clubsBySlug/' + param).once('value').then(function(slugSnap) {
+      var pushKey = slugSnap.val();
+      if (!pushKey) { cb(null); return; }
+      db.ref('/clubs/' + pushKey).once('value').then(function(clubSnap) {
+        if (!clubSnap.exists()) { cb(null); return; }
+        cb({ id: pushKey, info: clubSnap.val() });
+      }).catch(function() { cb(null); });
+    }).catch(function() { cb(null); });
+  }).catch(function() { cb(null); });
+}
+
+// v4.8.0: Load clubAdmin memberships for the current user.
+// Reads /clubAdmins/{slug} nodes keyed by sanitized email.
+// This is cheap — only runs once at sign-in.
+function loadClubAdminMemberships(cb) {
+  if (!FIREBASE_READY || !currentUser || !currentUser.email) { if (cb) cb(); return; }
+  var emailKey = sanitizeEmail(currentUser.email);
+  db.ref('/clubAdmins').once('value').then(function(snap) {
+    var all = snap.val() || {};
+    window._clubAdminFor = [];
+    for (var slug in all) {
+      if (all[slug] && all[slug][emailKey]) {
+        window._clubAdminFor.push(slug);
+      }
+    }
+    if (cb) cb();
+  }).catch(function() { window._clubAdminFor = []; if (cb) cb(); });
+}
+
+// v4.8.0: Is the current user a clubAdmin for the scoped club (or passed id)?
+function isClubAdminFor(clubId) {
+  if (!clubId) return false;
+  if (isAdmin()) return true; // global admin is clubAdmin everywhere
+  return (window._clubAdminFor || []).indexOf(clubId) !== -1;
+}
+
+// v4.8.0: Render the scoped-club welcome. Toggles visibility, populates the
+// club header, admin actions, and kicks off async fetches of leagues + mix-ins.
+// Idempotent — safe to call whenever showScreen('welcome') fires.
+function renderScopedWelcome() {
+  var scope = window._scopedClub;
+  if (!scope) return;
+  var scopedEl = document.getElementById('scoped-welcome-content');
+  var normalEl = document.getElementById('normal-welcome-content');
+  if (scopedEl) scopedEl.style.display = '';
+  if (normalEl) normalEl.style.display = 'none';
+
+  // Hide the welcome-subtitle "What would you like to play?" text — it's
+  // generic and the scoped club header replaces it.
+  var subEl = document.getElementById('welcome-subtitle');
+  if (subEl) subEl.style.display = 'none';
+
+  // Populate club header
+  var name = (scope.info && scope.info.name) || 'Your club';
+  var nameEl = document.getElementById('scoped-club-name');
+  if (nameEl) nameEl.textContent = name;
+  var inlineEl = document.getElementById('scoped-club-name-inline');
+  if (inlineEl) inlineEl.textContent = name;
+  var subClubEl = document.getElementById('scoped-club-sub');
+  if (subClubEl) subClubEl.textContent = 'Pick a league or mix-in to join';
+
+  // Show organiser tools if this user is a clubAdmin or global admin
+  var adminBox = document.getElementById('scoped-admin-actions');
+  if (adminBox) {
+    adminBox.style.display = isClubAdminFor(scope.id) ? '' : 'none';
+  }
+
+  // Fetch and render leagues + mix-ins
+  if (!FIREBASE_READY) return;
+  renderScopedLeagueList(scope.id);
+  renderScopedMixInList(scope.id);
+}
+
+// v4.8.0: Populate #scoped-leagues-list with this club's box leagues.
+function renderScopedLeagueList(clubId) {
+  var box = document.getElementById('scoped-leagues-list');
+  if (!box) return;
+  box.innerHTML = '<div style="color:#6b7280;font-size:13px;padding:10px">Loading leagues&hellip;</div>';
+  db.ref('/clubLeagues/' + clubId).once('value').then(function(snap) {
+    var leagues = snap.val() || {};
+    var ids = Object.keys(leagues);
+    if (ids.length === 0) {
+      box.innerHTML = '<div style="color:#6b7280;font-size:13px;padding:14px;text-align:center;background:#f9fafb;border-radius:10px">No leagues yet. ' +
+        (isClubAdminFor(clubId) ? '<a onclick="scopedCreateLeague()" style="color:#1d4ed8;cursor:pointer;font-weight:600">Create the first one &rarr;</a>' : 'Check back soon.') +
+        '</div>';
+      return;
+    }
+    var html = '';
+    ids.forEach(function(lid) {
+      var lg = leagues[lid] || {};
+      var lgName = lg.name || lg.leagueName || '(unnamed)';
+      var fmt = String(lg.format || '').toLowerCase();
+      var fmtBadge = '';
+      if (fmt === 'singles') {
+        fmtBadge = '<span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px">SINGLES</span>';
+      } else if (fmt === 'mixed') {
+        fmtBadge = '<span style="background:#fce7f3;color:#be185d;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px">MIXED DOUBLES</span>';
+      } else {
+        fmtBadge = '<span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px">DOUBLES</span>';
+      }
+      html += '<div onclick="joinAndEnterLeague(\'' + lid + '\')" style="cursor:pointer;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:flex;align-items:center;justify-content:space-between;gap:10px" onmouseover="this.style.borderColor=\'#1d4ed8\';this.style.boxShadow=\'0 4px 12px rgba(29,78,216,0.12)\'" onmouseout="this.style.borderColor=\'#e5e7eb\';this.style.boxShadow=\'0 1px 2px rgba(0,0,0,0.04)\'">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-weight:700;font-size:15px;color:#0f172a;margin-bottom:4px">' + esc(lgName) + '</div>' +
+          '<div>' + fmtBadge + '</div>' +
+        '</div>' +
+        '<div style="color:#9ca3af;font-size:20px;font-weight:700">&rsaquo;</div>' +
+      '</div>';
+    });
+    box.innerHTML = html;
+  }).catch(function(e) {
+    console.warn('[scoped-welcome] league list error', e);
+    box.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:10px">Could not load leagues.</div>';
+  });
+}
+
+// v4.8.0: Populate #scoped-mixins-list with this club's mix-in games.
+function renderScopedMixInList(clubId) {
+  var box = document.getElementById('scoped-mixins-list');
+  if (!box) return;
+  box.innerHTML = '<div style="color:#6b7280;font-size:13px;padding:10px">Loading mix-ins&hellip;</div>';
+  db.ref('/clubs/' + clubId + '/mixInGames').once('value').then(function(snap) {
+    var games = snap.val() || {};
+    var ids = Object.keys(games);
+    if (ids.length === 0) {
+      box.innerHTML = '<div style="color:#6b7280;font-size:13px;padding:14px;text-align:center;background:#f9fafb;border-radius:10px">No mix-in games scheduled. ' +
+        (isClubAdminFor(clubId) ? '<a onclick="enterMixInAsScopedClub()" style="color:#1d4ed8;cursor:pointer;font-weight:600">Schedule one &rarr;</a>' : 'Check back soon.') +
+        '</div>';
+      return;
+    }
+    var html = '';
+    ids.forEach(function(gid) {
+      var g = games[gid] || {};
+      var title = g.title || g.name || 'Mix-in game';
+      var when = g.date || g.when || '';
+      html += '<div onclick="enterMixInAsScopedClub()" style="cursor:pointer;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:flex;align-items:center;justify-content:space-between;gap:10px">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-weight:700;font-size:15px;color:#0f172a;margin-bottom:2px">' + esc(title) + '</div>' +
+          (when ? '<div style="font-size:12px;color:#6b7280">' + esc(when) + '</div>' : '') +
+        '</div>' +
+        '<div style="color:#9ca3af;font-size:20px;font-weight:700">&rsaquo;</div>' +
+      '</div>';
+    });
+    box.innerHTML = html;
+  }).catch(function(e) {
+    console.warn('[scoped-welcome] mix-in list error', e);
+    box.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:10px">Could not load mix-ins.</div>';
+  });
+}
+
+// v4.8.0: Go to mix-in view for the currently scoped club.
+function enterMixInAsScopedClub() {
+  var scope = window._scopedClub;
+  if (!scope) return;
+  userHomeClub = {
+    id: scope.id,
+    name: (scope.info && scope.info.name) || '',
+    bookingUrl: (scope.info && scope.info.bookingUrl) || ''
+  };
+  goToMixIn();
+}
+
+// v4.8.0: Open the scoped create-league modal.
+function scopedCreateLeague() {
+  var scope = window._scopedClub;
+  if (!scope) { toast('No club scope'); return; }
+  if (!isClubAdminFor(scope.id)) { toast('Club organisers only'); return; }
+  openScopedModal('scoped-create-league-modal');
+  var hint = document.getElementById('scoped-create-league-club-hint');
+  if (hint) {
+    hint.innerHTML = '&#127942; New league will be added to <strong>' + esc(scope.info.name || '') + '</strong>';
+  }
+  // Reset fields
+  document.getElementById('scoped-cl-name').value = '';
+  document.getElementById('scoped-cl-format').value = 'doubles';
+  document.getElementById('scoped-cl-format').dataset.userTouched = '';
+  document.getElementById('scoped-cl-sport').value = 'tennis';
+  document.getElementById('scoped-cl-deadline').value = '';
+  document.getElementById('scoped-cl-msg').innerHTML = '';
+  setTimeout(function() { document.getElementById('scoped-cl-name').focus(); }, 100);
+}
+
+// v4.8.0: Open the bulk-add-players modal, populated with this club's leagues.
+function scopedBulkAddPlayers() {
+  var scope = window._scopedClub;
+  if (!scope) { toast('No club scope'); return; }
+  if (!isClubAdminFor(scope.id)) { toast('Club organisers only'); return; }
+  openScopedModal('scoped-bulk-add-modal');
+  document.getElementById('scoped-ba-text').value = '';
+  document.getElementById('scoped-ba-msg').innerHTML = '';
+  // Populate league dropdown
+  var sel = document.getElementById('scoped-ba-league');
+  sel.innerHTML = '<option value="">Loading leagues&hellip;</option>';
+  if (!FIREBASE_READY) return;
+  db.ref('/clubLeagues/' + scope.id).once('value').then(function(snap) {
+    var leagues = snap.val() || {};
+    var ids = Object.keys(leagues);
+    if (ids.length === 0) {
+      sel.innerHTML = '<option value="">No leagues yet — create one first</option>';
+      return;
+    }
+    sel.innerHTML = ids.map(function(lid) {
+      var lg = leagues[lid] || {};
+      return '<option value="' + esc(lid) + '">' + esc(lg.name || '(unnamed)') + '</option>';
+    }).join('');
+  });
+}
+
+// v4.8.0: Modal helpers.
+function openScopedModal(modalId) {
+  document.getElementById('scoped-modal-backdrop').style.display = '';
+  document.getElementById(modalId).style.display = '';
+}
+function closeScopedModal(ev) {
+  if (ev && ev.target && ev.target.id !== 'scoped-modal-backdrop') return;
+  document.getElementById('scoped-modal-backdrop').style.display = 'none';
+  document.getElementById('scoped-create-league-modal').style.display = 'none';
+  document.getElementById('scoped-bulk-add-modal').style.display = 'none';
+}
+
+// v4.8.0: Auto-detect format from league name in scoped create modal.
+function scopedAutoDetectFormat() {
+  var sel = document.getElementById('scoped-cl-format');
+  if (!sel || sel.dataset.userTouched === '1') return;
+  var name = (document.getElementById('scoped-cl-name').value || '').toLowerCase();
+  if (/(\bmixed\b|\bmix\s*doubles?\b|\bmxd\b|\bxd\b)/.test(name)) sel.value = 'mixed';
+  else if (/\bsingles?\b/.test(name)) sel.value = 'singles';
+  else if (/\bdoubles?\b/.test(name)) sel.value = 'doubles';
+}
+
+// v4.8.0: Create a league in the currently scoped club.
+// Mirrors createLeagueInClub() but uses _scopedClub instead of selectedClubId.
+async function scopedSubmitCreateLeague() {
+  var scope = window._scopedClub;
+  if (!scope) { toast('No club scope'); return; }
+  if (!isClubAdminFor(scope.id)) { toast('Club organisers only'); return; }
+
+  var name     = val('scoped-cl-name');
+  var format   = val('scoped-cl-format') || 'doubles';
+  var sport    = val('scoped-cl-sport') || 'tennis';
+  var deadline = val('scoped-cl-deadline') || '';
+  var msgEl    = document.getElementById('scoped-cl-msg');
+  msgEl.innerHTML = '';
+
+  if (!name) { msgEl.innerHTML = '<div style="color:#b91c1c">Enter a league name.</div>'; return; }
+  if (looksLikeLeagueName(scope.info.name) === false && !name) {
+    msgEl.innerHTML = '<div style="color:#b91c1c">Enter a league name.</div>'; return;
+  }
+
+  try {
+    var code = await genUniqueCode();
+    var clubId = scope.id;
+    var clubName = scope.info.name || '';
+
+    if (!FIREBASE_READY) {
+      toast('Firebase not ready');
+      return;
+    }
+
+    var leagueRef = db.ref('/leagues').push();
+    var leagueId = leagueRef.key;
+    var updates = {};
+    var memberKey = sanitizeEmail(currentUser.email);
+    updates['/leagues/' + leagueId] = {
+      info: { name: name, sport: sport, format: format, code: code, clubId: clubId, clubName: clubName, organiserUid: currentUser.uid, createdAt: Date.now() },
+      groups: {}, availability: {}, settings: { leagueName: name, deadline: deadline }, booked: {},
+      members: {}
+    };
+    updates['/leagues/' + leagueId + '/members/' + memberKey] = {
+      uid: currentUser.uid, name: currentUser.displayName || currentUser.email, email: currentUser.email,
+      role: 'organiser', playerName: '', partnerName: '', joinedAt: Date.now()
+    };
+    updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = {
+      name: name, sport: sport, format: format, code: code, role: 'organiser', clubId: clubId, clubName: clubName
+    };
+    updates['/clubLeagues/' + clubId + '/' + leagueId] = { name: name, sport: sport, format: format };
+    updates['/codes/' + code] = leagueId;
+    updates['/leagueIndex/' + leagueId] = { name: name, sport: sport, format: format, clubId: clubId, clubName: clubName, createdAt: Date.now() };
+
+    db.ref().update(updates).then(function() {
+      logAction('create_league_scoped', name + ' at ' + clubName);
+      msgEl.innerHTML = '<div style="color:#059669;font-weight:700">&#9989; League created!</div>';
+      toast('League "' + name + '" created');
+      setTimeout(function() {
+        closeScopedModal();
+        renderScopedWelcome(); // re-fetch lists
+      }, 600);
+    }).catch(function(err) {
+      console.error('Scoped create league error:', err);
+      msgEl.innerHTML = '<div style="color:#b91c1c">Error: ' + esc(err.message || String(err)) + '</div>';
+    });
+  } catch (e) {
+    msgEl.innerHTML = '<div style="color:#b91c1c">Error: ' + esc(e.message || String(e)) + '</div>';
+  }
+}
+
+// v4.8.0: Parse the bulk-add textarea into a list of player/team entries.
+// Supports four input shapes:
+//   "Jane Doe"                                     → {name, email:''}
+//   "Jane Doe, jane@example.com"                   → {name, email}
+//   "Jane & Bob"                                   → {name:'Jane', partnerName:'Bob'}
+//   "Jane, j@x.com & Bob, b@x.com"                 → full team with both emails
+function parseBulkPlayers(text) {
+  var lines = String(text || '').split(/\r?\n/).map(function(s) { return s.trim(); }).filter(Boolean);
+  var out = [];
+  var errors = [];
+  lines.forEach(function(line, idx) {
+    var parts = line.split('&').map(function(s) { return s.trim(); });
+    if (parts.length > 2) {
+      errors.push('Line ' + (idx + 1) + ': too many "&" — max 2 players per team');
+      return;
+    }
+    function parseOne(s) {
+      var sub = s.split(',').map(function(x) { return x.trim(); });
+      var name = sub[0] || '';
+      var email = sub[1] || '';
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errors.push('Line ' + (idx + 1) + ': invalid email "' + email + '"');
+      }
+      return { name: name, email: email };
+    }
+    var p1 = parseOne(parts[0]);
+    if (!p1.name) { errors.push('Line ' + (idx + 1) + ': no name'); return; }
+    if (parts.length === 2) {
+      var p2 = parseOne(parts[1]);
+      if (!p2.name) { errors.push('Line ' + (idx + 1) + ': no partner name after "&"'); return; }
+      out.push({ name: p1.name, email: p1.email, partnerName: p2.name, partnerEmail: p2.email });
+    } else {
+      out.push({ name: p1.name, email: p1.email, partnerName: '', partnerEmail: '' });
+    }
+  });
+  return { rows: out, errors: errors };
+}
+
+// v4.8.0: Submit bulk-add-players form. Creates group entries directly
+// in /leagues/{id}/groups. For doubles leagues each entry is a team
+// (Player A + Player B). For singles each entry is a single player.
+async function scopedSubmitBulkAdd() {
+  var scope = window._scopedClub;
+  if (!scope) { toast('No club scope'); return; }
+  if (!isClubAdminFor(scope.id)) { toast('Club organisers only'); return; }
+
+  var leagueId = val('scoped-ba-league');
+  var text     = document.getElementById('scoped-ba-text').value || '';
+  var msgEl    = document.getElementById('scoped-ba-msg');
+  msgEl.innerHTML = '';
+
+  if (!leagueId) { msgEl.innerHTML = '<div style="color:#b91c1c">Pick a league first.</div>'; return; }
+  if (!text.trim()) { msgEl.innerHTML = '<div style="color:#b91c1c">Paste at least one player.</div>'; return; }
+
+  var parsed = parseBulkPlayers(text);
+  if (parsed.errors.length > 0) {
+    msgEl.innerHTML = '<div style="color:#b91c1c">' + parsed.errors.map(esc).join('<br>') + '</div>';
+    return;
+  }
+  if (parsed.rows.length === 0) {
+    msgEl.innerHTML = '<div style="color:#b91c1c">No valid entries found.</div>'; return;
+  }
+
+  // Fetch league to determine format and to preserve existing groups.
+  db.ref('/leagues/' + leagueId).once('value').then(function(snap) {
+    var league = snap.val();
+    if (!league) { msgEl.innerHTML = '<div style="color:#b91c1c">League not found.</div>'; return; }
+    var fmt = (league.info && league.info.format) || 'doubles';
+    var isSingles = fmt === 'singles';
+
+    // Existing groups may be array or object — normalise to array-of-entries.
+    var existing = league.groups || {};
+    var existingList = Array.isArray(existing) ? existing.slice() : Object.keys(existing).map(function(k) { return existing[k]; });
+    var newGroups = existingList.slice();
+
+    parsed.rows.forEach(function(row) {
+      if (isSingles) {
+        newGroups.push({
+          playerName: row.name,
+          email: row.email || '',
+          addedBy: currentUser.email,
+          addedAt: Date.now()
+        });
+      } else {
+        newGroups.push({
+          playerName: row.name,
+          partnerName: row.partnerName || '(partner TBD)',
+          email: row.email || '',
+          partnerEmail: row.partnerEmail || '',
+          addedBy: currentUser.email,
+          addedAt: Date.now()
+        });
+      }
+    });
+
+    var updates = {};
+    updates['/leagues/' + leagueId + '/groups'] = newGroups;
+    // Log activity
+    var logKey = db.ref('/leagues/' + leagueId + '/activityLog').push().key;
+    updates['/leagues/' + leagueId + '/activityLog/' + logKey] = {
+      action: 'bulk_add_players',
+      count: parsed.rows.length,
+      actor: currentUser.email,
+      ts: Date.now()
+    };
+
+    db.ref().update(updates).then(function() {
+      logAction('bulk_add_players', parsed.rows.length + ' players to ' + ((league.info && league.info.name) || leagueId));
+      msgEl.innerHTML = '<div style="color:#059669;font-weight:700">&#9989; Added ' + parsed.rows.length + ' ' + (isSingles ? 'player' : 'team') + (parsed.rows.length === 1 ? '' : 's') + '.</div>';
+      toast('Added ' + parsed.rows.length + ' to ' + ((league.info && league.info.name) || 'league'));
+      setTimeout(function() { closeScopedModal(); }, 800);
+    }).catch(function(err) {
+      msgEl.innerHTML = '<div style="color:#b91c1c">Write failed: ' + esc(err.message || String(err)) + '</div>';
+    });
+  }).catch(function(err) {
+    msgEl.innerHTML = '<div style="color:#b91c1c">League lookup failed: ' + esc(err.message || String(err)) + '</div>';
+  });
+}
+
+function scopedShareInvite() {
+  var scope = window._scopedClub;
+  if (!scope) { toast('No club scope'); return; }
+  // Build the canonical share URL using whatever slug/id resolved this scope.
+  var params = new URLSearchParams(window.location.search);
+  var slug = params.get('club') || scope.id;
+  var url = window.location.origin + window.location.pathname + '?club=' + encodeURIComponent(slug);
+  var clubName = (scope.info && scope.info.name) || 'our club';
+  var msg = 'Join ' + clubName + ' on BoxLeague Pro:\n' + url;
+  if (navigator.share) {
+    navigator.share({ title: clubName + ' — BoxLeague Pro', text: msg, url: url })
+      .catch(function() { /* user cancelled */ });
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(function() {
+      toast('Club link copied to clipboard');
+    }).catch(function() {
+      prompt('Copy this club link:', url);
+    });
+  } else {
+    prompt('Copy this club link:', url);
+  }
+}
 
 function mixInPath() {
   if (userHomeClub && userHomeClub.id) return '/clubs/' + userHomeClub.id + '/mixInGames';
