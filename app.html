@@ -96,6 +96,11 @@
     .league-card:active { transform: scale(0.99); }
     .league-card-name { font-size: 20px; font-weight: 700; }
     .league-card-meta { font-size: 15px; color: var(--muted); margin-top: 4px; }
+    /* v4.7.1: SINGLES/DOUBLES badge on league cards so the format is visible at a glance */
+    .league-format-badge { display: inline-block; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 10px; letter-spacing: 0.5px; margin-right: 8px; vertical-align: middle; text-transform: uppercase; }
+    .league-format-badge.singles { background: #dbeafe; color: #1d4ed8; }
+    .league-format-badge.doubles { background: #dcfce7; color: #15803d; }
+    .league-format-badge.mixed { background: #fce7f3; color: #be185d; }
     .league-card-sport { display: inline-block; background: #eff6ff; color: var(--primary-dark); padding: 3px 10px; border-radius: 20px; font-size: 13px; font-weight: 700; text-transform: uppercase; margin-top: 8px; }
     .club-list-item { background: var(--card); border-radius: 10px; padding: 14px 16px; margin-bottom: 8px; box-shadow: var(--shadow); cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 2px solid transparent; transition: border-color 0.15s; }
     .club-list-item:hover { border-color: var(--primary-light); }
@@ -657,16 +662,13 @@
   <div class="welcome-body">
     <img src="images/hero-banner-sm.jpg" alt="BoxLeague Pro" style="width:100%;border-radius:16px;margin-bottom:10px">
 
-    <div class="wc-card wc-card-img" onclick="selectGameType('singles')" aria-label="Singles Box League" style="background-image:url('images/singles-card-sm.jpg')">
-      <div class="wc-card-badge" style="background:rgba(0,0,0,0.5);color:#fff">1v1</div>
-    </div>
-
-    <div class="wc-card wc-card-img" onclick="selectGameType('doubles')" aria-label="Doubles Box League" style="background-image:url('images/doubles-card-sm.jpg')">
-      <div class="wc-card-badge" style="background:rgba(0,0,0,0.5);color:#fff">2v2</div>
+    <!-- v4.7.1: simplified to 2 choices. Singles vs doubles is shown on each league card instead. -->
+    <div class="wc-card wc-card-img" onclick="selectGameType('box')" aria-label="Box Leagues" style="background-image:url('images/doubles-card-sm.jpg')">
+      <div class="wc-card-badge" style="background:rgba(0,0,0,0.5);color:#fff">Box Leagues</div>
     </div>
 
     <div class="wc-card wc-card-img" onclick="selectGameType('mixin')" id="mixin-card" aria-label="Friendly Mix-In Games" style="background-image:url('images/mixin-card-sm.jpg')">
-      <div class="wc-card-badge" style="background:rgba(0,0,0,0.5);color:#fff">Open</div>
+      <div class="wc-card-badge" style="background:rgba(0,0,0,0.5);color:#fff">Friendly Mix-Ins</div>
     </div>
 
     <div id="welcome-my-leagues" style="display:none">
@@ -1434,7 +1436,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.7.0 · Build 20260415</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.7.1 · Build 20260415</div>
   </div>
 </div>
 
@@ -1453,6 +1455,10 @@
           <span style="background:#dcfce7;color:#15803d;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">NEW</span>
         </div>
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Simpler welcome screen</strong> — just two choices now: Box Leagues and Friendly Mix-Ins. No more format filter page to click through</li>
+          <li><strong>Format badges on every league</strong> — every league card shows SINGLES, DOUBLES or MIXED DOUBLES at a glance so you always know what you're joining</li>
+          <li><strong>Fix: singles leagues not loading</strong> — the old format filter was hiding some tennis singles leagues. Removed entirely</li>
+          <li><strong>Admin console from the top menu</strong> — clicking Admin Console in the menu now opens the console from anywhere, not just the Browse screen</li>
           <li><strong>Doubles + Mixed Doubles partners</strong> — your profile now remembers both a doubles partner and a mixed doubles partner, so you don't have to retype when you join a new league</li>
           <li><strong>New sticky top menu bar</strong> — always visible at the top of the app so you can see where you are and jump anywhere in one tap</li>
           <li><strong>Full menu system</strong> — Home, Browse leagues, all league tabs, Add a match, My profile, Help, What's new, Feedback &amp; Sign out all in one place</li>
@@ -3896,12 +3902,13 @@ function enterMixInMode() {
 }
 
 function selectGameType(type) {
+  // v4.7.1: simplified to 'box' (all box leagues) and 'mixin'. Legacy 'singles'/'doubles'
+  // values still work but no longer filter — every league is shown with a SINGLES/DOUBLES badge.
   selectedGameType = type;
   if (type === 'mixin') {
     goToMixIn();
     return;
   }
-  // For singles/doubles, go to browse screen with sport pre-selected
   goToBrowse();
 }
 
@@ -4071,11 +4078,10 @@ function goToBrowse() {
   document.getElementById('browse-user-name').textContent = firstName;
   const photoUrl = currentUser.photoURL || getDefaultAvatar();
   document.getElementById('browse-user-photo').src = photoUrl;
-  // Show game type subtitle
+  // v4.7.1: no game-type subtitle — all box leagues share a single screen and
+  // each card is badged SINGLES / DOUBLES / MIXED DOUBLES.
   const label = document.getElementById('browse-game-type-label');
-  if (selectedGameType === 'singles') { label.textContent = 'Organise Your Singles Box League Matches'; label.style.display = 'inline-block'; }
-  else if (selectedGameType === 'doubles') { label.textContent = 'Organise Your Doubles Box League Matches'; label.style.display = 'inline-block'; }
-  else { label.style.display = 'none'; }
+  if (label) { label.textContent = 'Organise Your Box League Matches'; label.style.display = 'inline-block'; }
   // Re-render leagues with filter applied
   renderMyLeagues();
   showScreen('browse');
@@ -4091,7 +4097,7 @@ function renderWelcomeLeagues() {
   list.innerHTML = ids.map(id => {
     const lg = userLeagues[id];
     return `<div class="league-card" onclick="enterLeague('${esc(id)}')" style="margin-bottom:8px">
-      <div class="league-card-name">${esc(lg.name || 'Unnamed League')}</div>
+      <div class="league-card-name">${leagueFormatBadge(lg)}${esc(lg.name || 'Unnamed League')}</div>
       <div class="league-card-meta">${esc(lg.clubName || '')}${lg.clubName ? ' &middot; ' : ''}${esc(lg.sport || '')}</div>
     </div>`;
   }).join('');
@@ -4133,12 +4139,9 @@ let createdLeagueId = null; // Track league just created for the share flow
 let createdLeagueName = null; // Track league name separately to avoid parsing display text
 
 function filterLeaguesByGameType(leagueEntries) {
-  if (!selectedGameType || selectedGameType === 'mixin') return leagueEntries;
-  return leagueEntries.filter(([id, lg]) => {
-    if (selectedGameType === 'singles') return isSinglesLeague(lg.sport);
-    if (selectedGameType === 'doubles') return !isSinglesLeague(lg.sport);
-    return true;
-  });
+  // v4.7.1: no filter — box leagues screen shows all leagues and each card is
+  // badged SINGLES or DOUBLES so players can see the type at a glance.
+  return leagueEntries;
 }
 
 function renderMyLeagues() {
@@ -4159,7 +4162,7 @@ function renderMyLeagues() {
     const deleteBtn = admin ? `<button onclick="deleteLeague('${esc(id)}', event)" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap" title="Delete league">&#128465; Delete</button>` : '';
     return `<div class="league-card" onclick="enterLeague('${esc(id)}')" style="display:flex;justify-content:space-between;align-items:center">
       <div>
-        <div class="league-card-name">${esc(lg.name || 'Unnamed League')}</div>
+        <div class="league-card-name">${leagueFormatBadge(lg)}${esc(lg.name || 'Unnamed League')}</div>
         <div class="league-card-meta">${esc(lg.clubName || '')}${lg.clubName ? ' &middot; ' : ''}${esc(lg.sport || '')}</div>
       </div>
       ${deleteBtn}
@@ -4212,12 +4215,10 @@ function showCreateFlow() {
   document.getElementById('create-club-create-option').style.display = 'none';
   selectedClubId = null;
   selectedClubName = '';
-  // Pre-select sport based on game type choice
-  if (selectedGameType === 'singles') {
-    document.getElementById('inp-create-league-sport').value = 'singles';
-  } else if (selectedGameType === 'doubles') {
-    document.getElementById('inp-create-league-sport').value = 'tennis';
-  }
+  // v4.7.1: default to tennis — user picks singles/doubles by choosing sport
+  // (sport dropdown still has "Singles (any sport)" as a dedicated option).
+  const sportSel = document.getElementById('inp-create-league-sport');
+  if (sportSel && !sportSel.value) sportSel.value = 'tennis';
   document.getElementById('inp-create-club-search').focus();
 }
 
@@ -4397,17 +4398,26 @@ function isMixedDoublesLeague(leagueName) {
   return /(\bmixed\b|\bmix\s*doubles?\b|\bmxd\b|\bxd\b)/.test(n);
 }
 
+// v4.7.1: Build the SINGLES/DOUBLES/MIXED badge shown on league cards.
+// `lg` is a league record with .sport and .name fields.
+function leagueFormatBadge(lg) {
+  if (!lg) return '';
+  const isMixed = isMixedDoublesLeague(lg.name || '');
+  if (isMixed) return '<span class="league-format-badge mixed">MIXED DOUBLES</span>';
+  if (isSinglesLeague(lg.sport)) return '<span class="league-format-badge singles">SINGLES</span>';
+  return '<span class="league-format-badge doubles">DOUBLES</span>';
+}
+
 function renderClubLeagues(leagues) {
   const el = document.getElementById('league-results');
   const filtered = filterLeaguesByGameType(Object.entries(leagues));
   if (filtered.length === 0) {
-    const typeLabel = selectedGameType === 'singles' ? 'singles' : selectedGameType === 'doubles' ? 'doubles' : '';
-    el.innerHTML = `<div class="txt-muted" style="padding:8px 0;margin-bottom:8px">No ${typeLabel} leagues yet at this club. Create the first one!</div>`;
+    el.innerHTML = `<div class="txt-muted" style="padding:8px 0;margin-bottom:8px">No box leagues yet at this club. Create the first one!</div>`;
     return;
   }
   el.innerHTML = filtered.map(([id, lg]) => {
     return `<div class="league-card" onclick="joinAndEnterLeague('${esc(id)}')">
-      <div class="league-card-name">${esc(lg.name)}</div>
+      <div class="league-card-name">${leagueFormatBadge(lg)}${esc(lg.name)}</div>
       <div class="league-card-meta">${esc(lg.sport || 'Tennis')}</div>
     </div>`;
   }).join('');
