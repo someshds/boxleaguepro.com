@@ -636,6 +636,7 @@
           <button onclick="openAdminAction('adminLoadClubs')" style="background:#d97706;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Load Clubs</button>
           <button onclick="openAdminAction('adminRebuildIndex')" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Rebuild Index</button>
           <button onclick="openAdminAction('adminLoadLogs')" style="background:#0891b2;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Activity Log</button>
+          <button onclick="openAdminAction('adminLoadBookings')" style="background:#be185d;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Bookings</button>
           <button onclick="openAdminAction('adminClearLogs')" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Clear Logs</button>
         </div>
         <div style="font-size:12px;color:#6b7280">Opens the admin panel with results.</div>
@@ -750,6 +751,7 @@
           <button onclick="adminRebuildIndex()" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Rebuild Index</button>
           <button onclick="adminLoadClubs()" style="background:#d97706;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Load Clubs</button>
           <button onclick="adminLoadLogs()" style="background:#0891b2;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Activity Log</button>
+          <button onclick="adminLoadBookings()" style="background:#be185d;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Bookings</button>
           <button onclick="adminClearLogs()" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">Clear Logs</button>
         </div>
         <div id="admin-log-filter" style="display:none;margin-bottom:8px">
@@ -766,6 +768,7 @@
         <div id="admin-log-list" style="max-height:500px;overflow-y:auto;margin-bottom:8px"></div>
         <div id="admin-club-list" style="max-height:400px;overflow-y:auto;margin-bottom:8px"></div>
         <div id="admin-league-list" style="max-height:300px;overflow-y:auto;margin-bottom:8px"></div>
+        <div id="admin-booking-list" style="max-height:500px;overflow-y:auto;margin-bottom:8px"></div>
         <div id="admin-user-list" style="max-height:400px;overflow-y:auto"></div>
       </div>
     </div>
@@ -1372,7 +1375,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.6.1 · Build 20260415</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.6.2 · Build 20260415</div>
   </div>
 </div>
 
@@ -1856,7 +1859,7 @@ function toggleAdminConsole() {
 
 function openAdminAction(fnName) {
   // M7: Allowlist of valid admin functions to prevent arbitrary function invocation
-  const ALLOWED_ADMIN_FNS = ['adminLoadAllUsers','adminLoadLeagues','adminLoadClubs','adminRebuildIndex','adminLoadLogs','adminClearLogs','adminDeleteLeague','adminDeleteUser','adminDeleteClub'];
+  const ALLOWED_ADMIN_FNS = ['adminLoadAllUsers','adminLoadLeagues','adminLoadClubs','adminRebuildIndex','adminLoadLogs','adminLoadBookings','adminClearLogs','adminDeleteLeague','adminDeleteUser','adminDeleteClub'];
   if (!ALLOWED_ADMIN_FNS.includes(fnName)) { console.warn('Blocked unknown admin action:', fnName); return; }
   // Navigate to browse screen, expand admin console, then run the action
   goToBrowse();
@@ -2425,6 +2428,104 @@ function adminClearLogs() {
     document.getElementById('admin-log-filter').style.display = 'none';
     toast('Activity logs cleared');
   }).catch(err => { toast('Failed to clear logs: ' + err.message); }); // M12
+}
+
+/* ── Bookings Admin ──
+   Diagnostic view of every booked match across every league. Added after the
+   Bill Rolfe data-loss incident (15 Apr 2026) where a legacy match-key
+   delimiter made a match invisible in-app even though the data was still in
+   Firebase. This view reads directly from /leagues/{id}/booked — so if a
+   match exists anywhere it shows here regardless of delimiter format.
+   Highlights legacy '_' delimiter keys in amber so the pattern is obvious. */
+function adminLoadBookings() {
+  if (!isAdmin() || !FIREBASE_READY) return;
+  const el = document.getElementById('admin-booking-list');
+  el.innerHTML = '<div style="color:#be185d;font-size:13px;padding:8px 0">Loading bookings across all leagues...</div>';
+
+  db.ref('/leagues').once('value').then(snap => {
+    const leagues = snap.val() || {};
+    const rows = [];
+    Object.entries(leagues).forEach(([lid, league]) => {
+      if (!league || typeof league !== 'object') return;
+      const booked = league.booked || {};
+      const groups = league.groups || {};
+      const leagueName = (league.settings && league.settings.leagueName) || (league.info && league.info.name) || 'Unnamed';
+      // Build group-id → players lookup for resolving match keys
+      const groupMap = {};
+      Object.values(groups).forEach(g => { if (g && g.id) groupMap[g.id] = (g.players || []).join(' & ') || 'Unknown team'; });
+      Object.entries(booked).forEach(([matchKey, slot]) => {
+        if (!slot || typeof slot !== 'object') return;
+        // Figure out which two teams this key belongs to
+        let teamA = null, teamB = null;
+        const groupIds = Object.keys(groupMap);
+        for (let i = 0; i < groupIds.length && !teamA; i++) {
+          for (let j = i + 1; j < groupIds.length && !teamA; j++) {
+            const a = groupIds[i], b = groupIds[j];
+            const legacy = [a, b].sort().join('_');
+            const modern = [a, b].sort().join('~~');
+            if (legacy === matchKey || modern === matchKey) { teamA = a; teamB = b; }
+          }
+        }
+        rows.push({
+          leagueId: lid,
+          leagueName,
+          matchKey,
+          legacyDelimiter: matchKey.indexOf('~~') === -1,
+          teamAName: teamA ? groupMap[teamA] : null,
+          teamBName: teamB ? groupMap[teamB] : null,
+          date: slot.date || '',
+          slot: slot.slot || '',
+          courtBooked: !!slot.courtBooked,
+          notes: slot.notes || '',
+          agreedCount: slot.agreed ? Object.keys(slot.agreed).length : 0,
+          agreedNames: slot.agreed ? Object.keys(slot.agreed).join(', ') : ''
+        });
+      });
+    });
+
+    // Sort by date ascending, then by league
+    rows.sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.leagueName.localeCompare(b.leagueName));
+
+    if (rows.length === 0) {
+      el.innerHTML = '<div style="color:#6b7280;font-size:13px;padding:8px 0">No bookings found across any league.</div>';
+      return;
+    }
+
+    const legacyCount = rows.filter(r => r.legacyDelimiter).length;
+    const header = '<div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:8px">'
+      + rows.length + ' booking' + (rows.length === 1 ? '' : 's') + ' across ' + Object.keys(leagues).length + ' leagues'
+      + (legacyCount > 0 ? ' <span style="color:#d97706">&middot; ' + legacyCount + ' with legacy \'_\' delimiter</span>' : '')
+      + '</div>';
+
+    el.innerHTML = header + rows.map(r => {
+      const teams = (r.teamAName && r.teamBName)
+        ? esc(r.teamAName) + ' <span style="color:#9ca3af">vs</span> ' + esc(r.teamBName)
+        : '<span style="color:#dc2626">⚠ could not resolve teams from key</span>';
+      const border = r.legacyDelimiter ? '#fbbf24' : '#e5e7eb';
+      const bg = r.legacyDelimiter ? '#fffbeb' : '#fff';
+      const courtPill = r.courtBooked
+        ? '<span style="background:#dcfce7;color:#166534;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700">COURT BOOKED</span>'
+        : '<span style="background:#fee2e2;color:#991b1b;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700">NO COURT</span>';
+      const legacyPill = r.legacyDelimiter
+        ? ' <span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700">LEGACY KEY</span>'
+        : '';
+      return '<div style="padding:10px 12px;margin-bottom:6px;background:' + bg + ';border:1px solid ' + border + ';border-radius:8px;font-size:12px">'
+        + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">'
+        +   '<div style="font-weight:700;font-size:13px">' + teams + '</div>'
+        +   '<div style="white-space:nowrap">' + courtPill + legacyPill + '</div>'
+        + '</div>'
+        + '<div style="color:#374151;margin-bottom:4px"><strong>' + esc(r.date) + '</strong> @ ' + esc(r.slot)
+        +   (r.agreedCount > 0 ? ' &middot; <span style="color:#059669">agreed by ' + esc(r.agreedNames) + '</span>' : ' &middot; <span style="color:#9ca3af">not yet agreed</span>')
+        + '</div>'
+        + '<div style="color:#9ca3af;font-size:10px;font-family:monospace;word-break:break-all">'
+        +   esc(r.leagueName) + ' &middot; ' + esc(r.leagueId) + ' &middot; key: ' + esc(r.matchKey)
+        + '</div>'
+        + (r.notes ? '<div style="color:#6b7280;font-size:11px;margin-top:4px;font-style:italic">' + esc(r.notes) + '</div>' : '')
+        + '</div>';
+    }).join('');
+  }).catch(err => {
+    el.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:8px 0">Error loading bookings: ' + err.message + '</div>';
+  });
 }
 
 /* ── Club Admin ── */
