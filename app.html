@@ -1189,9 +1189,9 @@
           <div class="edu-tip-title">Setting Up Your League</div>
         </div>
         <div class="edu-tip-body">
-          Add your <strong>teams</strong> (doubles pairs). Then share the <strong>invite link</strong> so players can join and fill in their availability.
+          Add your <strong>players or teams</strong> (doubles pairs for doubles leagues, individual players for singles). Then share the <strong>invite link</strong> so players can join and fill in their own availability.
           <br><br>
-          <strong>Tip:</strong> Use the quick template below to add all teams in seconds.
+          <strong>Tip:</strong> Use <em>Bulk Add Players</em> from your club welcome screen, or the quick template below, to add everyone in seconds.
         </div>
       </div>
 
@@ -1523,7 +1523,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.9.3 · Build 20260415</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.9.4 · Build 20260415</div>
   </div>
 </div>
 
@@ -1536,6 +1536,20 @@
       <button onclick="closeChangelog()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <div style="padding:20px" id="changelog-content">
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#e0f2fe;color:#075985;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.9.4 &middot; 15 Apr 2026</span>
+          <span style="background:#dcfce7;color:#166534;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">HELP REFRESH</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>All help content rewritten for the current system</strong> &mdash; the FAQ, How it works, welcome overlays, guided tour, explainers and in-app edu-tips were all written before the club sandbox existed. They now describe club links (<code>?club=</code>), the three-tier role model (player / club organiser / super admin), the apply.html flow, the Club Organiser Tools panel, bulk add players, and club-admin-controlled league deletion</li>
+          <li><strong>FAQ expanded to 25 questions</strong> &mdash; new entries for "What is a club sandbox link?", "How do I get my club added?", "How do I create a league?", "How do players join?", "Can I add other organisers?", "Can I delete a league?", and "What roles exist and who can do what?"</li>
+          <li><strong>"How it works" expanded from 3 to 4 steps</strong> &mdash; now walks through Get your club set up &rarr; Share the club link &rarr; Create leagues &amp; bulk add players &rarr; Find &amp; book matches</li>
+          <li><strong>Guided tour has a new Club Link + Club Organiser Tools step</strong> so first-time organisers see exactly what the scoped welcome and the tools panel do. Tour is now 7 steps instead of 6</li>
+          <li><strong>Setup edu-tip is now format-agnostic</strong> &mdash; no longer assumes singles leagues, mentions Bulk Add Players, and explains the invite link flow</li>
+          <li><strong>No code changes</strong> &mdash; purely a help content refresh. All v4.9.3 bug fixes remain in place</li>
+        </ul>
+      </div>
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="background:#dcfce7;color:#166534;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.9.3 &middot; 15 Apr 2026</span>
@@ -1810,19 +1824,24 @@
       <button onclick="closeHelp();resetExplainers();resetTabGuides()" style="width:100%;padding:12px;border-radius:10px;border:2px solid #059669;background:#f0fdf4;color:#059669;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px">&#128218; Show All Guides Again</button>
 
       <!-- How it works -->
+      <!-- v4.9.4: updated to reflect the club sandbox + organiser role model -->
       <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:12px">How it works</div>
       <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
         <div style="display:flex;gap:12px;align-items:start">
           <div style="min-width:28px;height:28px;border-radius:50%;background:#3884F4;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">1</div>
-          <div><div style="font-size:14px;font-weight:600;color:#1a1a1a">Create or join a league</div><div style="font-size:13px;color:#6b7280">Start a new box league at your club, or join one that already exists.</div></div>
+          <div><div style="font-size:14px;font-weight:600;color:#1a1a1a">Get your club set up</div><div style="font-size:13px;color:#6b7280">Apply at <a href="/apply.html" style="color:#2563eb;text-decoration:underline">/apply.html</a> and we email back a dedicated club link. Existing clubs already have one &mdash; ask your organiser to share it.</div></div>
         </div>
         <div style="display:flex;gap:12px;align-items:start">
           <div style="min-width:28px;height:28px;border-radius:50%;background:#3884F4;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">2</div>
-          <div><div style="font-size:14px;font-weight:600;color:#1a1a1a">Invite your players</div><div style="font-size:13px;color:#6b7280">Share the invite link via WhatsApp, email, or text. Players sign up and set their availability.</div></div>
+          <div><div style="font-size:14px;font-weight:600;color:#1a1a1a">Share the club link</div><div style="font-size:13px;color:#6b7280">Drop the <code>?club=your-club</code> link into your club WhatsApp group. Players land straight on your club's own welcome screen with all your leagues listed.</div></div>
         </div>
         <div style="display:flex;gap:12px;align-items:start">
           <div style="min-width:28px;height:28px;border-radius:50%;background:#3884F4;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">3</div>
-          <div><div style="font-size:14px;font-weight:600;color:#1a1a1a">Find &amp; book matches</div><div style="font-size:13px;color:#6b7280">Match Finder compares everyone&rsquo;s availability and shows times when all players can play. Tap to book.</div></div>
+          <div><div style="font-size:14px;font-weight:600;color:#1a1a1a">Create leagues &amp; bulk add players</div><div style="font-size:13px;color:#6b7280">Club organisers use the Club Organiser Tools panel to spin up leagues in 30 seconds and bulk add players from a pasted list.</div></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:start">
+          <div style="min-width:28px;height:28px;border-radius:50%;background:#3884F4;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">4</div>
+          <div><div style="font-size:14px;font-weight:600;color:#1a1a1a">Find &amp; book matches</div><div style="font-size:13px;color:#6b7280">Players mark their availability; Match Finder compares everyone and shows times when all players can play. Tap to book, everyone gets notified.</div></div>
         </div>
       </div>
 
@@ -1843,27 +1862,35 @@
       <div id="app-faq-list" style="margin-bottom:20px"></div>
       <script>
       (function(){
+        // v4.9.4: FAQ refreshed for the current club-sandbox + organiser role model.
+        // Key changes: explains the ?club= scoped link, the apply.html flow, and
+        // the three-tier role system (player, club organiser, super admin).
         var faqs = [
           ["What is BoxLeague Pro?", "A free web app for organising box league matches and friendly mix-in games for any racquet sport \u2014 tennis, padel, squash, racketball, and badminton."],
           ["Is it really free?", "Yes, 100% free forever. No premium tiers, no player limits, no hidden fees. Every feature is available to everyone."],
           ["Do I need to download an app?", "No. BoxLeague Pro runs in your browser on any device \u2014 phone, tablet, or desktop. Just visit boxleaguepro.com and sign in."],
-          ["What sports does it support?", "Tennis, padel, squash, racketball, badminton, and any other racquet sport. Works for both singles and doubles."],
-          ["How do I create a box league?", "Sign in, choose your game type (singles or doubles), find or create your club, then create a league. Share the invite link with your players."],
-          ["How do players join my league?", "Share the invite link via WhatsApp, email, or text. When players click it, they\u2019re taken straight to your league. They just sign in and they\u2019re in."],
-          ["Can I run multiple leagues?", "Yes. Each club can have unlimited leagues \u2014 e.g. Men\u2019s Singles Box 1, Mixed Doubles Box 2, Ladies\u2019 Box 3, etc."],
-          ["What\u2019s the difference between Box Leagues and Mix-In Games?", "Box Leagues are structured competitions with teams, availability matching, and match scheduling. Mix-In Games are casual \u2014 post a game, set the date, and let anyone join."],
-          ["How does the availability grid work?", "Each player marks their free time in 30-minute slots from 7am to 9pm. You can tap individual slots, copy last week, or clear the week. The grid scrolls vertically to show all time slots."],
-          ["What is Match Finder?", "Match Finder automatically compares everyone\u2019s availability and shows time slots where all players in a match are free. One tap to book."],
-          ["Can I share via WhatsApp?", "Yes. Throughout the app there are WhatsApp share buttons for leagues, matches, availability reminders, and open games."],
-          ["Do I have to manage everything as organiser?", "No. Players join via link, set their own availability, and book their own matches. The organiser just sets up the league and shares the link."],
+          ["What sports does it support?", "Tennis, padel, squash, racketball, badminton, and any other racquet sport. Works for singles, doubles, and mixed doubles."],
+          ["What is a \u201cclub sandbox\u201d or \u201cclub link\u201d?", "Every club on BoxLeague Pro gets its own short link like boxleaguepro.com/app.html?club=east-grinstead-tennis. When players click it they land straight on their club's own welcome screen with their leagues and mix-in games \u2014 nothing from other clubs in the way. Your club organiser can share this one link in a WhatsApp group and everyone lands in the right place."],
+          ["How do I get my club added to BoxLeague Pro?", "Fill in the 30-second form at boxleaguepro.com/apply.html. We review the application, create a club sandbox for you, and email you back a dedicated club link. Once you're set up as the club organiser you can create leagues, bulk add players, and invite other organisers yourself \u2014 no technical help needed."],
+          ["How do I create a box league at my club?", "If you're a club organiser, open your club link (see above), tap the \u201cClub Organiser Tools\u201d panel at the top of your welcome screen, then \u201cNew League\u201d. Pick a format (Singles, Doubles, or Mixed Doubles), name it, and you're done. Bulk add your players in one paste, or share the invite link so they join themselves."],
+          ["How do players join my league?", "Three ways: (1) share your club link \u2014 players land on your club sandbox and tap \u201cJOIN\u201d on any open league; (2) share the league-specific invite link; or (3) bulk add them from the Club Organiser Tools panel. Players who already have a BoxLeague Pro account get added instantly; new players sign in once and they're in."],
+          ["Can I run multiple leagues at my club?", "Yes. Each club can have unlimited leagues \u2014 e.g. Men\u2019s Singles Box 1, Mixed Doubles Box 2, Ladies\u2019 Box 3, etc. Every league your club runs shows up on the same club welcome screen so players don't have to hunt."],
+          ["What\u2019s the difference between Box Leagues and Mix-In Games?", "Box Leagues are structured competitions with teams, availability matching, and match scheduling. Mix-In Games are casual \u2014 post a game, set the date, and let anyone at your club join."],
+          ["How does the availability grid work?", "Each player marks their free time in 1.5-hour slots across the week (morning, afternoon, evening). Tap individual slots, copy last week, or clear the week in one go. The grid scrolls to show all time slots and all days."],
+          ["What is Match Finder?", "Match Finder automatically compares everyone\u2019s availability in your league and shows time slots where all players in a potential match are free. One tap to book, and every player is notified."],
+          ["Can I share via WhatsApp?", "Yes. Every league, match, open game, and club link has a WhatsApp share button. Your club link is particularly useful for club WhatsApp groups \u2014 one tap and every player lands on the right screen."],
+          ["Do I have to manage everything as organiser?", "No. Players join via link, set their own availability, and the app finds match times automatically. As organiser you only set up the league, bulk add players (optional), and tap \u201cBook\u201d when a match slot looks good. The app does the rest."],
           ["Can I see who hasn\u2019t filled in availability?", "Yes. The Everyone view shows a colour-coded calendar. You can see who\u2019s missing and chase them via WhatsApp with one tap."],
           ["Can I set an availability deadline?", "Yes. Set a deadline in Settings. Players see a countdown, and the app highlights who still needs to respond."],
-          ["Can I remove a player?", "Yes. Organisers can remove players from the Members section. Only the organiser has this permission."],
-          ["Who can see my availability?", "Only members of your league can see your availability. Your data is not shared publicly."],
-          ["Is my data secure?", "Yes. BoxLeague Pro uses Firebase with secure authentication. Your data is encrypted and protected by Google\u2019s security infrastructure."],
-          ["Can I delete my account?", "Yes. Contact us at grant@aifusionautomations.com and we\u2019ll remove your data."],
+          ["Can I add other club organisers?", "Yes. In your Club Organiser Tools panel, tap \u201cManage Organisers\u201d. You can add other organisers by email (they need to have signed into BoxLeague Pro at least once), and remove them too. Promotes and demotes are live \u2014 the next time that person signs in they see the Club Organiser Tools panel automatically."],
+          ["Can I remove a player?", "Yes. Club organisers can remove players from a league via the Members section on the Setup tab. This also cleans up their team, availability, and any booked matches."],
+          ["Can I delete a league?", "Club organisers can delete any league in their own club \u2014 tap the small bin icon next to the league name on your club welcome screen. Delete asks for two confirmations and cascades through all of /leagues, /clubLeagues, /userLeagues, /leagueIndex and /codes properly, so there's no orphaned data."],
+          ["What roles exist? Who can do what?", "Three tiers. (1) <strong>Player</strong> \u2014 joins leagues, marks availability, plays matches. (2) <strong>Club Organiser</strong> \u2014 everything a player can do, plus creates leagues, bulk adds players, deletes leagues in their own club, and manages other club organisers for their own club. (3) <strong>Super Admin</strong> (just one, grantdeswardt@gmail.com) \u2014 global override for support and troubleshooting across all clubs. Club organisers have no access to any club other than their own."],
+          ["Who can see my availability?", "Only members of the same league can see your availability. Your data is never shared publicly and never shared with players in other leagues or clubs."],
+          ["Is my data secure?", "Yes. BoxLeague Pro runs on Firebase with Google-backed authentication. Every read and write is checked against per-club permission rules so players can only see their own club's data."],
+          ["Can I delete my account?", "Yes. Contact us at grant@aifusionautomations.com and we\u2019ll remove your data. You can also use the Feedback &amp; Support button in the menu to request data deletion."],
           ["Who built BoxLeague Pro?", "BoxLeague Pro is built by AI Fusion Automations, a UK-based software company. We build custom apps, AI automations, and business software."],
-          ["How do I book a court?", "If your club organiser has added a court booking URL, a \u201cBook a Court\u201d button appears throughout the app linking directly to your club\u2019s booking system."]
+          ["How do I book a court?", "If your club organiser has added a court booking URL to the league Settings, a \u201cBook a Court\u201d button appears on match and open-game screens linking directly to your club\u2019s booking system."]
         ];
         var html = '';
         faqs.forEach(function(f){
@@ -9819,6 +9846,7 @@ function openBookingUrl() {
 }
 
 /* ── Screen Explainers ── */
+// v4.9.4: explainer copy refreshed for the club sandbox + organiser role model.
 const EXPLAINERS = {
   welcome: {
     icon: '&#127934;',
@@ -9828,7 +9856,8 @@ const EXPLAINERS = {
       '<strong>Organise Your Singles Box League Matches</strong> — compete 1v1 against everyone in your group',
       '<strong>Organise Your Doubles Box League Matches</strong> — team up with a partner and take on other pairs',
       '<strong>Create or Join Friendly Mix-In Games</strong> — post a game and let anyone at your club join',
-      'Already have a league? Scroll down to <strong>"Your Leagues"</strong> or tap <strong>"Join directly"</strong> at the bottom'
+      'Got a <strong>club link</strong> from your organiser? Open it directly — you\'ll land on your club\'s own welcome screen with everything you need',
+      'Already in a league? Scroll down to <strong>"Your Leagues"</strong> or tap <strong>"Join directly"</strong> at the bottom'
     ]
   },
   browse: {
@@ -9837,9 +9866,10 @@ const EXPLAINERS = {
     subtitle: 'Get set up in under a minute',
     steps: [
       '<strong>Join a League</strong> — search for your club, then pick an existing league to join',
-      '<strong>Add a League</strong> — create a new league and invite your players with a share link',
+      '<strong>Got an invite link?</strong> Open it directly and you skip the search — you\'ll land straight in your league',
       '<strong>Create or Join Friendly Mix-In Games</strong> — skip the league and go straight to casual games at your club',
-      'Got a <strong>league code</strong>? Enter it in the "Join by code" box to jump straight in'
+      'Got a <strong>league code</strong>? Enter it in the "Join by code" box to jump straight in',
+      '<strong>Club organisers</strong> create new leagues from the Club Organiser Tools panel on the scoped club welcome screen'
     ]
   },
   availability: {
@@ -9903,10 +9933,10 @@ const EXPLAINERS = {
     title: 'League Setup',
     subtitle: 'Configure your league as the organiser',
     steps: [
-      'Add <strong>groups and teams</strong> — these are the doubles pairs or singles players in your league',
-      'Set a <strong>deadline</strong> for availability submissions',
-      'Share the <strong>invite link</strong> so players can join and fill in their own availability',
-      'Set the <strong>court booking URL</strong> so players can easily book courts'
+      'Add <strong>groups and teams</strong> — the doubles pairs, singles players, or mixed-doubles teams in your league',
+      '<strong>Bulk add players</strong> — paste a list of names (or doubles teams separated with <code>&amp;</code>) and they\'re added in one go',
+      'Set a <strong>deadline</strong> for availability submissions and an optional <strong>court booking URL</strong>',
+      'Share the <strong>invite link</strong> — or share your whole-club link from the scoped welcome screen to give players everything in one tap'
     ]
   }
 };
@@ -9953,12 +9983,14 @@ function resetExplainers() {
 }
 
 /* ── Guided Tour ── */
+// v4.9.4: tour refreshed to mention the club sandbox link and organiser tools.
 const TOUR_STEPS = [
   { target: null, title: 'Welcome to BoxLeague Pro! \u{1F3BE}', text: "Let's take a quick tour to get you started. It only takes 30 seconds." },
-  { target: '#browse-options', title: 'Join or Add a League', text: 'Choose "Join a League" to find an existing league at your club, or "Add a League" to create a brand new one.' },
-  { target: null, title: 'Quick Setup Wizard', text: "After joining or creating a league, a short wizard walks you through entering your name, picking your doubles partner, and marking when you're free to play.", icon: '\u{2699}\u{FE0F}' },
-  { target: null, title: 'Invite Your Players', text: 'After creating a league, you get a share link. Send it via WhatsApp, email, or text. Players click the link, sign up, and set their own availability.', icon: '\u{1F4E8}' },
-  { target: null, title: 'Find & Book Matches', text: "The Match Finder compares everyone's availability and shows times when all players can play. Tap a slot to book instantly.", icon: '\u{1F3BE}' },
+  { target: null, title: 'Your Club Link', text: "Every club on BoxLeague Pro has its own short link like ?club=east-grinstead-tennis. Players land straight on your club's welcome screen with everything they need. If your club isn't set up yet, tap Apply at /apply.html and we'll add it in 24 hours.", icon: '\u{1F517}' },
+  { target: '#browse-options', title: 'Join or Add a League', text: 'Choose "Join a League" to find an existing league at your club, or if you have a club link, open it directly to see all your club\u2019s leagues in one place.' },
+  { target: null, title: 'Quick Setup Wizard', text: "After joining or creating a league, a short wizard walks you through entering your name, picking your doubles partner (if it's a doubles league), and marking when you're free to play.", icon: '\u{2699}\u{FE0F}' },
+  { target: null, title: 'Club Organiser Tools', text: 'If you\u2019re a club organiser, the scoped welcome screen shows a Club Organiser Tools panel with one-tap New League, Bulk Add Players, Manage Organisers, and Share Club Link.', icon: '\u{1F6E0}\u{FE0F}' },
+  { target: null, title: 'Find & Book Matches', text: "Once players have marked their availability, Match Finder compares everyone and shows times when all players can play. Tap a slot to book instantly \u2014 everyone gets notified.", icon: '\u{1F3BE}' },
   { target: null, title: "You're All Set! \u{1F3C6}", text: "That's it \u2014 no spreadsheets, no WhatsApp chaos. Tap the ? button any time for help." }
 ];
 
