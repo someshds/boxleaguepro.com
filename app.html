@@ -1372,7 +1372,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.6.5 · Build 20260415</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.6.6 · Build 20260415</div>
   </div>
 </div>
 
@@ -4417,6 +4417,7 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
     if (!L.settings) L.settings = {};
     if (!L.booked) L.booked = {};
     migrateLegacyBooked(); // rekey any '_' bookings from older versions
+    migrateLegacyAvailability(); // expand legacy 1.5h slots → 30-min format
     document.getElementById('inp-league-name').value = L.settings.leagueName || '';
     document.getElementById('inp-deadline').value = L.settings.deadline || '';
     document.getElementById('inp-booking-url').value = clubBookingUrl || '';
@@ -4438,6 +4439,7 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
 
   const l2 = ref.child('availability').on('value', snap => {
     L.availability = snap.val() || {};
+    migrateLegacyAvailability(); // expand legacy 1.5h slots → 30-min keys (v4.6.6)
     if (currentTab === 'availability') { renderAvailGrid(); renderMySummary(); renderMyMatches(); }
     if (currentTab === 'everyone') { renderAllAvail(); renderMissing(); }
     if (currentTab === 'matches') renderMatchFinder();
@@ -4659,6 +4661,78 @@ function migrateLegacyBooked() {
       }
     }
   }
+}
+
+// HOTFIX 2026-04-15 (v4.6.6): Migrate legacy 1.5-hour availability slot keys to
+// current 30-minute format. Older versions stored slots as '9-1030', '1030-12',
+// etc. The current render/query paths only iterate the 30-min SLOTS array, so
+// legacy entries are invisible — the grid appears blank even though the data is
+// intact in Firebase. This function expands each legacy 1.5h slot into three
+// 30-min slots, writes the new keys in-memory, deletes the old keys, and
+// persists the change atomically to Firebase. Idempotent: keys already in
+// 30-min format (4-digit HHMM) are skipped.
+//
+// Affected leagues discovered 15 Apr 2026: 208 legacy entries across 4 leagues,
+// including Bill Rolfe's 86 slots.
+const LEGACY_TO_30MIN_SLOTS = {
+  '9-1030':  ['0900', '0930', '1000'],
+  '1030-12': ['1030', '1100', '1130'],
+  '12-130':  ['1200', '1230', '1300'],
+  '130-3':   ['1330', '1400', '1430'],
+  '3-430':   ['1500', '1530', '1600'],
+  '430-6':   ['1630', '1700', '1730'],
+  '6-730':   ['1800', '1830', '1900'],
+  '730-9':   ['1930', '2000', '2030']
+};
+
+function migrateLegacyAvailability() {
+  if (!L.availability) return 0;
+  const keys = Object.keys(L.availability);
+  const fbUpdates = {};
+  let migratedKeys = 0;
+  let expandedSlots = 0;
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    const parts = key.split('|');
+    if (parts.length !== 3) continue;
+    const player = parts[0];
+    const date = parts[1];
+    const slot = parts[2];
+    const newSlots = LEGACY_TO_30MIN_SLOTS[slot];
+    if (!newSlots) continue; // already 30-min format or unknown — skip
+    for (let s = 0; s < newSlots.length; s++) {
+      const newKey = player + '|' + date + '|' + newSlots[s];
+      if (!L.availability[newKey]) {
+        L.availability[newKey] = true;
+        fbUpdates[newKey] = true;
+        expandedSlots++;
+      }
+    }
+    delete L.availability[key];
+    fbUpdates[key] = null;
+    migratedKeys++;
+  }
+  if (migratedKeys === 0) return 0;
+  console.log('[BoxLeague] migrateLegacyAvailability: converted ' + migratedKeys + ' legacy keys → ' + expandedSlots + ' new 30-min keys');
+  const ref = leagueRef('availability');
+  if (ref) {
+    ref.update(fbUpdates)
+      .then(function() {
+        console.log('[BoxLeague] Legacy availability migration persisted to Firebase');
+        try {
+          if (typeof logAction === 'function') {
+            logAction('migrate_legacy_availability', migratedKeys + ' legacy slots → ' + expandedSlots + ' 30-min slots');
+          }
+        } catch (e) {}
+      })
+      .catch(function(err) {
+        console.warn('[BoxLeague] Legacy availability migration Firebase write failed:', err);
+      });
+  } else {
+    // localStorage path — persist immediately
+    try { localSave(); } catch (e) {}
+  }
+  return migratedKeys;
 }
 
 function fbSetBooked(matchKey, slotData) {
