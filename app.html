@@ -1523,7 +1523,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.9.2 · Build 20260415</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.9.3 · Build 20260415</div>
   </div>
 </div>
 
@@ -1536,6 +1536,19 @@
       <button onclick="closeChangelog()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <div style="padding:20px" id="changelog-content">
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#dcfce7;color:#166534;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.9.3 &middot; 15 Apr 2026</span>
+          <span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">AUDIT &amp; FIXES</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Fix: Ladies Singles Premier now shows the SINGLES badge</strong> &mdash; the scoped club welcome had its own local badge helper that only looked at the explicit <code>format</code> field, so legacy leagues (created before v4.7.3) fell through to DOUBLES even when the name said "Singles". Scoped badges now use the same full detection the rest of the app uses (format &rarr; sport &rarr; name heuristic)</li>
+          <li><strong>Fix: email keys are now always lowercased</strong> &mdash; <code>sanitizeEmail</code> previously only replaced dots, so signing in as <code>Grant@x.com</code> vs <code>grant@x.com</code> would write to two different Firebase keys, orphaning the second membership. Now trimmed + lowercased + null-safe. One legacy inline duplicate in <code>adminDeleteUser</code> was also routed through the helper</li>
+          <li><strong>Fix: super admin check is now case-insensitive</strong> &mdash; <code>isAdmin()</code> used a literal <code>.includes(currentUser.email)</code>, so Grant would lose super-admin if his email came back mixed case from a future auth provider. Normalised to lowercase before comparing</li>
+          <li><strong>Defense-in-depth permission gates</strong> on <code>removeMember</code>, <code>resetLeagueData</code>, <code>unbookMatch</code>, and <code>clearAllComments</code>. These were previously only protected by the UI, meaning a player on the browser console could still trigger them. They now all check <code>isAdmin()</code> or league organiser role before touching Firebase. Players can still cancel their own bookings via <code>unbookMatch</code></li>
+          <li><strong>No data migration needed</strong> &mdash; existing keys were already lowercase in practice (Google auth normalises), so this release is safe to hot-deploy. Bill's league, the scoped sandbox, and all existing memberships work exactly as before</li>
+        </ul>
+      </div>
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="background:#ede9fe;color:#6d28d9;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.9.2 &middot; 15 Apr 2026</span>
@@ -2066,7 +2079,14 @@ let listeners = [];           // Active Firebase listeners (to detach on league 
 /* ══════════════════════════════════════
    UTILITY
    ══════════════════════════════════════ */
-function isAdmin() { return currentUser && ADMIN_EMAILS.includes(currentUser.email); }
+// v4.9.3: case-insensitive email match. Firebase Auth sometimes returns the
+// email with the casing the user typed at sign-up, so a literal .includes()
+// could lock Grant out if he signed in as `GrantDeSwardt@gmail.com`.
+function isAdmin() {
+  if (!currentUser || !currentUser.email) return false;
+  var e = String(currentUser.email).toLowerCase();
+  return ADMIN_EMAILS.indexOf(e) !== -1;
+}
 
 function logAction(action, details) {
   if (!FIREBASE_READY) return;
@@ -2599,7 +2619,7 @@ function adminDeleteUser(email) {
   if (!isAdmin()) return;
   if (!confirm('Remove ' + email + ' from ALL leagues globally? This cannot be undone.')) return;
 
-  const emailKey = email.replace(/\./g, ',');
+  const emailKey = sanitizeEmail(email); // v4.9.3: was raw .replace, now goes through the lowercasing helper so mixed-case emails resolve to the same key
   const updates = {};
   let uid = null;
 
@@ -3348,7 +3368,11 @@ async function genUniqueCode() {
   for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
   return code;
 }
-function sanitizeEmail(email) { return email.replace(/\./g, ','); } // Firebase key-safe
+// v4.9.3: lowercase + null-safe. Must match the server side (firebase-admin.js)
+// and the CLI helper. Without .toLowerCase() we'd produce two different Firebase
+// keys for the same email depending on how the user typed it at sign-in
+// (`Grant@x.com` vs `grant@x.com`), causing orphaned /members records.
+function sanitizeEmail(email) { return String(email || '').trim().toLowerCase().replace(/\./g, ','); } // Firebase key-safe
 
 /* ── Player colours ── */
 const GROUP_COLORS = ['#1d4ed8','#0891b2','#dc2626','#d97706','#7c3aed','#059669','#be185d','#0d9488','#9333ea','#ea580c'];
@@ -4561,17 +4585,29 @@ function renderScopedLeagueList(clubId) {
     yourIds.sort(byName);
     otherIds.sort(byName);
 
-    function fmtBadge(fmt) {
-      fmt = String(fmt || '').toLowerCase();
-      if (fmt === 'singles') return '<span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px">SINGLES</span>';
-      if (fmt === 'mixed')   return '<span style="background:#fce7f3;color:#be185d;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px">MIXED DOUBLES</span>';
+    // v4.9.3: Was previously a local fmtBadge(fmt) that only looked at the
+    // explicit `format` field. Legacy leagues (created before v4.7.3 added the
+    // explicit Format picker) don't have `format` set — they only have `sport`
+    // and a name like "Ladies Singles Premier". The old helper fell through to
+    // DOUBLES for those. We now use a small inline detector that mirrors
+    // isSinglesLeague / isMixedDoublesLeague so the scoped welcome badges match
+    // what the rest of the app shows.
+    function fmtBadgeScoped(lg) {
+      lg = lg || {};
+      var fmt = String(lg.format || '').toLowerCase();
+      var sport = String(lg.sport || '').toLowerCase();
+      var name = String(lg.name || lg.leagueName || '').toLowerCase();
+      var isMixed = fmt === 'mixed' || /(\bmixed\b|\bmix\s*doubles?\b|\bmxd\b|\bxd\b)/.test(name);
+      if (isMixed) return '<span style="background:#fce7f3;color:#be185d;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px">MIXED DOUBLES</span>';
+      var isSingles = fmt === 'singles' || (!fmt && (sport === 'singles' || sport === 'squash' || sport === 'racketball')) || (!fmt && /\bsingles?\b/.test(name));
+      if (isSingles) return '<span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px">SINGLES</span>';
       return '<span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px">DOUBLES</span>';
     }
 
     function cardHtml(lid, isMember) {
       var lg = leagues[lid] || {};
       var lgName = lg.name || lg.leagueName || '(unnamed)';
-      var badges = fmtBadge(lg.format);
+      var badges = fmtBadgeScoped(lg);
       if (isMember) {
         badges += ' <span style="background:#ecfdf5;color:#047857;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px;border:1px solid #a7f3d0">&#10003; JOINED</span>';
       }
@@ -7061,6 +7097,11 @@ function linkMember(memberKey, playerName) {
 }
 
 function removeMember(emailKey) {
+  // v4.9.3: defense-in-depth permission gate. UI only shows the remove button
+  // to organisers, but this function is callable from the JS console, so we
+  // verify server-side-equivalent before making writes.
+  const lgInfoR = activeLeagueId ? userLeagues[activeLeagueId] : null;
+  if (!isAdmin() && !(lgInfoR && lgInfoR.role === 'organiser')) { toast('Only organisers can remove members'); return; }
   const m = L.members[emailKey];
   if (!m) return;
   const memberName = m.name || m.email;
@@ -7111,6 +7152,10 @@ function removeMember(emailKey) {
 }
 
 function resetLeagueData() {
+  // v4.9.3: defense-in-depth permission gate. Destructive — wipes every
+  // player's availability and every booked match for the league.
+  const lgInfoReset = activeLeagueId ? userLeagues[activeLeagueId] : null;
+  if (!isAdmin() && !(lgInfoReset && lgInfoReset.role === 'organiser')) { toast('Only organisers can reset league data'); return; }
   if (!confirm('Reset all availability and bookings? Groups and members will be kept.')) return;
   L.availability = {};
   L.booked = {};
@@ -8037,6 +8082,18 @@ function saveAddMatchModal(fixedTeamAId) {
 }
 
 function unbookMatch(matchKey) {
+  // v4.9.3: defense-in-depth permission gate. Only organisers (or players
+  // who are in the booked match) should be able to cancel a booking. Mirrors
+  // the gate on bookMatch at line ~7829.
+  const lgInfoUB = activeLeagueId ? userLeagues[activeLeagueId] : null;
+  const isOrgUB = isAdmin() || (lgInfoUB && lgInfoUB.role === 'organiser');
+  if (!isOrgUB) {
+    // Allow a player to cancel a match they're part of (self-service unbooking)
+    const booked = L.booked && L.booked[matchKey];
+    const myName = getMyPlayerName ? getMyPlayerName() : '';
+    const inMatch = myName && booked && matchKey.indexOf(myName) !== -1;
+    if (!inMatch) { toast('Only organisers can cancel this booking'); return; }
+  }
   if (!confirm('Cancel this booking?')) return;
   logAction('unbook_match', matchKey);
   fbSetBooked(matchKey, null);
@@ -9061,6 +9118,10 @@ function deleteComment(commentId) {
 }
 
 function clearAllComments() {
+  // v4.9.3: defense-in-depth permission gate. The UI button is organiser-only
+  // but the function is reachable from the JS console.
+  const lgInfoCC = activeLeagueId ? userLeagues[activeLeagueId] : null;
+  if (!isAdmin() && !(lgInfoCC && lgInfoCC.role === 'organiser')) { toast('Only organisers can clear all messages'); return; }
   if (!confirm('Delete ALL messages? This cannot be undone.')) return;
   const path = commentsPath();
   if (!path) return;
