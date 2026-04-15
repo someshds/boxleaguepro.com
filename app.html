@@ -1372,7 +1372,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.6 · Build 20260412</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.6.1 · Build 20260415</div>
   </div>
 </div>
 
@@ -4264,6 +4264,7 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
     } catch(e) {}
     if (!L.settings) L.settings = {};
     if (!L.booked) L.booked = {};
+    migrateLegacyBooked(); // rekey any '_' bookings from older versions
     document.getElementById('inp-league-name').value = L.settings.leagueName || '';
     document.getElementById('inp-deadline').value = L.settings.deadline || '';
     document.getElementById('inp-booking-url').value = clubBookingUrl || '';
@@ -4278,6 +4279,7 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
 
   const l1 = ref.child('groups').on('value', snap => {
     L.groups = snap.val() ? Object.values(snap.val()) : [];
+    migrateLegacyBooked(); // rekey any '_' bookings once groups are known
     renderGroups(); renderProgress();
   });
   listeners.push({ ref: ref.child('groups'), event: 'value', fn: l1 });
@@ -4302,6 +4304,7 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
 
   const l4 = ref.child('booked').on('value', snap => {
     L.booked = snap.val() || {};
+    migrateLegacyBooked(); // rekey any '_' bookings from older versions
     if (currentTab === 'matches') renderMatchFinder();
     if (currentTab === 'availability') renderMyMatches();
   });
@@ -4477,6 +4480,33 @@ function clearDeadline() {
   if (ref) ref.update({ deadline: '' }); else localSave();
   renderDeadline();
   toast('Deadline removed');
+}
+
+// HOTFIX 2026-04-15: Migrate legacy '_' match keys to '~~' format in memory.
+// Older versions used '_' as the match-key delimiter between group ids. Group
+// ids contain underscores, so we cannot split by '_' — instead we test every
+// group pair against each legacy key. Bookings in Firebase are preserved; we
+// only re-key the local copy so render functions find them. Idempotent: keys
+// already in '~~' format are skipped.
+function migrateLegacyBooked() {
+  if (!L.booked || !L.groups || L.groups.length < 2) return;
+  const keys = Object.keys(L.booked);
+  for (let k = 0; k < keys.length; k++) {
+    const key = keys[k];
+    if (key.indexOf('~~') !== -1) continue; // already new format
+    let matched = false;
+    for (let i = 0; i < L.groups.length && !matched; i++) {
+      for (let j = i + 1; j < L.groups.length && !matched; j++) {
+        const legacy = [L.groups[i].id, L.groups[j].id].sort().join('_');
+        if (legacy === key) {
+          const newKey = [L.groups[i].id, L.groups[j].id].sort().join('~~');
+          if (!L.booked[newKey]) L.booked[newKey] = L.booked[key];
+          delete L.booked[key];
+          matched = true;
+        }
+      }
+    }
+  }
 }
 
 function fbSetBooked(matchKey, slotData) {
@@ -4760,7 +4790,42 @@ function removeGroup(id) {
   if (!group) return;
   const playerNames = group.players || [];
   const playerList = playerNames.join(', ') || 'unnamed';
-  if (!confirm('Remove team (' + playerList + ')?\n\nThis will also remove their availability and booked matches.')) return;
+
+  // Count blast radius so the user sees exactly what will be deleted
+  let availCount = 0;
+  Object.keys(L.availability || {}).forEach(k => {
+    for (const pn of playerNames) { if (k.startsWith(pn + '|')) { availCount++; break; } }
+  });
+  let bookedCount = 0;
+  Object.keys(L.booked || {}).forEach(k => { if (k.includes(id)) bookedCount++; });
+
+  let warn = 'Remove team (' + playerList + ')?\n\n';
+  if (availCount || bookedCount) {
+    warn += 'This will permanently delete:\n';
+    if (availCount) warn += '  • ' + availCount + ' availability slot' + (availCount === 1 ? '' : 's') + '\n';
+    if (bookedCount) warn += '  • ' + bookedCount + ' booked match' + (bookedCount === 1 ? '' : 'es') + '\n';
+    warn += '\nThis cannot be undone.';
+  } else {
+    warn += 'This team has no availability or bookings yet.';
+  }
+  if (!confirm(warn)) return;
+
+  // Second confirm for teams with real data — forces a deliberate click
+  if (availCount >= 3 || bookedCount >= 1) {
+    if (!confirm('Final check: really delete ' + playerList + ' and all their data?')) return;
+  }
+
+  // Snapshot for manual recovery from the console (window.__lastRemovedTeam)
+  try {
+    const availSnap = {};
+    Object.keys(L.availability || {}).forEach(k => {
+      for (const pn of playerNames) { if (k.startsWith(pn + '|')) { availSnap[k] = L.availability[k]; break; } }
+    });
+    const bookedSnap = {};
+    Object.keys(L.booked || {}).forEach(k => { if (k.includes(id)) bookedSnap[k] = L.booked[k]; });
+    window.__lastRemovedTeam = { leagueId: activeLeagueId, group: JSON.parse(JSON.stringify(group)), availability: availSnap, booked: bookedSnap, removedAt: Date.now() };
+    console.log('[BoxLeague] Team removed. Run restoreLastRemovedTeam() in the console within 5 minutes to undo.');
+  } catch(e) {}
 
   // Build the new groups list but don't mutate L yet
   const newGroups = L.groups.filter(g => g.id !== id);
@@ -4970,6 +5035,33 @@ function resetLeagueData() {
   renderAll();
   toast('Availability and bookings reset');
 }
+
+// Recovery helper: if a team was accidentally removed, run this in the browser
+// console while the affected league is open. It restores the team, their
+// availability, and any bookings from the last removal.
+window.restoreLastRemovedTeam = function() {
+  const snap = window.__lastRemovedTeam;
+  if (!snap) { console.warn('[BoxLeague] No removed team snapshot in memory.'); return; }
+  if (snap.leagueId !== activeLeagueId) { console.warn('[BoxLeague] Snapshot is for a different league (' + snap.leagueId + '). Open that league first.'); return; }
+  // Restore in memory
+  if (!L.groups.find(g => g.id === snap.group.id)) L.groups.push(snap.group);
+  Object.assign(L.availability, snap.availability || {});
+  Object.assign(L.booked, snap.booked || {});
+  // Restore to Firebase
+  const ref = leagueRef();
+  if (ref) {
+    const updates = {};
+    updates['groups/' + snap.group.id] = snap.group;
+    Object.keys(snap.availability || {}).forEach(k => { updates['availability/' + k] = snap.availability[k]; });
+    Object.keys(snap.booked || {}).forEach(k => { updates['booked/' + k] = snap.booked[k]; });
+    ref.update(updates).then(() => { console.log('[BoxLeague] Restored:', snap.group.players); toast('Team restored'); })
+       .catch(err => { console.error('[BoxLeague] Restore failed:', err); });
+  } else {
+    localSave();
+    toast('Team restored');
+  }
+  renderGroups(); renderMembers(); renderProgress(); renderAvailGrid(); renderAllAvail();
+};
 
 /* ══════════════════════════════════════
    MY AVAILABILITY TAB
