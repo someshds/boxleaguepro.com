@@ -1523,7 +1523,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.9.0 · Build 20260415</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.9.1 · Build 20260415</div>
   </div>
 </div>
 
@@ -1536,6 +1536,16 @@
       <button onclick="closeChangelog()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <div style="padding:20px" id="changelog-content">
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.9.1 &middot; 15 Apr 2026</span>
+          <span style="background:#fee2e2;color:#b91c1c;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">HOTFIX</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Club organisers no longer get auto-joined as players</strong> &mdash; when a club organiser clicks a league they're not a member of from the scoped welcome screen, they now land in the league as <em>organiser</em> without writing a <code>/members</code> record or running the partner-onboarding wizard. New in-memory <code>adminEnterLeague()</code> path. Unjoined leagues get an amber &#128272; ORGANISER VIEW tag so it's obvious which action you'll get</li>
+          <li><strong>The v4.9.0 bug fixed here</strong>: clicking Bill's league as a club admin in v4.9.0 wrote a player membership and asked for your doubles partner. That's now gone</li>
+        </ul>
+      </div>
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="background:#dbeafe;color:#1d4ed8;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.9.0 &middot; 15 Apr 2026</span>
@@ -4552,12 +4562,24 @@ function renderScopedLeagueList(clubId) {
       if (isMember) {
         badges += ' <span style="background:#ecfdf5;color:#047857;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px;border:1px solid #a7f3d0">&#10003; JOINED</span>';
       }
+      if (isAdminHere && !isMember) {
+        badges += ' <span style="background:#fef3c7;color:#92400e;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px;border:1px solid #fcd34d">&#128272; ORGANISER VIEW</span>';
+      }
       var deleteBtn = '';
       if (isAdminHere) {
         deleteBtn = '<button onclick="event.stopPropagation();deleteLeague(\'' + lid + '\', event)" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-right:6px" title="Delete league">&#128465;</button>';
       }
-      var action = isMember ? 'enterLeague' : 'joinAndEnterLeague';
-      return '<div onclick="' + action + '(\'' + lid + '\')" style="cursor:pointer;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:flex;align-items:center;justify-content:space-between;gap:10px" onmouseover="this.style.borderColor=\'#1d4ed8\';this.style.boxShadow=\'0 4px 12px rgba(29,78,216,0.12)\'" onmouseout="this.style.borderColor=\'#e5e7eb\';this.style.boxShadow=\'0 1px 2px rgba(0,0,0,0.04)\'">' +
+      // v4.9.1: Club admins clicking a non-member league must NOT be auto-joined.
+      // adminEnterLeague opens the league as organiser without writing /members.
+      var actionCall;
+      if (isMember) {
+        actionCall = 'enterLeague(\'' + lid + '\')';
+      } else if (isAdminHere) {
+        actionCall = 'adminEnterLeague(\'' + lid + '\',\'' + clubId + '\')';
+      } else {
+        actionCall = 'joinAndEnterLeague(\'' + lid + '\')';
+      }
+      return '<div onclick="' + actionCall + '" style="cursor:pointer;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:flex;align-items:center;justify-content:space-between;gap:10px" onmouseover="this.style.borderColor=\'#1d4ed8\';this.style.boxShadow=\'0 4px 12px rgba(29,78,216,0.12)\'" onmouseout="this.style.borderColor=\'#e5e7eb\';this.style.boxShadow=\'0 1px 2px rgba(0,0,0,0.04)\'">' +
         '<div style="flex:1;min-width:0">' +
           '<div style="font-weight:700;font-size:15px;color:#0f172a;margin-bottom:4px">' + esc(lgName) + '</div>' +
           '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">' + badges + '</div>' +
@@ -5809,6 +5831,47 @@ function joinAndEnterLeague(leagueId) {
   }, err => {
     console.error('League lookup error:', err);
     toast('Error looking up league — please try again');
+  });
+}
+
+/* ══════════════════════════════════════
+   v4.9.1: Admin entry path
+   Opens a league as an organiser WITHOUT writing a player membership
+   record or running the onboarding wizard. Used when a club organiser
+   clicks a league from the scoped club welcome screen to manage it
+   (rather than join as a player).
+   ══════════════════════════════════════ */
+function adminEnterLeague(leagueId, clubId) {
+  if (!FIREBASE_READY) { toast('Firebase not ready'); return; }
+  if (!isAdmin() && !isClubAdminFor(clubId)) {
+    toast('You are not an organiser of this club');
+    return;
+  }
+  toast('Opening league as organiser...');
+  db.ref('/leagues/' + leagueId + '/info').once('value').then(function(snap) {
+    var info = snap.val();
+    if (!info) { toast('League not found — it may have been deleted'); return; }
+    // Synthesize a leagueInfo shaped like userLeagues entries so that
+    // enterLeagueMain() and all downstream render functions work. We
+    // stash it in the in-memory userLeagues map for the session only —
+    // nothing is written to /userLeagues or /leagues/{id}/members.
+    var synthInfo = {
+      name: info.name || '(unnamed)',
+      sport: info.sport || 'tennis',
+      format: info.format || '',
+      code: info.code || leagueId,
+      role: 'organiser',
+      clubId: info.clubId || clubId || '',
+      clubName: info.clubName || '',
+      __adminView: true // marker — not persisted anywhere
+    };
+    userLeagues[leagueId] = synthInfo;
+    activeLeagueId = leagueId;
+    logAction('admin_enter_league', synthInfo.name);
+    enterLeagueMain(leagueId, synthInfo, true);
+  }).catch(function(e) {
+    console.error('[admin-enter-league]', e);
+    toast('Could not open league');
   });
 }
 
