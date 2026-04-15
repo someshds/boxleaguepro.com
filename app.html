@@ -1527,7 +1527,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.9.6 · Build 20260415</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.9.7 · Build 20260415</div>
   </div>
 </div>
 
@@ -1540,6 +1540,18 @@
       <button onclick="closeChangelog()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <div style="padding:20px" id="changelog-content">
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.9.7 &middot; 15 Apr 2026</span>
+          <span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">ADMIN FIX</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Fix: super admins are no longer auto-joined to leagues they seed</strong> &mdash; when the super admin created leagues on behalf of a club they don&rsquo;t play at, the creation code was writing them into <code>/leagues/{id}/members</code> AND <code>/userLeagues/{uid}</code>, so every seeded league ended up in their personal &ldquo;Your Leagues&rdquo; list and they appeared as a member of the roster. Both <code>createLeagueInClub()</code> and the scoped mirror <code>scopedSubmitCreateLeague()</code> now detect super-admin-only creators (<code>isAdmin() &amp;&amp; !_clubAdminFor.includes(clubId)</code>) and skip those writes entirely</li>
+          <li><strong>Local club organisers are unaffected</strong> &mdash; they&rsquo;re still auto-joined to their own club&rsquo;s leagues, because they typically play in them. Only the super-admin-seeding path is silenced</li>
+          <li><strong>Ghost cleanup</strong> &mdash; 9 pre-existing ghost memberships (Grant at East Grinstead Tennis, Squash &amp; Racketball Club) swept from <code>/leagues/{lid}/members</code> and <code>/userLeagues/{uid}</code> via the Firebase Admin SDK. League info, organiserUid, and all legitimate members are untouched</li>
+          <li><strong>Activity log marker:</strong> super-admin-seeded creates now log as <code>create_league_super_seed</code> / <code>create_league_scoped_super_seed</code> so future audits can distinguish them from normal creates</li>
+        </ul>
+      </div>
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.9.6 &middot; 15 Apr 2026</span>
@@ -4856,6 +4868,10 @@ async function scopedSubmitCreateLeague() {
       return;
     }
 
+    // v4.9.7: Super-admin-only creators don't auto-join the league. Local club
+    // organisers still do (they typically play in their own club's leagues).
+    var isSuperAdminOnly = isAdmin() && (window._clubAdminFor || []).indexOf(clubId) === -1;
+
     var leagueRef = db.ref('/leagues').push();
     var leagueId = leagueRef.key;
     var updates = {};
@@ -4865,19 +4881,21 @@ async function scopedSubmitCreateLeague() {
       groups: {}, availability: {}, settings: { leagueName: name, deadline: deadline }, booked: {},
       members: {}
     };
-    updates['/leagues/' + leagueId + '/members/' + memberKey] = {
-      uid: currentUser.uid, name: currentUser.displayName || currentUser.email, email: currentUser.email,
-      role: 'organiser', playerName: '', partnerName: '', joinedAt: Date.now()
-    };
-    updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = {
-      name: name, sport: sport, format: format, code: code, role: 'organiser', clubId: clubId, clubName: clubName
-    };
+    if (!isSuperAdminOnly) {
+      updates['/leagues/' + leagueId + '/members/' + memberKey] = {
+        uid: currentUser.uid, name: currentUser.displayName || currentUser.email, email: currentUser.email,
+        role: 'organiser', playerName: '', partnerName: '', joinedAt: Date.now()
+      };
+      updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = {
+        name: name, sport: sport, format: format, code: code, role: 'organiser', clubId: clubId, clubName: clubName
+      };
+    }
     updates['/clubLeagues/' + clubId + '/' + leagueId] = { name: name, sport: sport, format: format };
     updates['/codes/' + code] = leagueId;
     updates['/leagueIndex/' + leagueId] = { name: name, sport: sport, format: format, clubId: clubId, clubName: clubName, createdAt: Date.now() };
 
     db.ref().update(updates).then(function() {
-      logAction('create_league_scoped', name + ' at ' + clubName);
+      logAction('create_league_scoped' + (isSuperAdminOnly ? '_super_seed' : ''), name + ' at ' + clubName);
       msgEl.innerHTML = '<div style="color:#059669;font-weight:700">&#9989; League created!</div>';
       toast('League "' + name + '" created');
       setTimeout(function() {
@@ -5862,21 +5880,37 @@ async function createLeagueInClub() {
     return;
   }
 
+  // v4.9.7: If the creator is a super admin who is NOT a local club organiser
+  // of this club, don't auto-write them into /members or /userLeagues. Super
+  // admins seed leagues on behalf of club organisers — they shouldn't show up
+  // as members of every league they touch. Local club organisers still get
+  // auto-joined because they normally play in their own club's leagues.
+  const isSuperAdminOnly = isAdmin() && (window._clubAdminFor || []).indexOf(selectedClubId) === -1;
+
   const leagueRef = db.ref('/leagues').push();
   const leagueId = leagueRef.key;
   const updates = {};
-  updates['/leagues/' + leagueId] = {
+  const leagueNode = {
     info: { name, sport, format, code, clubId: selectedClubId, clubName: selectedClubName, organiserUid: currentUser.uid, createdAt: Date.now() },
     groups: {}, availability: {}, settings: { leagueName: name, deadline: deadline }, booked: {},
-    members: { [sanitizeEmail(currentUser.email)]: { uid: currentUser.uid, name: currentUser.displayName, email: currentUser.email, role: 'organiser', playerName: '', partnerName: '', joinedAt: Date.now() } }
+    members: {}
   };
-  updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = { name, sport, format, code, role: 'organiser', clubId: selectedClubId, clubName: selectedClubName };
+  if (!isSuperAdminOnly) {
+    leagueNode.members[sanitizeEmail(currentUser.email)] = {
+      uid: currentUser.uid, name: currentUser.displayName, email: currentUser.email,
+      role: 'organiser', playerName: '', partnerName: '', joinedAt: Date.now()
+    };
+  }
+  updates['/leagues/' + leagueId] = leagueNode;
+  if (!isSuperAdminOnly) {
+    updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = { name, sport, format, code, role: 'organiser', clubId: selectedClubId, clubName: selectedClubName };
+  }
   updates['/clubLeagues/' + selectedClubId + '/' + leagueId] = { name, sport, format };
   updates['/codes/' + code] = leagueId;
   updates['/leagueIndex/' + leagueId] = { name, sport, format, clubId: selectedClubId, clubName: selectedClubName, createdAt: Date.now() };
 
   db.ref().update(updates).then(() => {
-    logAction('create_league', name + ' at ' + selectedClubName);
+    logAction('create_league' + (isSuperAdminOnly ? '_super_seed' : ''), name + ' at ' + selectedClubName);
     showCreateShareStep(leagueId, name);
   }).catch(err => {
     console.error('Create league error:', err);
