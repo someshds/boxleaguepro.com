@@ -35,6 +35,7 @@
       --amber: #f59e0b;
       --red: #ef4444;
       --green: #22c55e;
+      --top-bar-h: 52px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 16px; }
@@ -141,11 +142,48 @@
     .deadline-banner.urgent { background: #fef2f2; border-color: var(--red); color: #991b1b; }
 
     /* ── Nav ── */
-    .nav { background: #fff; border-bottom: 1px solid var(--border); display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .nav { background: #fff; border-bottom: 1px solid var(--border); display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; position: sticky; top: var(--top-bar-h); z-index: 100; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
     .nav::-webkit-scrollbar { display: none; }
     .nav-tab { flex: 1; padding: 14px 14px; font-size: 15px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; transition: all 0.18s; text-align: center; }
     .nav-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
     .nav-badge { background: var(--red); color: #fff; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; margin-left: 4px; vertical-align: top; }
+
+    /* ══════════════════════════════════════
+       TOP BAR (v4.6.9)
+       Global sticky nav shown on welcome/browse/app screens.
+       ══════════════════════════════════════ */
+    .top-bar { display: none; position: sticky; top: 0; z-index: 200; height: var(--top-bar-h); background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%); color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.12); padding: 0 12px; align-items: center; gap: 10px; }
+    .top-bar.show { display: flex; }
+    .top-bar-logo { display: flex; align-items: center; gap: 6px; background: none; border: none; color: #fff; font-size: 16px; font-weight: 800; cursor: pointer; padding: 6px 8px; border-radius: 8px; flex-shrink: 0; }
+    .top-bar-logo:hover { background: rgba(255,255,255,0.12); }
+    .top-bar-logo-icon { font-size: 20px; }
+    .top-bar-logo-text { letter-spacing: -0.3px; }
+    @media (max-width: 420px) { .top-bar-logo-text { display: none; } }
+    .top-bar-location { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.92); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; padding: 0 8px; }
+    .top-bar-location strong { font-weight: 800; color: #fff; }
+    .top-bar-location .sep { opacity: 0.5; margin: 0 6px; }
+    .top-bar-menu-btn { background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 22px; cursor: pointer; padding: 6px 12px; border-radius: 10px; font-weight: 700; flex-shrink: 0; display: flex; align-items: center; gap: 6px; height: 38px; }
+    .top-bar-menu-btn:hover { background: rgba(255,255,255,0.25); }
+    .top-bar-menu-btn-label { font-size: 14px; font-weight: 700; }
+    @media (max-width: 480px) { .top-bar-menu-btn-label { display: none; } }
+
+    /* Menu dropdown */
+    .top-bar-menu { display: none; position: fixed; top: calc(var(--top-bar-h) + 6px); right: 12px; background: #fff; color: var(--text); min-width: 260px; max-width: calc(100vw - 24px); max-height: calc(100vh - var(--top-bar-h) - 24px); overflow-y: auto; border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.05); z-index: 201; padding: 8px 0; }
+    .top-bar-menu.show { display: block; animation: topMenuIn 0.15s ease-out; }
+    @keyframes topMenuIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+    .top-bar-menu-group { padding: 4px 0; }
+    .top-bar-menu-group + .top-bar-menu-group { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 8px; }
+    .top-bar-menu-heading { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 16px 6px; }
+    .top-bar-menu-item { display: flex; align-items: center; gap: 12px; width: 100%; background: none; border: none; text-align: left; padding: 10px 16px; font-size: 15px; color: var(--text); cursor: pointer; font-weight: 600; }
+    .top-bar-menu-item:hover { background: #f1f5f9; }
+    .top-bar-menu-item.active { background: #eff6ff; color: var(--primary); }
+    .top-bar-menu-item.danger { color: #dc2626; }
+    .top-bar-menu-item.danger:hover { background: #fef2f2; }
+    .top-bar-menu-icon { font-size: 18px; width: 22px; text-align: center; flex-shrink: 0; }
+    .top-bar-menu-item-label { flex: 1; }
+    .top-bar-menu-item-check { font-size: 14px; color: var(--primary); flex-shrink: 0; }
+    .top-bar-menu-backdrop { display: none; position: fixed; inset: 0; z-index: 199; background: transparent; }
+    .top-bar-menu-backdrop.show { display: block; }
 
     /* ── Content ── */
     .content { padding: 18px; max-width: 680px; margin: 0 auto; padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
@@ -514,6 +552,23 @@
   </style>
 </head>
 <body>
+
+<!-- ══════════════════════════════════════════════════════
+     TOP BAR (v4.6.9) — global sticky nav
+     ══════════════════════════════════════════════════════ -->
+<div id="top-bar" class="top-bar" role="banner">
+  <button class="top-bar-logo" onclick="topBarGoHome()" aria-label="BoxLeague Pro home">
+    <span class="top-bar-logo-icon">&#127934;</span>
+    <span class="top-bar-logo-text">BoxLeague Pro</span>
+  </button>
+  <div class="top-bar-location" id="top-bar-location">&nbsp;</div>
+  <button class="top-bar-menu-btn" onclick="toggleTopMenu(event)" aria-haspopup="true" aria-expanded="false" aria-controls="top-bar-menu" id="top-bar-menu-btn">
+    <span aria-hidden="true">&#9776;</span>
+    <span class="top-bar-menu-btn-label">Menu</span>
+  </button>
+</div>
+<div id="top-bar-menu-backdrop" class="top-bar-menu-backdrop" onclick="closeTopMenu()"></div>
+<div id="top-bar-menu" class="top-bar-menu" role="menu" aria-labelledby="top-bar-menu-btn"></div>
 
 <!-- ══════════════════════════════════════════════════════
      SCREEN 0: LOADING (shown while checking auth state)
@@ -1003,7 +1058,8 @@
      ══════════════════════════════════════════════════════ -->
 <div id="screen-app" class="screen">
   <div class="app-header">
-    <div class="app-header-top">
+    <!-- v4.6.9: back + user pill moved into global top bar, this row is hidden by default -->
+    <div class="app-header-top" style="display:none">
       <button class="app-back" onclick="goToHub()">&larr; Home</button>
       <button class="user-pill" onclick="openProfile()">
         <img id="app-user-photo" alt="" onerror="this.style.display='none'">
@@ -1378,7 +1434,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.6.8 · Build 20260415</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.6.9 · Build 20260415</div>
   </div>
 </div>
 
@@ -1393,8 +1449,20 @@
     <div style="padding:20px" id="changelog-content">
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="background:#dbeafe;color:#1d4ed8;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">12 Apr 2026</span>
+          <span style="background:#dbeafe;color:#1d4ed8;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">15 Apr 2026</span>
           <span style="background:#dcfce7;color:#15803d;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">NEW</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>New sticky top menu bar</strong> — always visible at the top of the app so you can see where you are and jump anywhere in one tap</li>
+          <li><strong>Full menu system</strong> — Home, Browse leagues, all league tabs, Add a match, My profile, Help, What's new, Feedback &amp; Sign out all in one place</li>
+          <li><strong>Add a match arranged outside the app</strong> — if you've agreed a game face-to-face or on WhatsApp, record it here so reminders, WhatsApp sharing and calendar invites all still work</li>
+          <li><strong>One-tap 1.5-hour slot selection</strong> — tap a single time and the full match window is selected automatically (saves two clicks per slot)</li>
+          <li><strong>Legacy availability auto-fix</strong> — old 1.5-hour availability slots are silently upgraded to the new 30-minute format on load</li>
+        </ul>
+      </div>
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#dbeafe;color:#1d4ed8;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">12 Apr 2026</span>
         </div>
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
           <li><strong>Edit open/mix-in games</strong> — creators can now edit title, date, time, venue, sport, level and notes after creating a game</li>
@@ -1742,6 +1810,7 @@ let activeLeagueId = null;    // Currently viewing
 const ADMIN_EMAILS = ['grantdeswardt@gmail.com', 'grant@aifusionautomations.com'];
 let L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {} }; // Active league data
 let currentTab = 'availability';
+let currentScreen = '';       // v4.6.9: tracked for top bar (welcome|browse|app|auth|loading|wizard|onboarding|guided)
 let weekOff = 0;
 let listeners = [];           // Active Firebase listeners (to detach on league switch)
 
@@ -2833,6 +2902,7 @@ function showScreen(id) {
     console.warn('Auth guard: no user, redirecting to auth');
     id = 'auth';
   }
+  currentScreen = id; // v4.6.9: track for top bar
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById('screen-' + id);
   if (el) el.classList.add('active');
@@ -2853,9 +2923,257 @@ function showScreen(id) {
   if (id === 'welcome' || id === 'browse') {
     setTimeout(() => showExplainer(id), 400);
   }
+  // v4.6.9: sync top bar visibility + location + menu contents with screen change
+  try { updateTopBarForScreen(id); } catch (e) { console.warn('[top-bar] updateTopBarForScreen error', e); }
 }
 
+/* ══════════════════════════════════════
+   TOP BAR (v4.6.9)
+   Global sticky nav + menu system. Shown on welcome/browse/app.
+   ══════════════════════════════════════ */
+const TOP_BAR_VISIBLE_SCREENS = { welcome: true, browse: true, app: true };
 
+function updateTopBarForScreen(screenId) {
+  const bar = document.getElementById('top-bar');
+  if (!bar) return;
+  if (TOP_BAR_VISIBLE_SCREENS[screenId]) {
+    bar.classList.add('show');
+  } else {
+    bar.classList.remove('show');
+    closeTopMenu();
+  }
+  updateTopBarLocation(screenId);
+}
+
+function updateTopBarLocation(screenId) {
+  const el = document.getElementById('top-bar-location');
+  if (!el) return;
+  const s = screenId || (currentScreen || '');
+  let html = '&nbsp;';
+  if (s === 'welcome') {
+    html = 'Home';
+  } else if (s === 'browse') {
+    html = 'Browse leagues';
+  } else if (s === 'app') {
+    const leagueName = (L && L.settings && L.settings.leagueName) ||
+      (activeLeagueId && userLeagues[activeLeagueId] && userLeagues[activeLeagueId].name) ||
+      (mixInMode ? 'Friendly Matches' : 'League');
+    const tabLabels = {
+      availability: 'My Availability',
+      everyone: 'Everyone',
+      matches: 'Match Finder',
+      setup: 'Settings',
+      open: 'Friendly Matches'
+    };
+    const tabLabel = tabLabels[currentTab] || '';
+    if (mixInMode) {
+      html = '<strong>' + esc(leagueName) + '</strong>';
+    } else {
+      html = '<strong>' + esc(leagueName) + '</strong>' + (tabLabel ? '<span class="sep">·</span>' + esc(tabLabel) : '');
+    }
+  }
+  el.innerHTML = html;
+}
+
+function topBarGoHome() {
+  closeTopMenu();
+  if (!currentUser) return;
+  if (activeLeagueId || mixInMode) {
+    goToHub();
+  } else {
+    showScreen('welcome');
+  }
+}
+
+function toggleTopMenu(ev) {
+  if (ev) { ev.stopPropagation(); }
+  const menu = document.getElementById('top-bar-menu');
+  if (!menu) return;
+  if (menu.classList.contains('show')) {
+    closeTopMenu();
+  } else {
+    openTopMenu();
+  }
+}
+
+function openTopMenu() {
+  const menu = document.getElementById('top-bar-menu');
+  const backdrop = document.getElementById('top-bar-menu-backdrop');
+  const btn = document.getElementById('top-bar-menu-btn');
+  if (!menu) return;
+  menu.innerHTML = buildTopMenu();
+  menu.classList.add('show');
+  if (backdrop) backdrop.classList.add('show');
+  if (btn) btn.setAttribute('aria-expanded', 'true');
+}
+
+function closeTopMenu() {
+  const menu = document.getElementById('top-bar-menu');
+  const backdrop = document.getElementById('top-bar-menu-backdrop');
+  const btn = document.getElementById('top-bar-menu-btn');
+  if (menu) menu.classList.remove('show');
+  if (backdrop) backdrop.classList.remove('show');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+
+function buildTopMenu() {
+  const inLeague = !!activeLeagueId && currentScreen === 'app' && !mixInMode;
+  const inMixIn = !!mixInMode && currentScreen === 'app';
+  const signedIn = !!currentUser;
+  const isOrg = inLeague && userLeagues[activeLeagueId] && userLeagues[activeLeagueId].role === 'organiser';
+  const tabs = [];
+  if (inLeague) {
+    tabs.push(['availability', 'My Availability', '&#128197;']);
+    tabs.push(['everyone', 'Everyone', '&#128101;']);
+    tabs.push(['matches', 'Match Finder', '&#127934;']);
+    if (isOrg) tabs.push(['setup', 'Settings', '&#9881;&#65039;']);
+  } else if (inMixIn) {
+    tabs.push(['open', 'Friendly Matches', '&#129309;']);
+  }
+
+  let h = '';
+
+  // Navigate group
+  h += '<div class="top-bar-menu-group">';
+  h += '<div class="top-bar-menu-heading">Navigate</div>';
+  if (signedIn) {
+    const homeActive = currentScreen === 'welcome';
+    h += '<button class="top-bar-menu-item' + (homeActive ? ' active' : '') + '" role="menuitem" onclick="topBarNav(\'home\')">' +
+         '<span class="top-bar-menu-icon">&#127968;</span><span class="top-bar-menu-item-label">Home</span>' +
+         (homeActive ? '<span class="top-bar-menu-item-check">&#10003;</span>' : '') +
+         '</button>';
+    const browseActive = currentScreen === 'browse';
+    h += '<button class="top-bar-menu-item' + (browseActive ? ' active' : '') + '" role="menuitem" onclick="topBarNav(\'browse\')">' +
+         '<span class="top-bar-menu-icon">&#128269;</span><span class="top-bar-menu-item-label">Browse leagues</span>' +
+         (browseActive ? '<span class="top-bar-menu-item-check">&#10003;</span>' : '') +
+         '</button>';
+  }
+  for (let i = 0; i < tabs.length; i++) {
+    const t = tabs[i];
+    const active = currentTab === t[0];
+    h += '<button class="top-bar-menu-item' + (active ? ' active' : '') + '" role="menuitem" onclick="topBarNav(\'tab:' + t[0] + '\')">' +
+         '<span class="top-bar-menu-icon">' + t[2] + '</span><span class="top-bar-menu-item-label">' + t[1] + '</span>' +
+         (active ? '<span class="top-bar-menu-item-check">&#10003;</span>' : '') +
+         '</button>';
+  }
+  h += '</div>';
+
+  // League group (when inside a real league)
+  if (inLeague) {
+    h += '<div class="top-bar-menu-group">';
+    h += '<div class="top-bar-menu-heading">League</div>';
+    if (typeof canAddManualMatch === 'function' && canAddManualMatch()) {
+      h += '<button class="top-bar-menu-item" role="menuitem" onclick="topBarNav(\'add-match\')">' +
+           '<span class="top-bar-menu-icon">&#10133;</span><span class="top-bar-menu-item-label">Add a match</span>' +
+           '</button>';
+    }
+    h += '<button class="top-bar-menu-item danger" role="menuitem" onclick="topBarNav(\'leave-league\')">' +
+         '<span class="top-bar-menu-icon">&#128682;</span><span class="top-bar-menu-item-label">Leave this league</span>' +
+         '</button>';
+    h += '</div>';
+  }
+
+  // Account group
+  if (signedIn) {
+    h += '<div class="top-bar-menu-group">';
+    h += '<div class="top-bar-menu-heading">Account</div>';
+    h += '<button class="top-bar-menu-item" role="menuitem" onclick="topBarNav(\'profile\')">' +
+         '<span class="top-bar-menu-icon">&#128100;</span><span class="top-bar-menu-item-label">My profile</span>' +
+         '</button>';
+    if (typeof isAdmin === 'function' && isAdmin()) {
+      h += '<button class="top-bar-menu-item" role="menuitem" onclick="topBarNav(\'admin\')">' +
+           '<span class="top-bar-menu-icon">&#128273;</span><span class="top-bar-menu-item-label">Admin console</span>' +
+           '</button>';
+    }
+    h += '</div>';
+  }
+
+  // Help group
+  h += '<div class="top-bar-menu-group">';
+  h += '<div class="top-bar-menu-heading">Help</div>';
+  h += '<button class="top-bar-menu-item" role="menuitem" onclick="topBarNav(\'help\')">' +
+       '<span class="top-bar-menu-icon">&#10067;</span><span class="top-bar-menu-item-label">Help &amp; guides</span>' +
+       '</button>';
+  h += '<button class="top-bar-menu-item" role="menuitem" onclick="topBarNav(\'changelog\')">' +
+       '<span class="top-bar-menu-icon">&#128226;</span><span class="top-bar-menu-item-label">What&rsquo;s new</span>' +
+       '</button>';
+  h += '<button class="top-bar-menu-item" role="menuitem" onclick="topBarNav(\'feedback\')">' +
+       '<span class="top-bar-menu-icon">&#128172;</span><span class="top-bar-menu-item-label">Send feedback</span>' +
+       '</button>';
+  h += '</div>';
+
+  // Sign out
+  if (signedIn) {
+    h += '<div class="top-bar-menu-group">';
+    h += '<button class="top-bar-menu-item danger" role="menuitem" onclick="topBarNav(\'signout\')">' +
+         '<span class="top-bar-menu-icon">&#9166;</span><span class="top-bar-menu-item-label">Sign out</span>' +
+         '</button>';
+    h += '</div>';
+  }
+
+  return h;
+}
+
+function topBarNav(action) {
+  closeTopMenu();
+  if (!action) return;
+  try {
+    if (action === 'home') {
+      if (activeLeagueId || mixInMode) { goToHub(); } else { showScreen('welcome'); }
+      return;
+    }
+    if (action === 'browse') {
+      if (typeof goToBrowse === 'function') { goToBrowse(); } else { showScreen('browse'); }
+      return;
+    }
+    if (action.indexOf('tab:') === 0) {
+      const tab = action.slice(4);
+      if (currentScreen !== 'app') return;
+      showTab(tab);
+      return;
+    }
+    if (action === 'add-match') {
+      if (typeof openAddMatchModal === 'function') openAddMatchModal();
+      return;
+    }
+    if (action === 'leave-league') {
+      if (typeof goToHub === 'function') {
+        if (confirm('Leave this league and return to Home?')) goToHub();
+      }
+      return;
+    }
+    if (action === 'profile') {
+      if (typeof openProfile === 'function') openProfile();
+      return;
+    }
+    if (action === 'admin') {
+      if (typeof toggleAdminConsole === 'function') toggleAdminConsole();
+      return;
+    }
+    if (action === 'help') {
+      if (typeof openHelp === 'function') openHelp();
+      return;
+    }
+    if (action === 'changelog') {
+      if (typeof openChangelog === 'function') openChangelog();
+      return;
+    }
+    if (action === 'feedback') {
+      if (typeof openFeedback === 'function') openFeedback();
+      return;
+    }
+    if (action === 'signout') {
+      if (typeof signOut === 'function') signOut();
+      return;
+    }
+  } catch (e) { console.warn('[top-bar] nav error', e); }
+}
+
+// Close the menu on outside click or Escape (even though we have a backdrop,
+// this catches edge cases where the backdrop is bypassed).
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeTopMenu();
+});
 
 /* ══════════════════════════════════════
    AUTH
@@ -4822,6 +5140,8 @@ function fbSetBooked(matchKey, slotData) {
    ══════════════════════════════════════ */
 function showTab(t) {
   currentTab = t;
+  // v4.6.9: refresh top bar location text so the current tab name shows
+  try { updateTopBarLocation(currentScreen); } catch (e) {}
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   const section = document.getElementById('tab-' + t);
   if (section) section.classList.add('active');
@@ -7308,7 +7628,7 @@ function closeFeedback() {
 /* ── Changelog ── */
 function openChangelog() {
   document.getElementById('changelog-modal').style.display = 'flex';
-  localStorage.setItem('blp_changelog_seen', '2026-04-12');
+  localStorage.setItem('blp_changelog_seen', '2026-04-15');
 }
 function closeChangelog() {
   document.getElementById('changelog-modal').style.display = 'none';
