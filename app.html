@@ -1523,7 +1523,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.9.1 · Build 20260415</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.9.2 · Build 20260415</div>
   </div>
 </div>
 
@@ -1536,6 +1536,16 @@
       <button onclick="closeChangelog()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <div style="padding:20px" id="changelog-content">
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#ede9fe;color:#6d28d9;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.9.2 &middot; 15 Apr 2026</span>
+          <span style="background:#fee2e2;color:#b91c1c;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">ADMIN ROLES</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Single super admin</strong> &mdash; <code>grantdeswardt@gmail.com</code> is now the only global admin with override rights on every club. All other organisers are local club admins only &mdash; they can manage their own club but have no access to other clubs, global settings, or the admin console</li>
+          <li><strong>Firebase security rules tightened</strong> &mdash; <code>/clubs</code>, <code>/clubAdmins</code>, <code>/clubApplications</code>, <code>/userLeagues</code> and <code>/activityLog</code> all now check against the single super admin email. Local club admins are unaffected &mdash; they continue to manage their own club through the Club Organiser Tools panel</li>
+        </ul>
+      </div>
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.9.1 &middot; 15 Apr 2026</span>
@@ -1554,7 +1564,7 @@
           <li><strong>Player onboarding on scoped club links</strong> &mdash; when you land on a <code>?club=</code> link for the first time, your league list is split into <em>Your Leagues</em> (with a green &#10003; JOINED tag) and <em>Join a League</em>. Brand-new players see a &#128075; welcome card prompting them to tap and join. No more hunting for the right league or not knowing whether your organiser has added you already</li>
           <li><strong>Club admins can now delete leagues in their club</strong> &mdash; every league card in the scoped welcome has a small &#128465; button when you're a club organiser. Delete still asks for two confirmations and cascades through <code>/leagues</code>, <code>/clubLeagues</code>, <code>/userLeagues</code>, <code>/leagueIndex</code> and <code>/codes</code> properly</li>
           <li><strong>Manage Organisers modal</strong> &mdash; new button in the Club Organiser Tools panel. Lists every current club admin for your club, lets you add new ones by email, and remove any organiser (except yourself). Promotes or demotes are live &mdash; the next time that person signs in they get the Club Organiser Tools panel automatically. All changes are logged to the activity feed</li>
-          <li><strong>Super admin badge</strong> &mdash; the scoped welcome now shows a purple <em>SUPER ADMIN</em> pill when you're signed in as a global admin (grantdeswardt@gmail.com or grant@aifusionautomations.com). Makes it obvious when you're viewing someone's club with full override rights vs. just as a club organiser</li>
+          <li><strong>Super admin badge</strong> &mdash; the scoped welcome now shows a purple <em>SUPER ADMIN</em> pill when you're signed in as the global admin (grantdeswardt@gmail.com). Makes it obvious when you're viewing someone's club with full override rights vs. just as a club organiser</li>
         </ul>
       </div>
       <div style="margin-bottom:20px">
@@ -2042,7 +2052,11 @@ if (FIREBASE_READY) {
 let currentUser = null;       // Firebase user object
 let userLeagues = {};         // { leagueId: { info, role } }
 let activeLeagueId = null;    // Currently viewing
-const ADMIN_EMAILS = ['grantdeswardt@gmail.com', 'grant@aifusionautomations.com'];
+// v4.9.2: Single super admin. grantdeswardt@gmail.com has full global admin
+// rights across every club. Local club admins are defined per-club in
+// /clubAdmins/{clubId}/{sanitizedEmail} — they have no powers outside their
+// own club. Do NOT add non-Grant emails to this list.
+const ADMIN_EMAILS = ['grantdeswardt@gmail.com'];
 let L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {} }; // Active league data
 let currentTab = 'availability';
 let currentScreen = '';       // v4.6.9: tracked for top bar (welcome|browse|app|auth|loading|wizard|onboarding|guided)
@@ -4490,9 +4504,8 @@ function renderScopedWelcome() {
   if (adminBox) {
     adminBox.style.display = isClubAdminFor(scope.id) ? '' : 'none';
   }
-  // v4.9.0: Show SUPER ADMIN badge for global admins (grantdeswardt@gmail.com,
-  // grant@aifusionautomations.com) so the distinction from a club admin is
-  // visually obvious.
+  // v4.9.2: Show SUPER ADMIN badge for the global admin (grantdeswardt@gmail.com)
+  // so the distinction from a local club admin is visually obvious.
   var superBadge = document.getElementById('scoped-super-admin-badge');
   if (superBadge) {
     superBadge.style.display = isAdmin() ? '' : 'none';
