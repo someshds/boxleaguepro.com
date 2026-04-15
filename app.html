@@ -962,7 +962,7 @@
     <div class="wizard-step" id="wiz-step-2">
       <div class="wizard-step-icon">&#128197;</div>
       <div class="wizard-step-title">When are you free?</div>
-      <div class="wizard-step-desc">Tap the boxes to mark when you can play. You can always update this later.</div>
+      <div class="wizard-step-desc">Tap any time to mark a 1.5-hour match window (matches are always 1.5 hours, so one tap selects the whole window). You can always update this later.</div>
       <div class="card" style="padding:14px 10px">
         <div class="wk-nav">
           <button class="btn btn-secondary btn-sm" onclick="wizChangeWeek(-1)">&#9664; Prev</button>
@@ -1196,6 +1196,9 @@
           <button class="btn btn-secondary btn-sm" onclick="changeWeek(1)">Next &#9654;</button>
         </div>
         <div class="card" style="padding:14px 10px">
+          <div style="font-size:12px;color:var(--muted);margin:0 0 8px;text-align:center;line-height:1.4">
+            &#128161; Tap any time to mark a 1.5-hour match window — one tap fills the whole block.
+          </div>
           <div class="avail-wrap"><div id="avail-grid"></div></div>
         </div>
 
@@ -1372,7 +1375,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.6.6 · Build 20260415</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.6.7 · Build 20260415</div>
   </div>
 </div>
 
@@ -2759,6 +2762,39 @@ const LEGACY_SLOT_LABELS = { '9-1030':'9–10:30am', '1030-12':'10:30–12pm', '
 const LEGACY_SLOT_SHORT = { '9-1030':'9-10:30', '1030-12':'10:30-12', '12-130':'12-1:30', '130-3':'1:30-3', '3-430':'3-4:30', '430-6':'4:30-6', '6-730':'6-7:30', '730-9':'7:30-9' };
 function slotLabel(s) { return SLOT_LABELS[s] || LEGACY_SLOT_LABELS[s] || s; }
 function slotShort(s) { return SLOT_SHORT[s] || LEGACY_SLOT_SHORT[s] || s; }
+
+/* Matches are always 1.5 hours = three consecutive 30-min slots.
+   Added 2026-04-15 · v4.6.7 — one tap marks a full match window. */
+const MATCH_SLOT_COUNT = 3;
+function expandSlotBlock(slot) {
+  const idx = SLOTS.indexOf(slot);
+  if (idx < 0) return [slot]; // legacy / unknown — don't expand
+  return SLOTS.slice(idx, idx + MATCH_SLOT_COUNT);
+}
+/** "7am–8:30am" — label for a 1.5h window starting at `slot`. */
+function slotBlockLabel(slot) {
+  const block = expandSlotBlock(slot);
+  if (block.length < 2) return slotLabel(slot);
+  const startLabel = slotLabel(block[0]);
+  const lastIdx = SLOTS.indexOf(block[block.length - 1]);
+  const nextSlot = SLOTS[lastIdx + 1];
+  let endLabel;
+  if (nextSlot) {
+    endLabel = slotLabel(nextSlot);
+  } else {
+    // end-of-day: synthesise label 30 min after the last slot (e.g. 2100 → 2130 → "9:30pm")
+    const last = block[block.length - 1];
+    const h = parseInt(last.slice(0, 2), 10);
+    const m = parseInt(last.slice(2), 10);
+    const totalMin = h * 60 + m + 30;
+    const eh = Math.floor(totalMin / 60) % 24;
+    const em = totalMin % 60;
+    const suffix = eh < 12 ? 'am' : 'pm';
+    const h12 = eh === 0 ? 12 : eh > 12 ? eh - 12 : eh;
+    endLabel = h12 + ':' + String(em).padStart(2, '0') + suffix;
+  }
+  return startLabel + '–' + endLabel;
+}
 
 /* ── Educational tips ── */
 function closeTip(id) {
@@ -4300,10 +4336,18 @@ function renderWizAvailGrid() {
 function wizToggleCell(el) {
   const playerName = val('wiz-name');
   if (!playerName) { toast('Please enter your name first'); return; }
-  const key = avk(playerName, el.dataset.date, el.dataset.slot);
-  const newVal = !wizAvailability[key];
-  if (newVal) wizAvailability[key] = true; else delete wizAvailability[key];
-  el.classList.toggle('on', newVal);
+  // v4.6.7: one tap = full 1.5-hour match window (3 × 30-min slots).
+  const clickedKey = avk(playerName, el.dataset.date, el.dataset.slot);
+  const newVal = !wizAvailability[clickedKey];
+  const block = expandSlotBlock(el.dataset.slot);
+  const d = new Date(el.dataset.date + 'T00:00:00');
+  block.forEach(s => {
+    const k = avk(playerName, d, s);
+    if (newVal) wizAvailability[k] = true; else delete wizAvailability[k];
+    // Update matching cell in the DOM (may be same row or later rows).
+    const cell = document.querySelector('#wiz-avail-grid .cell[data-date="' + el.dataset.date + '"][data-slot="' + s + '"]');
+    if (cell) cell.classList.toggle('on', newVal);
+  });
 }
 
 function wizChangeWeek(dir) { wizWeekOff += dir; renderWizAvailGrid(); }
@@ -5325,7 +5369,7 @@ function renderAvailGrid() {
       if (isPast) {
         h += `<td><div class="cell past"></div></td>`;
       } else {
-        h += `<td><div class="cell ${on}" data-date="${ds(d)}" data-slot="${slot}" onclick="toggleCell(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCell(this)}" role="button" tabindex="0" aria-label="${DAY_NAMES[d.getDay()]} ${d.getDate()} ${slotLabel(slot)}${on ? ' — available' : ''}"></div></td>`;
+        h += `<td><div class="cell ${on}" data-date="${ds(d)}" data-slot="${slot}" onclick="toggleCell(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCell(this)}" role="button" tabindex="0" aria-label="${DAY_NAMES[d.getDay()]} ${d.getDate()} ${slotBlockLabel(slot)} match window${on ? ' — available' : ''}"></div></td>`;
       }
     });
     h += '</tr>';
@@ -5350,13 +5394,20 @@ function toggleCell(el) {
       return;
     }
   }
+  // v4.6.7: one tap = full 1.5-hour match window (3 × 30-min slots).
   const d = new Date(el.dataset.date + 'T00:00:00');
-  const key = avk(player, d, el.dataset.slot);
-  const newVal = !L.availability[key];
-  if (newVal) L.availability[key] = true; else delete L.availability[key];
-  el.classList.toggle('on', newVal);
+  const clickedKey = avk(player, d, el.dataset.slot);
+  const newVal = !L.availability[clickedKey];
+  const block = expandSlotBlock(el.dataset.slot);
+  block.forEach(s => {
+    const k = avk(player, d, s);
+    if (newVal) L.availability[k] = true; else delete L.availability[k];
+    // Reflect new state in the matching DOM cell (same row or later rows).
+    const cell = document.querySelector('#avail-grid .cell[data-date="' + el.dataset.date + '"][data-slot="' + s + '"]');
+    if (cell) cell.classList.toggle('on', newVal);
+    _toggleBatch[k] = newVal || null;
+  });
   // Batch Firebase writes and debounce re-renders
-  _toggleBatch[key] = newVal || null;
   if (_toggleTimer) clearTimeout(_toggleTimer);
   _toggleTimer = setTimeout(() => {
     if (Object.keys(_toggleBatch).length > 0) {
@@ -7443,7 +7494,7 @@ const TAB_GUIDES = {
     steps: [
       { q: 'What would you like to do?', hint: 'Pick what you need help with right now.',
         options: [
-          { label: 'Mark when I can play', icon: '&#9989;', desc: 'Tap boxes on the grid to show your free time slots', action: 'close', scrollTo: 'avail-grid' },
+          { label: 'Mark when I can play', icon: '&#9989;', desc: 'Tap any time on the grid to mark a 1.5-hour match window', action: 'close', scrollTo: 'avail-grid' },
           { label: 'See my upcoming matches', icon: '&#127934;', desc: 'View matches you need to arrange or have booked', action: 'close', scrollTo: 'my-matches-card' },
           { label: 'Copy last week\'s times', icon: '&#128260;', desc: 'Quickly fill in the same availability as last week', action: 'fn', fn: 'copyLastWeek' },
           { label: 'Show me how the grid works', icon: '&#128161;', desc: 'Step-by-step explanation of the availability grid', action: 'next' },
