@@ -717,7 +717,7 @@
     <div id="onboard-step-club">
       <div class="welcome-heading" style="margin-bottom:4px">Which club do you play at?</div>
       <div style="font-size:13px;color:#6b7280;margin-bottom:14px">This connects you with other players at your club.</div>
-      <input class="fi" id="inp-onboard-club" placeholder="Search for your club..." oninput="searchOnboardClubs()" style="font-size:16px;margin-bottom:8px">
+      <input class="fi" id="inp-onboard-club" placeholder="Search for your club (venue)..." oninput="searchOnboardClubs()" style="font-size:16px;margin-bottom:8px">
       <div id="onboard-club-results" style="max-height:180px;overflow-y:auto"></div>
       <div id="onboard-club-create" style="display:none;margin-top:8px">
         <div class="club-list-item" onclick="createOnboardClub()" style="cursor:pointer;background:#f0fdf4;border:1px dashed #059669">
@@ -854,7 +854,7 @@
         <div class="section-title" style="margin:0" id="tour-target-join">Select your club</div>
       </div>
       <div class="fg">
-        <input class="fi" id="inp-club-search" placeholder="Search for your club..." oninput="searchClubs()" style="font-size:16px">
+        <input class="fi" id="inp-club-search" placeholder="Search for your club (venue)..." oninput="searchClubs()" style="font-size:16px">
       </div>
       <div id="club-results"></div>
       <div id="club-create-option" style="display:none">
@@ -894,7 +894,7 @@
       <div id="create-step-club">
         <div class="fg">
           <label class="fl">Club Name</label>
-          <input class="fi" id="inp-create-club-search" placeholder="Search or type club name..." oninput="searchClubsCreate()" style="font-size:16px">
+          <input class="fi" id="inp-create-club-search" placeholder="Search or type venue name (e.g. Willows Sports Centre)..." oninput="searchClubsCreate()" style="font-size:16px">
         </div>
         <div id="create-club-results"></div>
         <div id="create-club-create-option" style="display:none">
@@ -1436,7 +1436,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.7.1 · Build 20260415</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.7.2 · Build 20260415</div>
   </div>
 </div>
 
@@ -1455,6 +1455,9 @@
           <span style="background:#dcfce7;color:#15803d;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">NEW</span>
         </div>
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Admin: spot league-named "clubs"</strong> — the admin club list now flags entries that look like league names (e.g. "Mens Singles Box 5") and sorts them to the top so they're easy to clean up</li>
+          <li><strong>Warn before creating a league-named club</strong> — if someone types "Box League 5" into the club field, the app now explains the difference and asks them to confirm</li>
+          <li><strong>Clearer club placeholder</strong> — "Search for your club (venue)" makes it obvious this is the place, not the competition</li>
           <li><strong>Simpler welcome screen</strong> — just two choices now: Box Leagues and Friendly Mix-Ins. No more format filter page to click through</li>
           <li><strong>Format badges on every league</strong> — every league card shows SINGLES, DOUBLES or MIXED DOUBLES at a glance so you always know what you're joining</li>
           <li><strong>Fix: singles leagues not loading</strong> — the old format filter was hiding some tennis singles leagues. Removed entirely</li>
@@ -2699,16 +2702,39 @@ function adminLoadClubs() {
     entries.forEach(([id]) => { leagueCounts[id] = 0; });
 
     function renderClubList() {
-      el.innerHTML = '<div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:8px">' + entries.length + ' clubs</div>' +
-        entries.map(([id, club]) => {
-          const count = leagueCounts[id] || 0;
+      // v4.7.2: sort suspicious entries (league-named "clubs" with 0 leagues) to the top
+      // so Grant can see them immediately when auditing.
+      const scored = entries.map(([id, club]) => {
+        const count = leagueCounts[id] || 0;
+        const nameLooksLikeLeague = looksLikeLeagueName(club.name || '');
+        // "Suspicious" = name looks like a league AND no leagues attached to it.
+        // A club legitimately called "…League…" with attached leagues is fine.
+        const suspicious = nameLooksLikeLeague && count === 0;
+        return { id, club, count, suspicious };
+      });
+      scored.sort((a, b) => {
+        if (a.suspicious !== b.suspicious) return a.suspicious ? -1 : 1;
+        return (a.club.name || '').localeCompare(b.club.name || '');
+      });
+      const suspiciousCount = scored.filter(s => s.suspicious).length;
+      const header = '<div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:8px">' + entries.length + ' clubs' +
+        (suspiciousCount > 0 ? ' &middot; <span style="color:#b91c1c">⚠ ' + suspiciousCount + ' look like league names — probably typed in the wrong field</span>' : '') +
+        '</div>';
+      el.innerHTML = header +
+        scored.map(({ id, club, count, suspicious }) => {
           const hasLeagues = count > 0;
-          return `<div style="padding:8px 12px;margin-bottom:6px;background:${hasLeagues ? '#f0fdf4' : '#fff'};border:1px solid ${hasLeagues ? '#bbf7d0' : '#e5e7eb'};border-radius:8px;display:flex;justify-content:space-between;align-items:center">
-            <div>
-              <div style="font-size:14px;font-weight:600">${esc(club.name || 'Unnamed')}</div>
+          const bg = suspicious ? '#fef2f2' : (hasLeagues ? '#f0fdf4' : '#fff');
+          const bd = suspicious ? '#fca5a5' : (hasLeagues ? '#bbf7d0' : '#e5e7eb');
+          const warnBadge = suspicious
+            ? '<span style="display:inline-block;font-size:9px;font-weight:800;color:#b91c1c;background:#fee2e2;padding:2px 6px;border-radius:8px;margin-right:6px;vertical-align:middle;letter-spacing:0.3px">⚠ LOOKS LIKE A LEAGUE</span>'
+            : '';
+          return `<div style="padding:8px 12px;margin-bottom:6px;background:${bg};border:1px solid ${bd};border-radius:8px;display:flex;justify-content:space-between;align-items:center">
+            <div style="min-width:0;flex:1">
+              <div style="font-size:14px;font-weight:600">${warnBadge}${esc(club.name || 'Unnamed')}</div>
               <div style="font-size:11px;color:#6b7280">${esc(id)}${count > 0 ? ' &middot; ' + count + ' league' + (count !== 1 ? 's' : '') : ''}${club.bookingUrl ? ' &middot; 🔗 ' + esc(club.bookingUrl) : ''}</div>
+              ${suspicious ? '<div style="font-size:10px;color:#b91c1c;margin-top:2px">Likely created by a user who typed a league name into the club field. Safe to delete if no one is using it.</div>' : ''}
             </div>
-            <button onclick="adminDeleteClub('${esc(id)}','${esc((club.name || 'Unnamed').replace(/'/g, ''))}',${count})" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Delete</button>
+            <button onclick="adminDeleteClub('${esc(id)}','${esc((club.name || 'Unnamed').replace(/'/g, ''))}',${count})" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;margin-left:8px">Delete</button>
           </div>`;
         }).join('');
     }
@@ -3973,6 +3999,7 @@ function selectOnboardClub(clubId, clubName, bookingUrl) {
 function createOnboardClub() {
   const name = document.getElementById('inp-onboard-club').value.trim();
   if (!name) { toast('Enter a club name'); return; }
+  if (!confirmClubNameIfSuspicious(name)) return; // v4.7.2
   const bookingUrl = (document.getElementById('inp-onboard-booking-url').value || '').trim();
   if (!FIREBASE_READY) {
     const id = 'C' + Date.now();
@@ -4247,6 +4274,7 @@ function selectClubForCreate(clubId, clubName) {
 function createClubFromCreate() {
   const name = document.getElementById('inp-create-club-search').value;
   if (!name) { toast('Enter a club name'); return; }
+  if (!confirmClubNameIfSuspicious(name)) return; // v4.7.2
   const bookingUrl = (document.getElementById('inp-create-club-booking-url').value || '').trim();
   if (!FIREBASE_READY) {
     const id = 'C' + Date.now();
@@ -4325,6 +4353,7 @@ function searchClubs() {
 function createClubFromSearch() {
   const name = val('inp-club-search');
   if (!name) { toast('Enter a club name'); return; }
+  if (!confirmClubNameIfSuspicious(name)) return; // v4.7.2
   const bookingUrl = (document.getElementById('inp-club-booking-url').value || '').trim();
 
   if (!FIREBASE_READY) {
@@ -4406,6 +4435,30 @@ function leagueFormatBadge(lg) {
   if (isMixed) return '<span class="league-format-badge mixed">MIXED DOUBLES</span>';
   if (isSinglesLeague(lg.sport)) return '<span class="league-format-badge singles">SINGLES</span>';
   return '<span class="league-format-badge doubles">DOUBLES</span>';
+}
+
+// v4.7.2: Heuristic — does this name look like a league rather than a club?
+// Used to (a) warn users before they create a league-named "club" and
+// (b) flag suspicious entries in the admin club list. Club names are
+// usually a venue or organisation (e.g. "East Grinstead Tennis Club",
+// "Willows Sports Centre"), not a competition format.
+function looksLikeLeagueName(name) {
+  if (!name) return false;
+  const n = String(name).toLowerCase();
+  // Strong signals that this is a league name, not a club name.
+  return /(\bbox\b|\bsingles\b|\bdoubles\b|\bmixed\b|\bmix-?in\b|\bleague\b|\bdivision\b|\bgroup\s*[a-z0-9]\b|\bladder\b)/i.test(n);
+}
+
+// v4.7.2: Shared confirm prompt for the 4 club-creation flows.
+// Returns true if OK to proceed (name looks fine OR user confirmed anyway).
+function confirmClubNameIfSuspicious(name) {
+  if (!looksLikeLeagueName(name)) return true;
+  return confirm(
+    '"' + name + '" looks like a LEAGUE name, not a club name.\n\n' +
+    'A club is the place where you play — e.g. "East Grinstead Tennis Club" or "Willows Sports Centre".\n' +
+    'A league is the competition you run inside a club — e.g. "Men\'s Singles Box 5".\n\n' +
+    'You\'ll create the league on the next step. Do you still want to create a CLUB called "' + name + '"?'
+  );
 }
 
 function renderClubLeagues(leagues) {
@@ -7930,7 +7983,7 @@ function renderQStep() {
     html += `<input class="q-input" id="q-input" placeholder="${esc(step.placeholder || '')}" value="${esc(val)}" onkeydown="if(event.key==='Enter')qSubmitInput('${step.id}')">`;
     html += `<button class="q-btn" onclick="qSubmitInput('${step.id}')">Next</button>`;
   } else if (step.type === 'clubSearch') {
-    html += `<input class="q-input" id="q-club-input" placeholder="Search for your club..." oninput="qSearchClubs()" style="text-align:left;font-size:16px;font-weight:400">`;
+    html += `<input class="q-input" id="q-club-input" placeholder="Search for your club (venue)..." oninput="qSearchClubs()" style="text-align:left;font-size:16px;font-weight:400">`;
     html += `<div class="q-search-results" id="q-club-results"></div>`;
     html += `<div id="q-club-create" style="display:none;margin-top:8px">
       <div class="q-search-item q-create-item" onclick="qCreateClub()">
@@ -7997,6 +8050,7 @@ function qSelectClub(id, name, bookingUrl) {
 function qCreateClub() {
   const name = (document.getElementById('q-club-input').value || '').trim();
   if (!name) return;
+  if (!confirmClubNameIfSuspicious(name)) return; // v4.7.2
   if (!currentUser) { toast('Please sign in'); return; } // M35: null check
   if (FIREBASE_READY) {
     const ref = db.ref('/clubs').push();
