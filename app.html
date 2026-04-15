@@ -1305,6 +1305,9 @@
       <div id="tab-guide-matches" class="tab-guide" style="display:none"></div>
 
       <div id="mf-booking-link"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <button class="btn btn-secondary btn-sm" onclick="openAddMatchModal()" style="font-size:13px">&#10133; Add a match arranged outside the app</button>
+      </div>
       <div id="match-summary" style="margin-bottom:14px"></div>
       <div id="match-results"></div>
 
@@ -1375,7 +1378,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.6.7 · Build 20260415</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.6.8 · Build 20260415</div>
   </div>
 </div>
 
@@ -1451,6 +1454,20 @@
       <button onclick="closeAddPlayer()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <div style="padding:20px" id="add-player-content"></div>
+  </div>
+</div>
+
+<!-- ── Add Match (arranged outside the app) Modal · v4.6.8 ── -->
+<div id="add-match-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeAddMatchModal()">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e2e8f0">
+      <div>
+        <div style="font-size:17px;font-weight:700">Add a match</div>
+        <div style="font-size:12px;color:#64748b;margin-top:2px">Already arranged outside the app?</div>
+      </div>
+      <button onclick="closeAddMatchModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px" aria-label="Close">&times;</button>
+    </div>
+    <div style="padding:20px" id="add-match-modal-body"></div>
   </div>
 </div>
 
@@ -5509,6 +5526,9 @@ function renderMyMatches() {
           : `<span style="font-size:12px;color:var(--amber);font-weight:600">&#128993; No overlap yet</span>`}
       </div>
       ${slots.length > 0 ? `<div class="sug-slots" style="margin-top:6px">${slots.slice(0,3).map(s => `<span class="sug-slot">${fmtFull(s.date)} &middot; ${slotLabel(s.slot)}</span>`).join('')}</div>` : ''}
+      <div style="margin-top:6px">
+        <button class="btn btn-sm btn-secondary" onclick="openAddMatchModal('${esc(opp.id)}')" style="font-size:11px;padding:4px 10px">&#10133; Already arranged? Add it</button>
+      </div>
     </div>`;
   }).join('');
   if (blEl) blEl.innerHTML = bookCourtHtml();
@@ -6023,6 +6043,199 @@ function bookMatch(matchKey, date, slot) {
   notifyBooking(matchKey, date, slot);
   renderMatchFinder(); renderMyMatches();
   toast('Match booked! Players will be notified.');
+}
+
+/* ══════════════════════════════════════
+   ADD MATCH ARRANGED OUTSIDE THE APP
+   Added 2026-04-15 · v4.6.8
+   Any league member can record a match they've agreed face-to-face
+   (or over WhatsApp etc.) so the app can then handle reminders,
+   confirmations, court status, and calendar invites.
+   ══════════════════════════════════════ */
+function canAddManualMatch() {
+  if (!L.groups || L.groups.length < 2) return false;
+  if (isAdmin()) return true;
+  const lgInfo = activeLeagueId ? userLeagues[activeLeagueId] : null;
+  if (lgInfo && lgInfo.role === 'organiser') return true;
+  // Regular players can add matches involving their own team
+  const myName = getMyPlayerName();
+  if (!myName) return false;
+  return L.groups.some(g => (g.players || []).includes(myName));
+}
+
+function openAddMatchModal(preselectOpponentId) {
+  if (!canAddManualMatch()) {
+    toast(L.groups.length < 2 ? 'Need at least 2 teams first' : 'You need to be on a team to add a match');
+    return;
+  }
+  const modal = document.getElementById('add-match-modal');
+  const body = document.getElementById('add-match-modal-body');
+  if (!modal || !body) return;
+
+  const myName = getMyPlayerName();
+  const lgInfo = activeLeagueId ? userLeagues[activeLeagueId] : null;
+  const isOrg = isAdmin() || (lgInfo && lgInfo.role === 'organiser');
+  const myGroup = myName ? L.groups.find(g => (g.players || []).includes(myName)) : null;
+
+  // Default date = today, default slot = noon (12:00) or first slot
+  const today = new Date();
+  const defaultDate = ds(today);
+  const defaultSlot = SLOTS.includes('1200') ? '1200' : SLOTS[0];
+
+  let teamAOpts = '', teamBOpts = '';
+  let teamAFixed = false;
+  let teamAFixedId = '';
+
+  if (isOrg) {
+    // Organiser/admin: pick any two teams
+    teamAOpts = '<option value="">— Select team A —</option>' +
+      L.groups.map(g => `<option value="${esc(g.id)}">${esc(g.name)}</option>`).join('');
+    teamBOpts = '<option value="">— Select team B —</option>' +
+      L.groups.map(g => `<option value="${esc(g.id)}">${esc(g.name)}</option>`).join('');
+  } else {
+    // Regular player: their team is fixed, pick opponent
+    if (!myGroup) { toast('You need to be on a team to add a match'); return; }
+    teamAFixed = true;
+    teamAFixedId = myGroup.id;
+    const opponents = L.groups.filter(g => g.id !== myGroup.id);
+    teamBOpts = '<option value="">— Select opponent —</option>' +
+      opponents.map(g => {
+        const sel = preselectOpponentId === g.id ? ' selected' : '';
+        return `<option value="${esc(g.id)}"${sel}>${esc(g.name)}</option>`;
+      }).join('');
+  }
+
+  const slotOpts = SLOTS.map(s => `<option value="${s}"${s === defaultSlot ? ' selected' : ''}>${slotLabel(s)}</option>`).join('');
+
+  body.innerHTML = `
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:13px;color:#1e40af;line-height:1.4">
+      &#128161; Use this when you've already agreed a match face-to-face, over WhatsApp, or by phone. The app will then handle reminders, court status, and calendar invites.
+    </div>
+
+    ${teamAFixed
+      ? `<div style="margin-bottom:12px">
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.03em">Your team</label>
+          <div style="padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;font-weight:600">${esc(myGroup.name)}</div>
+        </div>`
+      : `<div style="margin-bottom:12px">
+          <label for="add-match-team-a" style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.03em">Team A</label>
+          <select id="add-match-team-a" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;background:#fff">${teamAOpts}</select>
+        </div>`}
+
+    <div style="margin-bottom:12px">
+      <label for="add-match-team-b" style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.03em">${teamAFixed ? 'Opponent' : 'Team B'}</label>
+      <select id="add-match-team-b" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;background:#fff">${teamBOpts}</select>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div>
+        <label for="add-match-date" style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.03em">Date</label>
+        <input type="date" id="add-match-date" value="${defaultDate}" min="${defaultDate}" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;background:#fff">
+      </div>
+      <div>
+        <label for="add-match-slot" style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.03em">Start time</label>
+        <select id="add-match-slot" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;background:#fff">${slotOpts}</select>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div>
+        <label for="add-match-court" style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.03em">Court (optional)</label>
+        <input type="text" id="add-match-court" placeholder="e.g. Court 3" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;background:#fff">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.03em">Court booked?</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;cursor:pointer;font-size:14px">
+          <input type="checkbox" id="add-match-court-booked" style="width:16px;height:16px;accent-color:var(--green)">
+          <span>Already booked</span>
+        </label>
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label for="add-match-notes" style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.03em">Notes (optional)</label>
+      <input type="text" id="add-match-notes" placeholder="Meeting point, ball colour, etc." style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;background:#fff">
+    </div>
+
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-secondary" onclick="closeAddMatchModal()" style="flex:1">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAddMatchModal('${esc(teamAFixedId)}')" style="flex:2">&#9989; Add match</button>
+    </div>
+  `;
+  modal.style.display = 'flex';
+}
+
+function closeAddMatchModal() {
+  const modal = document.getElementById('add-match-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function saveAddMatchModal(fixedTeamAId) {
+  const teamAId = fixedTeamAId || (document.getElementById('add-match-team-a') || {}).value || '';
+  const teamBId = (document.getElementById('add-match-team-b') || {}).value || '';
+  const date = (document.getElementById('add-match-date') || {}).value || '';
+  const slot = (document.getElementById('add-match-slot') || {}).value || '';
+  const court = ((document.getElementById('add-match-court') || {}).value || '').trim();
+  const notes = ((document.getElementById('add-match-notes') || {}).value || '').trim();
+  const courtBooked = !!(document.getElementById('add-match-court-booked') || {}).checked;
+
+  if (!teamAId) { toast('Please pick team A'); return; }
+  if (!teamBId) { toast('Please pick the opponent'); return; }
+  if (teamAId === teamBId) { toast('A team can\'t play itself'); return; }
+  if (!date) { toast('Please pick a date'); return; }
+  if (!slot) { toast('Please pick a start time'); return; }
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  if (new Date(date + 'T00:00:00') < today) { toast('Cannot add a match in the past'); return; }
+
+  const teamA = L.groups.find(g => g.id === teamAId);
+  const teamB = L.groups.find(g => g.id === teamBId);
+  if (!teamA || !teamB) { toast('Teams not found — refresh and try again'); return; }
+
+  // Permission re-check (defensive)
+  const myName = getMyPlayerName();
+  const lgInfo = activeLeagueId ? userLeagues[activeLeagueId] : null;
+  const isOrg = isAdmin() || (lgInfo && lgInfo.role === 'organiser');
+  if (!isOrg) {
+    const inMatch = (teamA.players || []).includes(myName) || (teamB.players || []).includes(myName);
+    if (!inMatch) { toast('You can only add matches your team is playing in'); return; }
+  }
+
+  const matchKey = [teamAId, teamBId].sort().join('~~');
+
+  // Block if already booked — user should edit/cancel existing, not stomp it
+  if (L.booked && L.booked[matchKey]) {
+    const existing = L.booked[matchKey];
+    toast('This match is already booked for ' + fmtFull(existing.date) + ' — cancel first if you want to reschedule');
+    return;
+  }
+
+  const slotLbl = slotLabel(slot);
+  const d = new Date(date + 'T00:00:00');
+  const dateLabel = DAY_NAMES[d.getDay()] + ' ' + d.getDate() + ' ' + MONTH_NAMES[d.getMonth()];
+
+  // Auto-confirm the person who added the match (they obviously agreed)
+  const agreed = {};
+  if (myName) agreed[myName] = true;
+
+  const slotData = {
+    date: date,
+    slot: slot,
+    notes: notes,
+    courtBooked: courtBooked,
+    agreed: agreed,
+    manualAdd: true,        // flag so we can distinguish in activity log / analytics
+    addedBy: currentUser ? currentUser.email : ''
+  };
+  if (court) slotData.courtNumber = court;
+
+  fbSetBooked(matchKey, slotData);
+  logAction('add_manual_match', teamA.name + ' vs ' + teamB.name + ' — ' + dateLabel + ' at ' + slotLbl);
+  notifyBooking(matchKey, date, slot);
+
+  closeAddMatchModal();
+  renderMatchFinder(); renderMyMatches();
+  toast('Match added! Players will be notified.');
 }
 
 function unbookMatch(matchKey) {
