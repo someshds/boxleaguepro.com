@@ -5845,8 +5845,19 @@ function renderClubLeagues(leagues) {
     el.innerHTML = `<div class="txt-muted" style="padding:8px 0;margin-bottom:8px">No box leagues yet at this club. Create the first one!</div>`;
     return;
   }
+  // v4.9.9: admins/organisers should enter without joining; members re-enter; others join
+  const isAdminBrowse = selectedClubId ? isClubAdminFor(selectedClubId) : isAdmin();
   el.innerHTML = filtered.map(([id, lg]) => {
-    return `<div class="league-card" onclick="joinAndEnterLeague('${esc(id)}')">
+    const isMember = !!(userLeagues && userLeagues[id]);
+    let action;
+    if (isMember) {
+      action = `enterLeague('${esc(id)}')`;
+    } else if (isAdminBrowse) {
+      action = `adminEnterLeague('${esc(id)}','${esc(selectedClubId || '')}')`;
+    } else {
+      action = `joinAndEnterLeague('${esc(id)}')`;
+    }
+    return `<div class="league-card" onclick="${action}">
       <div class="league-card-name">${leagueFormatBadge(lg)}${esc(lg.name)}</div>
       <div class="league-card-meta">${esc(lg.sport || 'Tennis')}</div>
     </div>`;
@@ -5946,6 +5957,12 @@ function joinAndEnterLeague(leagueId) {
   if (userLeagues[leagueId]) {
     // Already in this league — check if they completed wizard (have a playerName)
     enterLeague(leagueId);
+    return;
+  }
+
+  // v4.9.9: Safety — admins/organisers should never auto-join. Route to adminEnterLeague.
+  if (isAdmin() || isClubAdminFor(selectedClubId)) {
+    adminEnterLeague(leagueId, selectedClubId || '');
     return;
   }
 
