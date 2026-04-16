@@ -1431,6 +1431,39 @@
       </div>
     </div>
 
+    <!-- ═══ RESULTS & STANDINGS TAB ═══ -->
+    <div id="tab-results" class="section">
+      <div class="edu-tip" id="tip-results">
+        <button class="edu-tip-close" onclick="closeTip('results')">&times;</button>
+        <div class="edu-tip-header">
+          <div class="edu-tip-icon">&#127942;</div>
+          <div class="edu-tip-title">Results &amp; Standings</div>
+        </div>
+        <div class="edu-tip-body">
+          Record match scores and track who's top of the box. The <strong>league table</strong> updates automatically as results are entered. Points: <strong>3 for a win</strong>, <strong>1 for a loss</strong>, <strong>0 for not played</strong>.
+        </div>
+      </div>
+
+      <div id="tab-guide-results" class="tab-guide" style="display:none"></div>
+
+      <!-- League Table -->
+      <div class="card" style="overflow-x:auto">
+        <div class="card-title" style="margin-bottom:12px">&#127942; League Table</div>
+        <div id="standings-table"></div>
+      </div>
+
+      <!-- Match Results -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="card-title" style="margin-bottom:0">Match Results</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-whatsapp btn-sm" onclick="shareStandingsWhatsApp()" style="font-size:12px">&#128172; Share</button>
+          </div>
+        </div>
+        <div id="results-list"></div>
+      </div>
+    </div>
+
     <!-- ── Friendly Matches Tab ── -->
     <div id="tab-open" class="section">
       <div class="edu-tip" id="tip-open">
@@ -2130,7 +2163,7 @@ let activeLeagueId = null;    // Currently viewing
 // /clubAdmins/{clubId}/{sanitizedEmail} — they have no powers outside their
 // own club. Do NOT add non-Grant emails to this list.
 const ADMIN_EMAILS = ['grantdeswardt@gmail.com'];
-let L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {} }; // Active league data
+let L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {}, results: {} }; // Active league data
 let currentTab = 'availability';
 let currentScreen = '';       // v4.6.9: tracked for top bar (welcome|browse|app|auth|loading|wizard|onboarding|guided)
 let weekOff = 0;
@@ -3625,6 +3658,7 @@ function updateTopBarLocation(screenId) {
       availability: 'My Availability',
       everyone: 'Everyone',
       matches: 'Match Finder',
+      results: 'Results',
       setup: 'Settings',
       open: 'Friendly Matches'
     };
@@ -3689,6 +3723,7 @@ function buildTopMenu() {
     tabs.push(['availability', 'My Availability', '&#128197;']);
     tabs.push(['everyone', 'Everyone', '&#128101;']);
     tabs.push(['matches', 'Match Finder', '&#127934;']);
+    tabs.push(['results', 'Results', '&#127942;']);
     if (isOrg) tabs.push(['setup', 'Settings', '&#9881;&#65039;']);
   } else if (inMixIn) {
     tabs.push(['open', 'Friendly Matches', '&#129309;']);
@@ -4020,7 +4055,7 @@ function signOut() {
   consentModalActive = false;
   pendingGoogleUser = null;
   _addPlayerMatchId = null;
-  L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {} };
+  L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {}, results: {} };
   if (FIREBASE_READY) {
     auth.signOut();
   } else {
@@ -5226,7 +5261,7 @@ function enterMixInMode() {
   activeLeagueId = null;
   fillInForPlayer = '';
   clubBookingUrl = userHomeClub.bookingUrl || '';
-  L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {} };
+  L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {}, results: {} };
 
   // Set header — show club name under Create or Join Friendly Mix-In Games
   const clubLabel = userHomeClub ? userHomeClub.name : '';
@@ -6377,9 +6412,9 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   if (mixInMode) {
     tabs = [['open','Friendly Matches']];
   } else if (isOrganiser) {
-    tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['setup','Settings']];
+    tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['results','Results'],['setup','Settings']];
   } else {
-    tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder']];
+    tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['results','Results']];
   }
 
   const navEl = document.getElementById('app-nav');
@@ -6417,6 +6452,7 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
         L.booked = parsed.booked || {};
         L.members = parsed.members || {};
         L.openMatches = parsed.openMatches || {};
+        L.results = parsed.results || {};
         L.comments = parsed.comments || {};
       }
     } catch(e) {}
@@ -6470,6 +6506,12 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   });
   listeners.push({ ref: ref.child('booked'), event: 'value', fn: l4 });
 
+  const l4b = ref.child('results').on('value', snap => {
+    L.results = snap.val() || {};
+    if (currentTab === 'results') { renderStandings(); renderResultsList(); }
+  });
+  listeners.push({ ref: ref.child('results'), event: 'value', fn: l4b });
+
   let membersInitial = true;
   const l5 = ref.child('members').on('value', snap => {
     L.members = snap.val() || {};
@@ -6502,7 +6544,7 @@ function goToHub() {
   activeLeagueId = null;
   clubBookingUrl = '';
   mixInMode = false;
-  L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {} };
+  L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {}, results: {} };
   showScreen('welcome');
 }
 
@@ -6555,7 +6597,7 @@ function leagueRef(path) {
 
 function localSave() {
   if (!FIREBASE_READY && activeLeagueId) {
-    const data = { groups: {}, availability: L.availability, settings: L.settings, booked: L.booked, members: L.members };
+    const data = { groups: {}, availability: L.availability, settings: L.settings, booked: L.booked, members: L.members, results: L.results };
     L.groups.forEach(g => { data.groups[g.id] = g; });
     localStorage.setItem('blp_league_' + activeLeagueId, JSON.stringify(data));
   }
@@ -6814,7 +6856,7 @@ function showTab(t) {
     } else {
       // Fallback for tabs without data-tab attribute
       const text = el.textContent.trim();
-      const map = { 'My Availability':'availability', 'Everyone':'everyone', 'Match Finder':'matches', 'Friendly Matches':'open', 'Settings':'setup', 'Setup':'setup' };
+      const map = { 'My Availability':'availability', 'Everyone':'everyone', 'Match Finder':'matches', 'Results':'results', 'Friendly Matches':'open', 'Settings':'setup', 'Setup':'setup' };
       el.classList.toggle('active', map[text] === t);
     }
   });
@@ -6822,6 +6864,7 @@ function showTab(t) {
   if (t === 'availability') { checkPlayerLink(); }
   if (t === 'everyone') { renderAllAvail(); renderMissing(); }
   if (t === 'matches') { renderMatchFinder(); }
+  if (t === 'results') { renderStandings(); renderResultsList(); }
   if (t === 'open') { renderOpenMatches(); }
   if (t === 'setup') { renderGroups(); renderMembers(); }
 
@@ -6833,6 +6876,373 @@ function showTab(t) {
     const explainerId = (t === 'open' && mixInMode) ? 'mixin' : t;
     setTimeout(() => showExplainer(explainerId), 300);
   }
+}
+
+/* ══════════════════════════════════════
+   RESULTS & STANDINGS MODULE
+   ══════════════════════════════════════ */
+
+// Data structure: L.results[matchKey] = { scores: [[6,3],[4,6],[7,5]], winner: 'G123', date: '2026-04-16', enteredBy: uid }
+// Points: Win = 3, Loss = 1, Not played = 0 (encourages playing all matches)
+
+function fbSaveResult(matchKey, resultData) {
+  L.results[matchKey] = resultData;
+  if (FIREBASE_READY && activeLeagueId) {
+    db.ref('/leagues/' + activeLeagueId + '/results/' + matchKey).set(resultData);
+  }
+  localSave();
+  renderStandings(); renderResultsList();
+}
+
+function fbDeleteResult(matchKey) {
+  delete L.results[matchKey];
+  if (FIREBASE_READY && activeLeagueId) {
+    db.ref('/leagues/' + activeLeagueId + '/results/' + matchKey).set(null);
+  }
+  localSave();
+  renderStandings(); renderResultsList();
+}
+
+function openScoreEntry(matchKey) {
+  const groups = L.groups;
+  const parts = matchKey.split('~~');
+  const gA = groups.find(g => g.id === parts[0]) || groups.find(g => g.id === parts[1]);
+  const gB = groups.find(g => g.id !== gA.id && (g.id === parts[0] || g.id === parts[1]));
+  if (!gA || !gB) { toast('Teams not found'); return; }
+
+  const existing = L.results[matchKey];
+  const s1 = existing ? existing.scores : [];
+
+  let html = '<div style="padding:20px">';
+  html += '<div style="font-size:16px;font-weight:700;margin-bottom:4px;text-align:center">' + esc(gA.name) + ' vs ' + esc(gB.name) + '</div>';
+  html += '<div style="font-size:13px;color:#64748b;text-align:center;margin-bottom:16px">Enter the score for each set played</div>';
+
+  // Set score inputs (up to 5 sets)
+  for (let i = 0; i < 5; i++) {
+    const sA = s1[i] ? s1[i][0] : '';
+    const sB = s1[i] ? s1[i][1] : '';
+    const required = i < 1; // At least 1 set required
+    html += '<div class="score-set-row" style="display:flex;align-items:center;gap:8px;margin-bottom:8px' + (i >= 3 ? ';display:none' : '') + '" id="score-set-' + i + '">';
+    html += '<span style="font-size:13px;font-weight:600;color:#64748b;width:44px">Set ' + (i+1) + '</span>';
+    html += '<input type="number" min="0" max="13" class="fi score-input" id="score-a-' + i + '" value="' + sA + '" placeholder="-" style="width:56px;text-align:center;font-size:18px;font-weight:700;padding:8px" oninput="scoreChanged()">';
+    html += '<span style="font-size:14px;color:#9ca3af;font-weight:700">–</span>';
+    html += '<input type="number" min="0" max="13" class="fi score-input" id="score-b-' + i + '" value="' + sB + '" placeholder="-" style="width:56px;text-align:center;font-size:18px;font-weight:700;padding:8px" oninput="scoreChanged()">';
+    html += '</div>';
+  }
+  html += '<div style="display:flex;gap:8px;margin-bottom:12px">';
+  html += '<button class="btn btn-secondary btn-sm" onclick="toggleExtraSets()" id="btn-more-sets" style="font-size:12px">+ More sets</button>';
+  html += '</div>';
+
+  // Winner auto-detect display
+  html += '<div id="score-winner-preview" style="text-align:center;font-size:14px;font-weight:600;color:#059669;margin-bottom:12px"></div>';
+
+  html += '<div style="display:flex;gap:8px">';
+  html += '<button class="btn btn-primary" onclick="saveScore(\'' + esc(matchKey) + '\',\'' + esc(gA.id) + '\',\'' + esc(gB.id) + '\')" style="flex:1">Save Result</button>';
+  html += '<button class="btn btn-secondary" onclick="closeScoreModal()" style="flex:1">Cancel</button>';
+  html += '</div>';
+
+  if (existing) {
+    html += '<div style="margin-top:12px;text-align:center">';
+    html += '<button class="btn btn-sm" onclick="if(confirm(\'Delete this result?\'))deleteResult(\'' + esc(matchKey) + '\')" style="color:#dc2626;font-size:12px">Delete result</button>';
+    html += '</div>';
+  }
+
+  html += '</div>';
+
+  // Create modal
+  let modal = document.getElementById('score-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'score-modal';
+    modal.style.cssText = 'display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px';
+    modal.onclick = function(e) { if (e.target === modal) closeScoreModal(); };
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = '<div style="background:#fff;border-radius:16px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e2e8f0">' +
+    '<div style="font-size:17px;font-weight:700">&#127934; Enter Score</div>' +
+    '<button onclick="closeScoreModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>' +
+    '</div>' + html + '</div>';
+  modal.style.display = 'flex';
+  setTimeout(function() { scoreChanged(); }, 50);
+}
+
+function toggleExtraSets() {
+  for (let i = 3; i < 5; i++) {
+    const row = document.getElementById('score-set-' + i);
+    if (row) row.style.display = row.style.display === 'none' ? 'flex' : 'none';
+  }
+}
+
+function scoreChanged() {
+  const preview = document.getElementById('score-winner-preview');
+  if (!preview) return;
+  let setsA = 0, setsB = 0;
+  for (let i = 0; i < 5; i++) {
+    const a = parseInt(document.getElementById('score-a-' + i).value);
+    const b = parseInt(document.getElementById('score-b-' + i).value);
+    if (isNaN(a) || isNaN(b)) continue;
+    if (a > b) setsA++;
+    else if (b > a) setsB++;
+  }
+  if (setsA === 0 && setsB === 0) { preview.textContent = ''; return; }
+  if (setsA > setsB) preview.innerHTML = '&#127942; Team A leads ' + setsA + '-' + setsB;
+  else if (setsB > setsA) preview.innerHTML = '&#127942; Team B leads ' + setsB + '-' + setsA;
+  else preview.innerHTML = 'Sets tied ' + setsA + '-' + setsB;
+}
+
+function closeScoreModal() {
+  const modal = document.getElementById('score-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function saveScore(matchKey, gAId, gBId) {
+  const scores = [];
+  for (let i = 0; i < 5; i++) {
+    const a = parseInt(document.getElementById('score-a-' + i).value);
+    const b = parseInt(document.getElementById('score-b-' + i).value);
+    if (isNaN(a) || isNaN(b)) continue;
+    scores.push([a, b]);
+  }
+  if (scores.length === 0) { toast('Enter at least one set score'); return; }
+
+  // Determine winner by sets won
+  let setsA = 0, setsB = 0, gamesA = 0, gamesB = 0;
+  scores.forEach(function(s) {
+    if (s[0] > s[1]) setsA++; else if (s[1] > s[0]) setsB++;
+    gamesA += s[0]; gamesB += s[1];
+  });
+
+  const winner = setsA > setsB ? gAId : setsB > setsA ? gBId : 'draw';
+  const booked = L.booked[matchKey];
+  const resultData = {
+    scores: scores,
+    winner: winner,
+    loser: winner === gAId ? gBId : winner === gBId ? gAId : 'draw',
+    setsA: setsA,
+    setsB: setsB,
+    gamesA: gamesA,
+    gamesB: gamesB,
+    date: (booked && booked.date) || new Date().toISOString().slice(0,10),
+    enteredBy: currentUser ? currentUser.uid : 'anon',
+    enteredAt: new Date().toISOString()
+  };
+
+  fbSaveResult(matchKey, resultData);
+  closeScoreModal();
+  toast('Result saved!');
+}
+
+function deleteResult(matchKey) {
+  fbDeleteResult(matchKey);
+  closeScoreModal();
+  toast('Result deleted');
+}
+
+function calculateStandings() {
+  const standings = {};
+  // Initialize all groups
+  L.groups.forEach(function(g) {
+    standings[g.id] = {
+      id: g.id,
+      name: g.name,
+      played: 0,
+      won: 0,
+      lost: 0,
+      drawn: 0,
+      setsWon: 0,
+      setsLost: 0,
+      gamesWon: 0,
+      gamesLost: 0,
+      points: 0
+    };
+  });
+
+  // Process results
+  Object.keys(L.results).forEach(function(matchKey) {
+    const r = L.results[matchKey];
+    if (!r || !r.scores) return;
+    const parts = matchKey.split('~~');
+    const idA = parts[0], idB = parts[1];
+    if (!standings[idA] || !standings[idB]) return;
+
+    standings[idA].played++;
+    standings[idB].played++;
+
+    // Sets
+    standings[idA].setsWon += r.setsA || 0;
+    standings[idA].setsLost += r.setsB || 0;
+    standings[idB].setsWon += r.setsB || 0;
+    standings[idB].setsLost += r.setsA || 0;
+
+    // Games
+    standings[idA].gamesWon += r.gamesA || 0;
+    standings[idA].gamesLost += r.gamesB || 0;
+    standings[idB].gamesWon += r.gamesB || 0;
+    standings[idB].gamesLost += r.gamesA || 0;
+
+    // Points: Win=3, Loss=1, Draw=2
+    if (r.winner === idA) {
+      standings[idA].won++; standings[idA].points += 3;
+      standings[idB].lost++; standings[idB].points += 1;
+    } else if (r.winner === idB) {
+      standings[idB].won++; standings[idB].points += 3;
+      standings[idA].lost++; standings[idA].points += 1;
+    } else {
+      standings[idA].drawn++; standings[idA].points += 2;
+      standings[idB].drawn++; standings[idB].points += 2;
+    }
+  });
+
+  // Sort: points desc → set diff desc → game diff desc → name
+  return Object.values(standings).sort(function(a, b) {
+    if (b.points !== a.points) return b.points - a.points;
+    const sdA = a.setsWon - a.setsLost, sdB = b.setsWon - b.setsLost;
+    if (sdB !== sdA) return sdB - sdA;
+    const gdA = a.gamesWon - a.gamesLost, gdB = b.gamesWon - b.gamesLost;
+    if (gdB !== gdA) return gdB - gdA;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+function renderStandings() {
+  const el = document.getElementById('standings-table');
+  if (!el) return;
+  const standings = calculateStandings();
+  if (standings.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">No teams yet — add teams in Settings</div>';
+    return;
+  }
+
+  let html = '<table style="width:100%;border-collapse:collapse;font-size:14px">';
+  html += '<thead><tr style="border-bottom:2px solid #e2e8f0;font-size:12px;text-transform:uppercase;color:#64748b;font-weight:700">';
+  html += '<th style="text-align:left;padding:8px 6px">#</th>';
+  html += '<th style="text-align:left;padding:8px 6px">Team</th>';
+  html += '<th style="text-align:center;padding:8px 4px" title="Played">P</th>';
+  html += '<th style="text-align:center;padding:8px 4px" title="Won">W</th>';
+  html += '<th style="text-align:center;padding:8px 4px" title="Lost">L</th>';
+  html += '<th style="text-align:center;padding:8px 4px" title="Sets Won-Lost">Sets</th>';
+  html += '<th style="text-align:center;padding:8px 4px" title="Games Won-Lost">Games</th>';
+  html += '<th style="text-align:center;padding:8px 6px;font-weight:800" title="Points">Pts</th>';
+  html += '</tr></thead><tbody>';
+
+  standings.forEach(function(s, i) {
+    const pos = i + 1;
+    const posIcon = pos === 1 ? '&#129351;' : pos === 2 ? '&#129352;' : pos === 3 ? '&#129353;' : pos;
+    const rowBg = i % 2 === 0 ? '#fff' : '#f8fafc';
+    const isTop = pos === 1 && s.played > 0;
+    html += '<tr style="border-bottom:1px solid #f1f5f9;background:' + rowBg + (isTop ? ';background:linear-gradient(90deg,#f0fdf4,#fff)' : '') + '">';
+    html += '<td style="padding:10px 6px;font-weight:700;font-size:' + (pos <= 3 ? '18px' : '14px') + '">' + posIcon + '</td>';
+    html += '<td style="padding:10px 6px;font-weight:600;' + (isTop ? 'color:#059669' : '') + '">' + esc(s.name) + '</td>';
+    html += '<td style="text-align:center;padding:10px 4px">' + s.played + '</td>';
+    html += '<td style="text-align:center;padding:10px 4px;color:#059669;font-weight:600">' + s.won + '</td>';
+    html += '<td style="text-align:center;padding:10px 4px;color:#dc2626">' + s.lost + '</td>';
+    html += '<td style="text-align:center;padding:10px 4px;font-size:12px">' + s.setsWon + '-' + s.setsLost + '</td>';
+    html += '<td style="text-align:center;padding:10px 4px;font-size:12px">' + s.gamesWon + '-' + s.gamesLost + '</td>';
+    html += '<td style="text-align:center;padding:10px 6px;font-weight:800;font-size:16px;' + (isTop ? 'color:#059669' : '') + '">' + s.points + '</td>';
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  html += '<div style="font-size:11px;color:#94a3b8;margin-top:8px;text-align:center">Win = 3 pts · Loss = 1 pt · Not played = 0 pts</div>';
+  el.innerHTML = html;
+}
+
+function renderResultsList() {
+  const el = document.getElementById('results-list');
+  if (!el) return;
+  const groups = L.groups;
+  const results = L.results;
+
+  // Build all matchups
+  const matchups = [];
+  for (let i = 0; i < groups.length; i++) {
+    for (let j = i+1; j < groups.length; j++) {
+      const gA = groups[i], gB = groups[j];
+      const matchKey = [gA.id, gB.id].sort().join('~~');
+      const result = results[matchKey];
+      const booked = L.booked[matchKey];
+      matchups.push({ gA: gA, gB: gB, matchKey: matchKey, result: result, booked: booked });
+    }
+  }
+
+  if (matchups.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">No matches to show yet</div>';
+    return;
+  }
+
+  // Split into completed and pending
+  const completed = matchups.filter(function(m) { return !!m.result; });
+  const pending = matchups.filter(function(m) { return !m.result; });
+
+  let html = '';
+
+  // Completed results
+  if (completed.length > 0) {
+    html += '<div style="font-size:13px;font-weight:700;color:#059669;margin-bottom:8px;text-transform:uppercase">Completed (' + completed.length + ')</div>';
+    completed.sort(function(a, b) { return (b.result.enteredAt || '').localeCompare(a.result.enteredAt || ''); });
+    html += completed.map(function(m) {
+      const r = m.result;
+      const scoreStr = r.scores.map(function(s) { return s[0] + '-' + s[1]; }).join(', ');
+      const winnerName = r.winner === m.gA.id ? m.gA.name : r.winner === m.gB.id ? m.gB.name : 'Draw';
+      const isWinnerA = r.winner === m.gA.id;
+      const isWinnerB = r.winner === m.gB.id;
+      return '<div class="match-card" style="border-left:4px solid #059669;margin-bottom:8px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<div style="font-size:15px"><span style="font-weight:' + (isWinnerA ? '800' : '400') + '">' + esc(m.gA.name) + '</span> <span style="color:#9ca3af">vs</span> <span style="font-weight:' + (isWinnerB ? '800' : '400') + '">' + esc(m.gB.name) + '</span></div>' +
+        '<button class="btn btn-sm" onclick="openScoreEntry(\'' + esc(m.matchKey) + '\')" style="font-size:11px;padding:3px 8px">Edit</button>' +
+        '</div>' +
+        '<div style="font-size:18px;font-weight:800;color:#1e293b;margin-top:4px">' + scoreStr + '</div>' +
+        '<div style="font-size:12px;color:#059669;font-weight:600;margin-top:2px">&#127942; ' + esc(winnerName) + ' wins' + (r.date ? ' · ' + fmtFull(r.date) : '') + '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  // Pending matches
+  if (pending.length > 0) {
+    html += '<div style="font-size:13px;font-weight:700;color:#94a3b8;margin:16px 0 8px;text-transform:uppercase">Awaiting Result (' + pending.length + ')</div>';
+    html += pending.map(function(m) {
+      const isBooked = !!m.booked;
+      return '<div class="match-card" style="border-left:4px solid #e2e8f0;margin-bottom:8px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<div><span style="font-size:15px;font-weight:600">' + esc(m.gA.name) + '</span> <span style="color:#9ca3af;font-size:15px">vs</span> <span style="font-size:15px;font-weight:600">' + esc(m.gB.name) + '</span></div>' +
+        '<button class="btn btn-primary btn-sm" onclick="openScoreEntry(\'' + esc(m.matchKey) + '\')" style="font-size:12px;padding:4px 12px">Enter Score</button>' +
+        '</div>' +
+        (isBooked ? '<div style="font-size:12px;color:#059669;margin-top:4px">&#9989; Booked: ' + fmtFull(m.booked.date) + ' · ' + slotLabel(m.booked.slot) + '</div>' : '<div style="font-size:12px;color:#9ca3af;margin-top:4px">Not yet booked</div>') +
+        '</div>';
+    }).join('');
+  }
+
+  el.innerHTML = html;
+}
+
+function shareStandingsWhatsApp() {
+  const standings = calculateStandings();
+  const leagueName = (L.settings && L.settings.leagueName) || 'Box League';
+  let text = '🏆 ' + leagueName + ' — Standings\n\n';
+  standings.forEach(function(s, i) {
+    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1) + '.';
+    text += medal + ' ' + s.name + ' — ' + s.points + ' pts (W' + s.won + ' L' + s.lost + ')\n';
+  });
+
+  // Add recent results
+  const resultKeys = Object.keys(L.results);
+  if (resultKeys.length > 0) {
+    text += '\n📊 Recent Results:\n';
+    resultKeys.slice(-5).forEach(function(key) {
+      const r = L.results[key];
+      const parts = key.split('~~');
+      const gA = L.groups.find(function(g) { return g.id === parts[0]; });
+      const gB = L.groups.find(function(g) { return g.id === parts[1]; });
+      if (gA && gB && r.scores) {
+        const scoreStr = r.scores.map(function(s) { return s[0] + '-' + s[1]; }).join(', ');
+        text += (gA.name || '?') + ' vs ' + (gB.name || '?') + ': ' + scoreStr + '\n';
+      }
+    });
+  }
+
+  const url = 'https://wa.me/?text=' + encodeURIComponent(text);
+  window.open(url, '_blank');
 }
 
 /* ══════════════════════════════════════
@@ -7939,8 +8349,9 @@ function renderMatchFinder() {
       return `<div class="match-card is-booked">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
         <div class="match-players">${esc(m.gA.name)} <span style="color:#9ca3af;font-weight:400">vs</span> ${esc(m.gB.name)}</div>
-        <span class="badge badge-booked">Booked</span>
+        ${L.results[m.matchKey] ? '<span class="badge" style="background:#dcfce7;color:#059669">Result In</span>' : '<span class="badge badge-booked">Booked</span>'}
       </div>
+      ${L.results[m.matchKey] ? `<div style="font-size:20px;font-weight:800;color:#1e293b;margin:4px 0">${L.results[m.matchKey].scores.map(s => s[0]+'-'+s[1]).join(', ')}</div>` : ''}
       <div style="font-size:14px;font-weight:600;color:#059669">\u{1F4C5} ${fmtFull(m.booked.date)} &middot; ${slotLabel(m.booked.slot)}</div>
       ${m.booked.courtNumber ? `<div style="font-size:13px;color:var(--text);margin-top:4px;font-weight:600">Court: ${esc(m.booked.courtNumber)}</div>` : ''}
       <div style="margin-top:8px">
@@ -7954,6 +8365,7 @@ function renderMatchFinder() {
       </div>
       ${getAgreedHtml(m.matchKey, m.booked)}
       <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="openScoreEntry('${esc(m.matchKey)}')" style="font-size:12px">${L.results[m.matchKey] ? '&#127942; Edit Score' : '&#127942; Enter Score'}</button>
         <button class="btn btn-secondary btn-sm" onclick="addMatchToCalendar('${esc(m.matchKey)}')" style="font-size:12px">&#128197; Add to calendar</button>
         <button class="btn btn-secondary btn-sm" onclick="toggleEditBooking('${esc(m.matchKey)}')" style="font-size:12px">&#9998; Edit booking</button>
         <button class="btn btn-secondary btn-sm" onclick="unbookMatch('${esc(m.matchKey)}')" style="font-size:12px;color:#dc2626;border-color:#fca5a5">Cancel booking</button>
