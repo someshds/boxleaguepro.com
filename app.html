@@ -6619,8 +6619,11 @@ function saveSettings() {
       }
     });
   }
-  // Also update current user's entry (covers organiser/admin who may not be in L.members)
-  updates['/userLeagues/' + currentUser.uid + '/' + lid + '/name'] = newName;
+  // Also update current user's entry — but ONLY if they actually have a userLeagues record
+  // (admins viewing via adminEnterLeague don't, and writing here would create a ghost entry)
+  if (userLeagues[lid] && !userLeagues[lid].__adminView) {
+    updates['/userLeagues/' + currentUser.uid + '/' + lid + '/name'] = newName;
+  }
 
   db.ref().update(updates).then(function() {
     // Update local state
