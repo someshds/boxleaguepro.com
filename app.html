@@ -1681,7 +1681,7 @@
           <li><strong>Match Finder</strong> — automatic availability matching to find times everyone can play</li>
           <li><strong>Availability grid</strong> — visual weekly grid for each player's free times</li>
           <li><strong>Multi-sport support</strong> — tennis, padel, squash, racketball, badminton</li>
-          <li><strong>Club system</strong> — find or create your club, run multiple leagues per club</li>
+          <li><strong>Club system</strong> — your club organiser shares a link, you land straight in your club</li>
           <li><strong>Player photos</strong> — upload a profile photo that shows on avatars</li>
         </ul>
       </div>
@@ -9434,14 +9434,13 @@ const Q_STEPS = [
     { value: 'singles', label: 'Singles', desc: 'I play on my own' },
     { value: 'doubles', label: 'Doubles', desc: 'I play with a partner' },
   ]},
-  { id: 'club', question: 'What club do you play at?', hint: 'Search for your club below, or create a new one.', type: 'clubSearch', show: () => {
-    // Skip club search if user already has a home club
+  { id: 'club', question: 'What club do you play at?', hint: 'Your club is set from your club link.', type: 'clubSearch', show: () => {
+    // v4.10.0: Club search removed — always skip. Club is set from club link.
     if (userHomeClub && userHomeClub.id) {
       qData.club = userHomeClub.name;
       qData.clubId = userHomeClub.id;
-      return false;
     }
-    return (qData.goal === 'create') || (qData.goal === 'join' && qData.hasCode === 'no') || qData.goal === 'mixin';
+    return false;
   }},
   { id: 'leagueName', question: 'What would you like to call your league?', hint: 'Give it a name your players will recognise.', type: 'input', placeholder: 'e.g. Mens Doubles 1, Tuesday Night Tennis', show: () => qData.goal === 'create' },
   { id: 'playerName', question: 'What is your full name?', hint: 'Use your first and last name — this is how other players will see you in the league.', type: 'input', placeholder: 'e.g. Grant de Swardt' },
@@ -9943,19 +9942,18 @@ const EXPLAINERS = {
       '<strong>Organise Your Doubles Box League Matches</strong> — team up with a partner and take on other pairs',
       '<strong>Create or Join Friendly Mix-In Games</strong> — post a game and let anyone at your club join',
       'Got a <strong>club link</strong> from your organiser? Open it directly — you\'ll land on your club\'s own welcome screen with everything you need',
-      'Already in a league? Scroll down to <strong>"Your Leagues"</strong> or tap <strong>"Join directly"</strong> at the bottom'
+      'Already in a league? Scroll down to <strong>"Your Leagues"</strong> or use <strong>"Join with code"</strong> at the bottom'
     ]
   },
   browse: {
     icon: '&#128269;',
-    title: 'Find or Add a League',
-    subtitle: 'Get set up in under a minute',
+    title: 'Your Leagues',
+    subtitle: 'Join or manage your box leagues',
     steps: [
-      '<strong>Join a League</strong> — search for your club, then pick an existing league to join',
-      '<strong>Got an invite link?</strong> Open it directly and you skip the search — you\'ll land straight in your league',
-      '<strong>Create or Join Friendly Mix-In Games</strong> — skip the league and go straight to casual games at your club',
+      '<strong>Your club is set from your club link</strong> — your organiser shares a link and you land straight in your club\'s leagues',
       'Got a <strong>league code</strong>? Enter it in the "Join by code" box to jump straight in',
-      '<strong>Club organisers</strong> create new leagues from the Club Organiser Tools panel on the scoped club welcome screen'
+      '<strong>Got an invite link?</strong> Open it directly to land straight in your league',
+      '<strong>Club organisers</strong> create new leagues from the Club Organiser Tools panel on the club welcome screen'
     ]
   },
   availability: {
