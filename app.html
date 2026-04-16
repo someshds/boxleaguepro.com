@@ -1527,7 +1527,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.9.7 · Build 20260415</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.9.8 · Build 20260416</div>
   </div>
 </div>
 
@@ -1540,6 +1540,16 @@
       <button onclick="closeChangelog()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <div style="padding:20px" id="changelog-content">
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#dcfce7;color:#166534;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.9.8 &middot; 16 Apr 2026</span>
+          <span style="background:#dbeafe;color:#1d4ed8;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">RENAME FIX</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Atomic league rename</strong> &mdash; renaming a league in Settings now updates ALL places the name is stored in a single atomic write: <code>/leagues/{lid}/info/name</code>, <code>/leagues/{lid}/settings/leagueName</code>, <code>/clubLeagues/{clubId}/{lid}/name</code>, <code>/leagueIndex/{lid}/name</code>, and every member&rsquo;s <code>/userLeagues/{uid}/{lid}/name</code></li>
+          <li><strong>Previously:</strong> only the league itself and the current user&rsquo;s <code>/userLeagues</code> entry were updated &mdash; club listings, the global index, and other members&rsquo; &ldquo;Your Leagues&rdquo; views all showed stale names</li>
+        </ul>
+      </div>
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.9.7 &middot; 15 Apr 2026</span>
@@ -6547,20 +6557,51 @@ function saveSettings() {
   const newName = val('inp-league-name');
   if (!newName) { toast('Please enter a league name'); return; }
   L.settings.leagueName = newName;
-  const ref = leagueRef('settings');
-  if (ref) ref.update(L.settings); else localSave();
-  renderHeader(); renderDeadline();
 
-  // Also update league name in userLeagues and hub
-  // TODO [M4]: This only updates the current organiser's userLeagues entry. Other members who
-  // have this league in their userLeagues will still see the old name until they reload. Fixing
-  // this requires iterating all members' userLeagues refs, which is a Firebase architecture change.
-  if (FIREBASE_READY && activeLeagueId && L.settings.leagueName) {
-    db.ref('/userLeagues/' + currentUser.uid + '/' + activeLeagueId + '/name').set(L.settings.leagueName);
-    db.ref('/leagues/' + activeLeagueId + '/info/name').set(L.settings.leagueName);
+  if (!FIREBASE_READY || !activeLeagueId) {
+    localSave(); renderHeader(); renderDeadline();
+    toast('League name saved!'); return;
   }
-  logAction('save_settings', 'League name: ' + newName);
-  toast('League name saved!');
+
+  // v4.9.8: Atomic multi-path rename — propagate to ALL places that store the name
+  const lid = activeLeagueId;
+  const leagueInfo = userLeagues[lid] || {};
+  const clubId = leagueInfo.clubId || '';
+  const updates = {};
+
+  // 1. League settings + info
+  updates['/leagues/' + lid + '/settings/leagueName'] = newName;
+  updates['/leagues/' + lid + '/info/name'] = newName;
+
+  // 2. Club listing (if league belongs to a club)
+  if (clubId) {
+    updates['/clubLeagues/' + clubId + '/' + lid + '/name'] = newName;
+  }
+
+  // 3. Global index
+  updates['/leagueIndex/' + lid + '/name'] = newName;
+
+  // 4. ALL members' userLeagues entries (not just current user)
+  if (L.members) {
+    Object.values(L.members).forEach(function(m) {
+      if (m && m.uid) {
+        updates['/userLeagues/' + m.uid + '/' + lid + '/name'] = newName;
+      }
+    });
+  }
+  // Also update current user's entry (covers organiser/admin who may not be in L.members)
+  updates['/userLeagues/' + currentUser.uid + '/' + lid + '/name'] = newName;
+
+  db.ref().update(updates).then(function() {
+    // Update local state
+    if (leagueInfo) leagueInfo.name = newName;
+    renderHeader(); renderDeadline();
+    logAction('rename_league', newName + ' (' + Object.keys(updates).length + ' paths)');
+    toast('League renamed everywhere!');
+  }).catch(function(e) {
+    console.error('[rename]', e);
+    toast('Rename failed — check console');
+  });
 }
 
 function bookCourtHtml() {
