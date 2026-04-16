@@ -1211,13 +1211,15 @@
         <div class="card">
           <div class="card-title" style="margin-bottom:12px">New Team</div>
           <div class="fg">
-            <label class="fl">Team Name</label>
-            <input class="fi" id="inp-gname" placeholder="e.g. Grant & James">
+            <label class="fl">Player 1 <span style="font-weight:400;text-transform:none">(full name)</span></label>
+            <input class="fi" id="inp-gplayer1" placeholder="e.g. Grant de Swardt">
           </div>
-          <div class="fg">
-            <label class="fl">Player Names <span style="font-weight:400;text-transform:none">(comma-separated)</span></label>
-            <input class="fi" id="inp-gplayers" placeholder="e.g. Grant, James">
+          <div class="fg" id="fg-gplayer2">
+            <label class="fl">Player 2 <span style="font-weight:400;text-transform:none">(full name)</span></label>
+            <input class="fi" id="inp-gplayer2" placeholder="e.g. James Smith">
           </div>
+          <input type="hidden" id="inp-gname">
+          <input type="hidden" id="inp-gplayers">
           <div style="display:flex;gap:8px">
             <button class="btn btn-primary" onclick="addGroup()">Add Team</button>
             <button class="btn btn-secondary" onclick="hideGroupForm()">Cancel</button>
@@ -7000,16 +7002,22 @@ function renderGroups() {
   }).join('');
 }
 
-function showGroupForm() { document.getElementById('add-group-form').style.display = 'block'; document.getElementById('inp-gname').focus(); }
-function hideGroupForm() { document.getElementById('add-group-form').style.display = 'none'; document.getElementById('inp-gname').value = ''; document.getElementById('inp-gplayers').value = ''; }
+function showGroupForm() {
+  const isDoubles = L.settings && (L.settings.format === 'doubles' || L.settings.format === 'mixed');
+  document.getElementById('fg-gplayer2').style.display = isDoubles ? 'block' : 'none';
+  document.getElementById('add-group-form').style.display = 'block';
+  document.getElementById('inp-gplayer1').focus();
+}
+function hideGroupForm() { document.getElementById('add-group-form').style.display = 'none'; document.getElementById('inp-gplayer1').value = ''; document.getElementById('inp-gplayer2').value = ''; }
 
 function addGroup() {
-  const name = val('inp-gname');
-  const playersRaw = val('inp-gplayers');
-  if (!name) { toast('Enter a team name'); return; }
-  if (!playersRaw) { toast('Enter at least one player name'); return; }
-  const players = playersRaw.split(',').map(p => p.trim()).filter(p => p);
-  if (players.length === 0) { toast('Enter at least one player name'); return; }
+  const p1 = val('inp-gplayer1');
+  const isDoubles = L.settings && (L.settings.format === 'doubles' || L.settings.format === 'mixed');
+  const p2 = isDoubles ? val('inp-gplayer2') : '';
+  if (!p1) { toast('Enter player name'); return; }
+  if (isDoubles && !p2) { toast('Enter both player names'); return; }
+  const players = isDoubles ? [p1, p2] : [p1];
+  const name = isDoubles ? p1 + ' & ' + p2 : p1;
   const existing = getAllPlayers();
   for (const p of players) {
     if (existing.includes(p)) { toast(`${p} is already in another team`); return; }
@@ -7123,8 +7131,8 @@ function loadTemplate(type) {
   const ta = document.getElementById('inp-template');
   form.style.display = 'block';
   title.textContent = 'Quick Add \u2014 All Teams';
-  info.innerHTML = 'One team per line. Two players per team, comma-separated.<br><strong>Example:</strong><br>Grant, James<br>Mark, Dave<br>Sean, Pete';
-  ta.placeholder = 'Grant, James\nMark, Dave\nSean, Pete';
+  info.innerHTML = 'One team per line. Two players per team, comma-separated.<br><strong>Example:</strong><br>Grant de Swardt, James Smith<br>Mark Wilson, Dave Brown<br>Sean Taylor, Pete Adams';
+  ta.placeholder = 'Grant de Swardt, James Smith\nMark Wilson, Dave Brown\nSean Taylor, Pete Adams';
   ta.value = ''; ta.focus();
 }
 
