@@ -1527,7 +1527,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447950964670">+44 7950 964670</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.9.8 · Build 20260416</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.9.9 · Build 20260416</div>
   </div>
 </div>
 
@@ -1540,6 +1540,16 @@
       <button onclick="closeChangelog()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <div style="padding:20px" id="changelog-content">
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#dcfce7;color:#166534;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.9.9 &middot; 16 Apr 2026</span>
+          <span style="background:#e0e7ff;color:#3730a3;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">PROFILE</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Profile now shows your name</strong> &mdash; Player Name field always pre-populates with your name from Google sign-in, instead of showing a blank placeholder</li>
+          <li><strong>Email shown on profile</strong> &mdash; your signed-in email address is now displayed below your photo so you can see which account you&rsquo;re using</li>
+        </ul>
+      </div>
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="background:#dcfce7;color:#166534;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.9.8 &middot; 16 Apr 2026</span>
@@ -1790,6 +1800,7 @@
           <input type="file" id="profile-photo-input" accept="image/*" onchange="handleProfilePhoto(this)" style="display:none">
         </label>
       </div>
+      <div id="profile-email" style="font-size:12px;color:#9ca3af;text-align:center;margin-bottom:12px"></div>
       <div style="font-size:13px;font-weight:600;color:#6b7280;margin-bottom:4px">Player Name</div>
       <input class="fi" id="profile-name" placeholder="Your full name (e.g. Grant de Swardt)" style="margin-bottom:12px">
       <div id="profile-partner-wrap">
@@ -4029,7 +4040,9 @@ function openProfile() {
   if (!currentUser) return;
   const emailKey = sanitizeEmail(currentUser.email);
   const member = L.members[emailKey];
-  document.getElementById('profile-name').value = member ? member.playerName || '' : (mixInMode ? currentUser.displayName || '' : '');
+  // v4.9.9: Always fall back to displayName so the field is never blank
+  document.getElementById('profile-name').value = (member && member.playerName) || currentUser.displayName || '';
+  document.getElementById('profile-email').textContent = currentUser.email || '';
   document.getElementById('profile-error').style.display = 'none';
 
   // v4.7.0: populate two partner fields. The "active" one for this league
