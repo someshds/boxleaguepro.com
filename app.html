@@ -2623,9 +2623,15 @@ function adminLoadAllUsers() {
           Object.entries(members).forEach(([emailKey, member]) => {
             const email = member.email || emailKey.replace(/,/g, '.');
             if (!userMap[email]) {
-              userMap[email] = { name: member.name || member.playerName || email, uid: member.uid, email, leagues: [], isAdmin: false };
+              userMap[email] = { name: member.name || member.playerName || email, uid: member.uid, email, leagues: [], isAdmin: false, partners: {} };
             }
-            if (member.playerName) userMap[email].name = member.playerName + (member.partnerName ? ' / ' + member.partnerName : '');
+            if (member.playerName) userMap[email].name = member.playerName;
+            if (member.partnerName) {
+              const fmt = (league.settings && league.settings.format) || '';
+              if (fmt === 'mixed') userMap[email].partners.mixed = member.partnerName;
+              else if (fmt === 'doubles') userMap[email].partners.doubles = member.partnerName;
+              else userMap[email].partners.other = member.partnerName;
+            }
             if (member.uid) userMap[email].uid = member.uid;
             userMap[email].leagues.push({ leagueId, leagueName, clubName, role: member.role || 'player', emailKey });
           });
@@ -2642,7 +2648,6 @@ function adminLoadAllUsers() {
 
 function renderAdminUserList(el, userMap) {
   const users = Object.values(userMap).sort((a, b) => {
-    // Admins first, then alphabetical
     if (a.isAdmin && !b.isAdmin) return -1;
     if (!a.isAdmin && b.isAdmin) return 1;
     return a.name.localeCompare(b.name);
@@ -2653,28 +2658,62 @@ function renderAdminUserList(el, userMap) {
     return;
   }
 
-  el.innerHTML = '<div style="font-size:11px;color:#92400e;font-weight:700;letter-spacing:1px;margin-bottom:8px">' + users.length + ' USERS FOUND</div>' +
+  // Collect unique clubs for display
+  const clubSet = new Set();
+  users.forEach(u => u.leagues.forEach(l => { if (l.clubName) clubSet.add(l.clubName); }));
+
+  el.innerHTML = '<div style="font-size:11px;color:#64748b;font-weight:700;letter-spacing:1px;margin-bottom:10px">' + users.length + ' PLAYERS</div>' +
     users.map(u => {
-      const adminBadge = u.isAdmin ? ' <span style="font-size:10px;background:#7c3aed;color:#fff;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle">ADMIN</span>' : '';
-      const leagueList = u.leagues.length > 0 ? u.leagues.map(l =>
-        '<span style="font-size:11px;background:#fde68a;border-radius:4px;padding:2px 6px;margin:2px;display:inline-block">' +
-        esc(l.leagueName) + ' <span style="color:#92400e;font-size:10px">(' + l.role + ')</span></span>'
-      ).join(' ') : '<span style="font-size:11px;color:#9ca3af;font-style:italic">No leagues joined</span>';
-      const deleteButtons = u.leagues.map(l =>
+      const adminBadge = u.isAdmin ? ' <span style="font-size:10px;background:#7c3aed;color:#fff;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle">SUPER ADMIN</span>' : '';
+
+      // Partner info
+      let partnerHtml = '';
+      if (u.partners.doubles) partnerHtml += '<div style="font-size:12px;color:#475569;margin-top:3px">&#127934; Doubles partner: <strong>' + esc(u.partners.doubles) + '</strong></div>';
+      if (u.partners.mixed) partnerHtml += '<div style="font-size:12px;color:#475569;margin-top:2px">&#129309; Mixed partner: <strong>' + esc(u.partners.mixed) + '</strong></div>';
+      if (u.partners.other && !u.partners.doubles && !u.partners.mixed) partnerHtml += '<div style="font-size:12px;color:#475569;margin-top:3px">&#127934; Partner: <strong>' + esc(u.partners.other) + '</strong></div>';
+
+      // Club info — show unique clubs this user belongs to
+      const userClubs = [...new Set(u.leagues.map(l => l.clubName).filter(c => c))];
+      const clubHtml = userClubs.length > 0
+        ? '<div style="font-size:11px;color:#6366f1;margin-top:4px;font-weight:600">&#127963; ' + userClubs.map(c => esc(c)).join(' · ') + '</div>'
+        : '';
+
+      // League badges
+      const leagueList = u.leagues.length > 0 ? '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">' + u.leagues.map(l =>
+        '<span style="font-size:11px;background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe;border-radius:6px;padding:3px 8px;display:inline-flex;align-items:center;gap:4px">' +
+        esc(l.leagueName) +
+        (l.role === 'organiser' ? ' <span style="font-size:9px;background:#dbeafe;color:#1d4ed8;border-radius:3px;padding:0 4px;font-weight:700">ORG</span>' : '') +
+        '</span>'
+      ).join('') + '</div>' : '';
+
+      // Expandable actions (collapsed by default)
+      const actionsId = 'user-actions-' + sanitizeEmail(u.email).replace(/[^a-zA-Z0-9]/g,'');
+      const actionButtons = u.leagues.map(l =>
         '<button onclick="adminRemoveUserFromLeague(\'' + esc(l.emailKey) + '\',\'' + esc(l.leagueId) + '\',\'' + esc(u.uid || '') + '\')" ' +
-        'style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:600;cursor:pointer;margin:2px">' +
+        'style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer">' +
         'Remove from ' + esc(l.leagueName) + '</button>'
       ).join(' ');
-      const bgColor = u.isAdmin ? '#f5f3ff' : '#fffbeb';
-      const borderColor = u.isAdmin ? '#c4b5fd' : '#fde68a';
-      return '<div style="background:' + bgColor + ';border:1px solid ' + borderColor + ';border-radius:8px;padding:10px 12px;margin-bottom:6px">' +
-        '<div style="display:flex;justify-content:space-between;align-items:start">' +
-        '<div><div style="font-size:14px;font-weight:700;color:#1a1a1a">' + esc(u.name) + adminBadge + '</div>' +
-        '<div style="font-size:12px;color:#6b7280;margin-top:2px">' + esc(u.email) + '</div></div>' +
-        (u.isAdmin ? '' : '<button onclick="adminDeleteUser(\'' + esc(u.email) + '\')" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Delete User</button>') +
+
+      const bgColor = u.isAdmin ? '#faf5ff' : '#fff';
+      const borderColor = u.isAdmin ? '#e9d5ff' : '#e2e8f0';
+      return '<div style="background:' + bgColor + ';border:1px solid ' + borderColor + ';border-radius:12px;padding:14px 16px;margin-bottom:8px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:start;gap:8px">' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:15px;font-weight:700;color:#1e293b">' + esc(u.name) + adminBadge + '</div>' +
+            '<div style="font-size:12px;color:#94a3b8;margin-top:2px">' + esc(u.email) + '</div>' +
+            partnerHtml +
+            clubHtml +
+          '</div>' +
+          '<button onclick="var el=document.getElementById(\'' + actionsId + '\');el.style.display=el.style.display===\'none\'?\'block\':\'none\'" ' +
+            'style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;color:#475569;white-space:nowrap">&#9881; Manage</button>' +
         '</div>' +
-        '<div style="margin-top:6px">' + leagueList + '</div>' +
-        (deleteButtons ? '<div style="margin-top:4px">' + deleteButtons + '</div>' : '') +
+        leagueList +
+        '<div id="' + actionsId + '" style="display:none;margin-top:8px;padding:10px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px">' +
+          '<div style="font-size:11px;font-weight:700;color:#991b1b;margin-bottom:6px;text-transform:uppercase">Actions</div>' +
+          '<div style="display:flex;flex-wrap:wrap;gap:6px">' + actionButtons +
+          (u.isAdmin ? '' : ' <button onclick="adminDeleteUser(\'' + esc(u.email) + '\')" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer">Delete from all leagues</button>') +
+          '</div>' +
+        '</div>' +
         '</div>';
     }).join('');
 }
