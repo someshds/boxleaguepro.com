@@ -2402,15 +2402,20 @@ function adminLoadLeagues() {
         if (league) {
           const info = league.info || {};
           const settings = league.settings || {};
-          const memberCount = league.members ? Object.keys(league.members).length : 0;
+          const members = league.members || {};
+          const memberCount = Object.keys(members).length;
           const deadline = settings.deadline || info.deadline || '';
+          const groups = league.groups ? Object.values(league.groups) : [];
           leagueData.push({
             id: leagueId,
-            name: info.name || 'Unnamed',
-            clubName: info.clubName || '',
-            sport: info.sport || '',
+            name: info.name || settings.leagueName || 'Unnamed',
+            clubName: info.clubName || settings.clubName || '',
+            sport: info.sport || settings.sport || '',
+            format: info.format || settings.format || '',
             deadline,
             memberCount,
+            members,
+            groups,
             createdAt: info.createdAt || 0,
             clubId: info.clubId,
             code: info.code
@@ -2436,9 +2441,13 @@ function renderAdminLeagueList(el, leagues) {
     return;
   }
 
+  // Sort: by club name then league name
+  leagues.sort((a, b) => (a.clubName || '').localeCompare(b.clubName || '') || a.name.localeCompare(b.name));
+
   const now = new Date();
-  el.innerHTML = '<div style="font-size:11px;color:#92400e;font-weight:700;letter-spacing:1px;margin-bottom:8px">' + leagues.length + ' LEAGUES</div>' +
+  el.innerHTML = '<div style="font-size:11px;color:#64748b;font-weight:700;letter-spacing:1px;margin-bottom:10px">' + leagues.length + ' LEAGUES</div>' +
     leagues.map(lg => {
+      const safeId = lg.id.replace(/[^a-zA-Z0-9]/g, '');
       let deadlineHtml = '<span style="color:#9ca3af">No end date set</span>';
       if (lg.deadline) {
         const d = new Date(lg.deadline);
@@ -2449,16 +2458,82 @@ function renderAdminLeagueList(el, leagues) {
           (expired ? '' : ' (' + daysLeft + ' days left)') + '</span>';
       }
       const created = lg.createdAt ? new Date(lg.createdAt).toLocaleDateString() : '?';
-      return '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;margin-bottom:6px">' +
-        '<div style="display:flex;justify-content:space-between;align-items:start">' +
-        '<div>' +
-        '<div style="font-size:14px;font-weight:700;color:#1a1a1a">' + esc(lg.name) + '</div>' +
-        '<div style="font-size:12px;color:#6b7280;margin-top:2px">' + esc(lg.clubName) + (lg.sport ? ' &middot; ' + esc(lg.sport) : '') + ' &middot; ' + lg.memberCount + ' members</div>' +
-        '<div style="font-size:12px;margin-top:4px">' + deadlineHtml + '</div>' +
-        '<div style="font-size:11px;color:#9ca3af;margin-top:2px">Created: ' + created + '</div>' +
+
+      // Format badge
+      const fmtBadge = lg.format
+        ? '<span style="font-size:10px;background:#dbeafe;color:#1e40af;border-radius:4px;padding:1px 6px;font-weight:700;text-transform:uppercase;margin-left:6px">' + esc(lg.format) + '</span>'
+        : '';
+
+      // Build members/teams detail panel
+      let detailHtml = '';
+
+      // Teams/Groups
+      if (lg.groups && lg.groups.length > 0) {
+        detailHtml += '<div style="margin-bottom:10px">';
+        detailHtml += '<div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;margin-bottom:6px">Teams / Players (' + lg.groups.length + ')</div>';
+        detailHtml += lg.groups.map(function(g) {
+          const isDoubles = g.players && g.players.length > 1;
+          return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f8fafc;border:1px solid #f1f5f9;border-radius:8px;margin-bottom:4px">' +
+            '<span style="font-size:14px">' + (isDoubles ? '&#128101;' : '&#128100;') + '</span>' +
+            '<div>' +
+              '<div style="font-size:13px;font-weight:600;color:#1e293b">' + esc(g.name) + '</div>' +
+              (isDoubles ? '<div style="font-size:11px;color:#64748b">' + g.players.map(function(p) { return esc(p); }).join(' &amp; ') + '</div>' : '') +
+            '</div>' +
+          '</div>';
+        }).join('');
+        detailHtml += '</div>';
+      }
+
+      // Registered members (joined via the app)
+      const memberEntries = Object.entries(lg.members || {});
+      if (memberEntries.length > 0) {
+        detailHtml += '<div style="margin-bottom:10px">';
+        detailHtml += '<div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;margin-bottom:6px">Registered Members (' + memberEntries.length + ')</div>';
+        detailHtml += memberEntries.map(function(entry) {
+          var emailKey = entry[0], m = entry[1];
+          var email = m.email || emailKey.replace(/,/g, '.');
+          var partnerLine = '';
+          if (m.partnerName) partnerLine = '<div style="font-size:11px;color:#6366f1">Partner: ' + esc(m.partnerName) + '</div>';
+          var roleBadge = m.role === 'organiser'
+            ? '<span style="font-size:9px;background:#dbeafe;color:#1d4ed8;border-radius:3px;padding:1px 5px;font-weight:700;margin-left:4px">ORG</span>'
+            : '';
+          return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#fff;border:1px solid #f1f5f9;border-radius:8px;margin-bottom:4px">' +
+            '<span style="font-size:14px">&#128100;</span>' +
+            '<div style="flex:1;min-width:0">' +
+              '<div style="font-size:13px;font-weight:600;color:#1e293b">' + esc(m.playerName || m.name || email) + roleBadge + '</div>' +
+              '<div style="font-size:11px;color:#94a3b8">' + esc(email) + '</div>' +
+              partnerLine +
+            '</div>' +
+          '</div>';
+        }).join('');
+        detailHtml += '</div>';
+      }
+
+      // Delete button inside the panel
+      detailHtml += '<div style="border-top:1px solid #fecaca;padding-top:8px;margin-top:4px">' +
+        '<button onclick="adminDeleteLeague(\'' + esc(lg.id) + '\',\'' + esc(lg.name) + '\',\'' + esc(lg.clubId || '') + '\',\'' + esc(lg.code || '') + '\')" ' +
+        'style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">&#128465; Delete League</button>' +
+        '</div>';
+
+      return '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;margin-bottom:8px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:start;gap:8px">' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:15px;font-weight:700;color:#1e293b">' + esc(lg.name) + fmtBadge + '</div>' +
+            '<div style="font-size:12px;color:#64748b;margin-top:3px">' +
+              (lg.clubName ? '&#127963; ' + esc(lg.clubName) + ' &middot; ' : '') +
+              (lg.sport ? esc(lg.sport) + ' &middot; ' : '') +
+              lg.memberCount + ' members &middot; ' + (lg.groups ? lg.groups.length : 0) + ' teams' +
+            '</div>' +
+            '<div style="font-size:12px;margin-top:4px">' + deadlineHtml + '</div>' +
+            '<div style="font-size:11px;color:#94a3b8;margin-top:2px">Created: ' + created + (lg.code ? ' &middot; Code: ' + esc(lg.code) : '') + '</div>' +
+          '</div>' +
+          '<button onclick="var p=document.getElementById(\'lg-detail-' + safeId + '\');p.style.display=p.style.display===\'none\'?\'block\':\'none\'" ' +
+            'style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;color:#475569;white-space:nowrap">&#9881; Manage</button>' +
         '</div>' +
-        '<button onclick="adminDeleteLeague(\'' + esc(lg.id) + '\',\'' + esc(lg.name) + '\',\'' + esc(lg.clubId || '') + '\',\'' + esc(lg.code || '') + '\')" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Delete</button>' +
-        '</div></div>';
+        '<div id="lg-detail-' + safeId + '" style="display:none;margin-top:12px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px">' +
+          detailHtml +
+        '</div>' +
+      '</div>';
     }).join('');
 }
 
