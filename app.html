@@ -1746,6 +1746,32 @@
   </div>
 </div>
 
+<!-- ── Contact Us Modal ── -->
+<div id="contact-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeContactModal()">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e2e8f0">
+      <div style="font-size:17px;font-weight:700">&#128222; Contact Us</div>
+      <button onclick="closeContactModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
+    </div>
+    <div style="padding:24px 20px">
+      <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.6">Got a question, need help setting up your club, or want to report a problem? We'd love to hear from you.</p>
+      <a href="tel:+447782219066" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;text-decoration:none;color:#15803d;font-weight:600;font-size:15px;margin-bottom:12px">
+        <span style="font-size:22px">&#128222;</span>
+        <span>+44 7782 219066</span>
+      </a>
+      <a href="mailto:grant@aifusionautomations.com" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;text-decoration:none;color:#1d4ed8;font-weight:600;font-size:15px;margin-bottom:12px">
+        <span style="font-size:22px">&#9993;</span>
+        <span>grant@aifusionautomations.com</span>
+      </a>
+      <a href="https://aifusionautomations.com" target="_blank" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:#faf5ff;border:1px solid #e9d5ff;border-radius:12px;text-decoration:none;color:#7e22ce;font-weight:600;font-size:15px">
+        <span style="font-size:22px">&#127760;</span>
+        <span>aifusionautomations.com</span>
+      </a>
+      <p style="margin:20px 0 0;color:#94a3b8;font-size:13px;text-align:center">Customer support hours: Mon–Fri, 9am–5pm</p>
+    </div>
+  </div>
+</div>
+
 <!-- ── Profile Modal ── -->
 <div id="profile-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeProfile()">
   <div style="background:#fff;border-radius:16px;width:100%;max-width:420px;padding:0;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden">
@@ -3737,6 +3763,9 @@ function buildTopMenu() {
   h += '<button class="top-bar-menu-item" role="menuitem" onclick="topBarNav(\'feedback\')">' +
        '<span class="top-bar-menu-icon">&#128172;</span><span class="top-bar-menu-item-label">Send feedback</span>' +
        '</button>';
+  h += '<button class="top-bar-menu-item" role="menuitem" onclick="topBarNav(\'contact\')">' +
+       '<span class="top-bar-menu-icon">&#128222;</span><span class="top-bar-menu-item-label">Contact us</span>' +
+       '</button>';
   h += '</div>';
 
   // Sign out
@@ -3808,6 +3837,10 @@ function topBarNav(action) {
     }
     if (action === 'feedback') {
       if (typeof openFeedback === 'function') openFeedback();
+      return;
+    }
+    if (action === 'contact') {
+      if (typeof openContactModal === 'function') openContactModal();
       return;
     }
     if (action === 'signout') {
@@ -9283,6 +9316,13 @@ function openFeedback() {
 }
 function closeFeedback() {
   document.getElementById('feedback-modal').style.display = 'none';
+}
+
+function openContactModal() {
+  document.getElementById('contact-modal').style.display = 'flex';
+}
+function closeContactModal() {
+  document.getElementById('contact-modal').style.display = 'none';
 }
 
 /* ── Changelog ── */
