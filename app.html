@@ -4849,7 +4849,7 @@ function aiParseTime(str) {
 }
 
 // Parse natural language → structured availability plan.
-// Returns { days: Set<0-6>, startHour: int, endHour: int, notes: [] }
+// Returns { days: [0-6], startHour: int, endHour: int, notes: [] }
 function aiParseAvailability(text) {
   var input = String(text || '').toLowerCase().trim();
   if (!input) return null;
@@ -4857,46 +4857,57 @@ function aiParseAvailability(text) {
   var notes = [];
   var includedDays = new Set();
   var excludedDays = new Set();
-  var startHour = 7;  // default earliest slot
-  var endHour = 21;   // default latest slot (slots end at 21:30)
+  var startHour = 7;
+  var endHour = 21;
 
-  // Detect "weekdays" / "weekends" / "every day" / "all days"
-  if (/\b(every ?day|all ?days?|any ?time|anytime|all ?week|whole ?week|any ?day)\b/.test(input)) {
+  // ── STEP 1: Detect broad categories ──
+  var hasBroad = false;
+  if (/\b(every ?day|all ?days?|any ?time|anytime|all ?week|whole ?week|any ?day|daily)\b/.test(input)) {
     [0,1,2,3,4,5,6].forEach(function(d) { includedDays.add(d); });
     notes.push('all days');
+    hasBroad = true;
   }
-  if (/\bweekdays?\b/.test(input) && !/(weekends?|weekend)/.test(input.replace(/weekdays?/, ''))) {
+  if (/\bweekdays?\b/.test(input)) {
     [1,2,3,4,5].forEach(function(d) { includedDays.add(d); });
-    notes.push('weekdays');
+    if (!hasBroad) notes.push('weekdays');
+    hasBroad = true;
   }
   if (/\bweekends?\b/.test(input)) {
     [0,6].forEach(function(d) { includedDays.add(d); });
-    notes.push('weekends');
+    if (!hasBroad) notes.push('weekends');
+    hasBroad = true;
   }
 
-  // Specific days mentioned (e.g. "tuesday and thursday")
+  // ── STEP 2: Split input into "include" section and "exclude" section ──
+  // Anything after 'except', 'not', 'excluding', 'apart from', 'but not' is exclusion territory
+  var excludeRegex = /\b(except|excluding|apart from|but not|other than|not on)\b/i;
+  var splitMatch = input.match(excludeRegex);
+  var includeText = input;
+  var excludeText = '';
+  if (splitMatch) {
+    var idx = input.indexOf(splitMatch[0]);
+    includeText = input.slice(0, idx);
+    excludeText = input.slice(idx + splitMatch[0].length);
+  }
+
+  // ── STEP 3: Find day mentions in each section ──
   Object.keys(AI_DAY_MAP).forEach(function(word) {
     var dayIdx = AI_DAY_MAP[word];
     var wordRegex = new RegExp('\\b' + word + '\\b');
-    if (wordRegex.test(input)) {
-      // Check if this day is in an "except" clause
-      var exceptMatch = input.match(/\b(except|not|excluding|apart from|but not)[^.]*?\b/);
-      if (exceptMatch && exceptMatch[0].toLowerCase().indexOf(word) !== -1) {
-        excludedDays.add(dayIdx);
-      } else if (includedDays.size === 0 || !/(every ?day|all ?days|weekdays|weekends)/.test(input)) {
-        // Only add as inclusion if we haven't already set a broad category
-        if (includedDays.size < 7) includedDays.add(dayIdx);
-      }
+    if (excludeText && wordRegex.test(excludeText)) {
+      excludedDays.add(dayIdx);
+    } else if (wordRegex.test(includeText) && !hasBroad) {
+      includedDays.add(dayIdx);
     }
   });
 
-  // If no days detected, default to every day
+  // ── STEP 4: Default to all days if nothing detected ──
   if (includedDays.size === 0 && excludedDays.size === 0) {
     [0,1,2,3,4,5,6].forEach(function(d) { includedDays.add(d); });
     notes.push('all days (default)');
   }
 
-  // Apply exclusions
+  // ── STEP 5: Apply exclusions ──
   excludedDays.forEach(function(d) { includedDays.delete(d); });
   if (excludedDays.size > 0) {
     var excludedNames = [];
@@ -4904,7 +4915,7 @@ function aiParseAvailability(text) {
     notes.push('except ' + excludedNames.join(', '));
   }
 
-  // Time range detection
+  // ── STEP 6: Time range detection ──
   // "evenings" → 5pm-9pm (17-21)
   // "mornings" → 7am-12pm
   // "afternoons" → 12pm-5pm
@@ -4962,15 +4973,26 @@ function formatHourLabel(h) {
 
 // Apply a parsed plan to the current week — fill in availability slots
 function aiFillAvailability() {
-  var player = getActivePlayer();
-  if (!player) { toast('You need to be linked to a player first'); return; }
-  var input = document.getElementById('ai-avail-prompt').value.trim();
   var resultEl = document.getElementById('ai-avail-result');
+  var input = (document.getElementById('ai-avail-prompt').value || '').trim();
   if (!input) { resultEl.innerHTML = '<span style="color:#dc2626">Enter a description first</span>'; return; }
 
+  // Diagnostic: are we linked to a player?
+  var player = getActivePlayer();
+  var myName = typeof getMyPlayerName === 'function' ? getMyPlayerName() : '';
+  console.log('[AI Fill] activePlayer=', player, 'myName=', myName, 'uid=', currentUser && currentUser.uid);
+
+  if (!player) {
+    resultEl.innerHTML = '<span style="color:#dc2626">You\'re not linked to a player in this league. Ask the organiser to link your account, or use "Fill in for another player" if available.</span>';
+    return;
+  }
+
+  // Parse the input
   var plan = aiParseAvailability(input);
+  console.log('[AI Fill] parsed plan=', plan);
+
   if (!plan || plan.days.length === 0) {
-    resultEl.innerHTML = '<span style="color:#dc2626">I couldn\'t understand that. Try "every day except Tuesday" or "weekday evenings".</span>';
+    resultEl.innerHTML = '<span style="color:#dc2626">I couldn\'t understand that. Try <em>"every day except Tuesday"</em> or <em>"weekday evenings"</em>.</span>';
     return;
   }
 
@@ -4978,10 +5000,12 @@ function aiFillAvailability() {
   var dates = weekDates();
   var updates = {};
   var count = 0;
+  var today = new Date(); today.setHours(0,0,0,0);
+
   dates.forEach(function(d) {
+    if (d < today) return; // skip past dates
     var dow = d.getDay();
     if (plan.days.indexOf(dow) === -1) return;
-    // For each slot that falls within [startHour, endHour)
     SLOTS.forEach(function(s) {
       var hour = parseInt(s.slice(0,2), 10);
       var min = parseInt(s.slice(2), 10);
@@ -4995,23 +5019,32 @@ function aiFillAvailability() {
     });
   });
 
+  console.log('[AI Fill] updates=', Object.keys(updates).length, 'for player', player);
+
   if (count === 0) {
-    resultEl.innerHTML = '<span style="color:#d97706">No slots matched. Try a broader description.</span>';
+    resultEl.innerHTML = '<span style="color:#d97706">No slots matched — the chosen days may all be in the past for this week. Try navigating to next week first, or use a broader description.</span>';
     return;
   }
 
   // Batch Firebase write
-  fbSetAvailBatch(updates);
+  try {
+    fbSetAvailBatch(updates);
+  } catch (e) {
+    console.error('[AI Fill] Firebase write failed', e);
+    resultEl.innerHTML = '<span style="color:#dc2626">Save failed: ' + esc(e.message || 'unknown error') + '</span>';
+    return;
+  }
 
   // Re-render UI
-  renderAvailGrid(); renderMySummary(); renderMyMatches(); renderProgress();
+  try { renderAvailGrid(); renderMySummary(); renderMyMatches(); renderProgress(); } catch (e) { console.warn('[AI Fill] render error', e); }
 
   // Success feedback
   var dayNames = plan.days.map(function(d) { return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]; });
-  resultEl.innerHTML = '<span style="color:#059669;font-weight:600">&#9989; Filled ' + count + ' slots — ' + dayNames.join(', ') + ', ' + formatHourLabel(plan.startHour) + '–' + formatHourLabel(plan.endHour) + '</span>';
+  var summary = '&#9989; Filled <strong>' + count + ' slots</strong> for ' + esc(player) + ' &mdash; ' + dayNames.join(', ') + ', ' + formatHourLabel(plan.startHour) + '–' + formatHourLabel(plan.endHour);
+  if (plan.notes && plan.notes.length) summary += '<br><span style="color:#6d28d9;font-size:11px">Understood: ' + plan.notes.map(esc).join(' · ') + '</span>';
+  resultEl.innerHTML = '<span style="color:#059669;font-weight:600">' + summary + '</span>';
   logAction('ai_fill_availability', player + ' · "' + input + '" → ' + count + ' slots');
 
-  // Clear input after success
   document.getElementById('ai-avail-prompt').value = '';
 }
 
