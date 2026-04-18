@@ -871,6 +871,25 @@
             </div>
           </div>
 
+          <div style="background:#f0fdfa;border:1px solid #99f6e4;border-radius:8px;padding:10px 12px;margin-bottom:10px">
+            <div style="font-size:11px;font-weight:700;color:#0f766e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Modules enabled</div>
+            <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:13px">
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                <input type="checkbox" id="prov-mod-matchfinder" checked disabled style="width:16px;height:16px;accent-color:#0f766e">
+                <span style="color:#0f766e;font-weight:600">🏸 Match Finder <span style="color:#94a3b8;font-weight:400">(core)</span></span>
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                <input type="checkbox" id="prov-mod-mixins" checked disabled style="width:16px;height:16px;accent-color:#0f766e">
+                <span style="color:#0f766e;font-weight:600">🤝 Mix-In Games <span style="color:#94a3b8;font-weight:400">(core)</span></span>
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                <input type="checkbox" id="prov-mod-scoring" style="width:16px;height:16px;accent-color:#0f766e">
+                <span style="color:#0f766e;font-weight:600">🏆 Scoring &amp; Tables</span>
+              </label>
+            </div>
+            <div style="font-size:11px;color:#14b8a6;margin-top:6px">Match Finder &amp; Mix-Ins always on. Additional modules opt-in at provisioning.</div>
+          </div>
+
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
             <button onclick="adminProvisionClub()" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer">&#9989; Create Club Sandbox</button>
             <button onclick="adminAttachSlugToExistingClub()" style="background:#0891b2;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer">&#128279; Add Slug to Existing Club</button>
@@ -3312,6 +3331,12 @@ function adminProvisionClub() {
       return;
     }
     const emailKey = sanitizeEmail(email);
+    const scoringEnabled = !!(document.getElementById('prov-mod-scoring') || {}).checked;
+    const modules = {
+      matchFinder: true,   // core — always on
+      mixIns: true,        // core — always on
+      scoring: scoringEnabled
+    };
     const updates = {};
     updates['/clubs/' + slug] = {
       name: name,
@@ -3319,7 +3344,8 @@ function adminProvisionClub() {
       createdAt: firebase.database.ServerValue.TIMESTAMP,
       createdBy: currentUser.email,
       sandbox: true,
-      organiserEmail: email
+      organiserEmail: email,
+      modules: modules
     };
     updates['/clubsBySlug/' + slug] = slug; // identity map — slug is also the push key
     updates['/clubAdmins/' + slug + '/' + emailKey] = true;
@@ -3329,6 +3355,7 @@ function adminProvisionClub() {
       slug: slug,
       clubName: name,
       organiserEmail: email,
+      modules: modules,
       actor: currentUser.email,
       ts: firebase.database.ServerValue.TIMESTAMP
     };
@@ -3837,7 +3864,7 @@ function buildTopMenu() {
     tabs.push(['availability', 'My Availability', '&#128197;']);
     tabs.push(['everyone', 'Everyone', '&#128101;']);
     tabs.push(['matches', 'Match Finder', '&#127934;']);
-    tabs.push(['results', 'Results', '&#127942;']);
+    if (isScoringEnabled()) tabs.push(['results', 'Results', '&#127942;']);
     if (isOrg) tabs.push(['setup', 'Settings', '&#9881;&#65039;']);
   } else if (inMixIn) {
     tabs.push(['open', 'Friendly Matches', '&#129309;']);
@@ -4712,6 +4739,74 @@ function isClubAdminFor(clubId) {
   if (!clubId) return false;
   if (isAdmin()) return true; // global admin is clubAdmin everywhere
   return (window._clubAdminFor || []).indexOf(clubId) !== -1;
+}
+
+// Club module config — modules are set at provisioning time by super admin.
+// Default: scoring OFF for any club without explicit config (safe for existing clubs).
+// Cache keyed by clubId, populated on league entry via loadClubModules().
+window._clubModules = window._clubModules || {};
+
+function loadClubModules(clubId, cb) {
+  if (!clubId || !FIREBASE_READY) { if (cb) cb(null); return; }
+  if (window._clubModules[clubId]) { if (cb) cb(window._clubModules[clubId]); return; }
+  db.ref('/clubs/' + clubId + '/modules').once('value').then(function(snap) {
+    var mods = snap.val() || null;
+    window._clubModules[clubId] = mods;
+    if (cb) cb(mods);
+  }).catch(function() { if (cb) cb(null); });
+}
+
+function getCurrentClubId() {
+  // Prefer scoped club (URL ?club= param), fallback to active league's clubId
+  if (window._scopedClub && window._scopedClub.id) return window._scopedClub.id;
+  if (activeLeagueId && userLeagues[activeLeagueId] && userLeagues[activeLeagueId].clubId) return userLeagues[activeLeagueId].clubId;
+  if (L && L.settings && L.settings.clubId) return L.settings.clubId;
+  return null;
+}
+
+function isScoringEnabled() {
+  // Super admin always sees Results tab (for testing / support)
+  if (isAdmin()) return true;
+  var clubId = getCurrentClubId();
+  if (!clubId) return false;
+  // Read from scoped club cache first (most reliable)
+  if (window._scopedClub && window._scopedClub.id === clubId && window._scopedClub.info && window._scopedClub.info.modules) {
+    return !!window._scopedClub.info.modules.scoring;
+  }
+  var mods = window._clubModules[clubId];
+  if (mods === undefined) {
+    // Not loaded yet — kick off async load, default to OFF for safety.
+    // A subsequent renderAppTabs() call will pick up the correct value.
+    loadClubModules(clubId, function() { try { renderAppTabs(); } catch (e) {} });
+    return false;
+  }
+  return !!(mods && mods.scoring);
+}
+
+// Rebuild the nav tabs — called after async club modules load so the tab list refreshes
+function renderAppTabs() {
+  if (currentScreen !== 'app' || !activeLeagueId) return;
+  try {
+    // Re-enter the nav builder by triggering the same logic as enterLeague did
+    var isOrganiser = userLeagues[activeLeagueId] && userLeagues[activeLeagueId].role === 'organiser';
+    var scoringOn = isScoringEnabled();
+    var tabs;
+    if (mixInMode) { tabs = [['open','Friendly Matches']]; }
+    else if (isOrganiser) {
+      tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder']];
+      if (scoringOn) tabs.push(['results','Results']);
+      tabs.push(['setup','Settings']);
+    } else {
+      tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder']];
+      if (scoringOn) tabs.push(['results','Results']);
+    }
+    var navEl = document.getElementById('app-nav');
+    if (!navEl) return;
+    navEl.innerHTML = tabs.map(function(t, i) {
+      var active = t[0] === currentTab ? ' active' : (i === 0 && !tabs.some(function(tt){return tt[0] === currentTab;}) ? ' active' : '');
+      return '<div class="nav-tab' + active + '" data-tab="' + t[0] + '" onclick="showTab(\'' + t[0] + '\')" onkeydown="if(event.key===\'Enter\')showTab(\'' + t[0] + '\')" role="tab" tabindex="0" aria-label="' + t[1] + '">' + t[1] + '</div>';
+    }).join('');
+  } catch (e) {}
 }
 
 // v4.8.0: Render the scoped-club welcome. Toggles visibility, populates the
@@ -6521,14 +6616,18 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   document.getElementById('app-user-photo').src = photoUrl;
   document.getElementById('app-user-first').textContent = (currentUser.displayName || 'You').split(' ')[0];
 
-  // Build nav tabs
+  // Build nav tabs — conditional on club modules
+  const scoringOn = isScoringEnabled();
   let tabs;
   if (mixInMode) {
     tabs = [['open','Friendly Matches']];
   } else if (isOrganiser) {
-    tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['results','Results'],['setup','Settings']];
+    tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder']];
+    if (scoringOn) tabs.push(['results','Results']);
+    tabs.push(['setup','Settings']);
   } else {
-    tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['results','Results']];
+    tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder']];
+    if (scoringOn) tabs.push(['results','Results']);
   }
 
   const navEl = document.getElementById('app-nav');
