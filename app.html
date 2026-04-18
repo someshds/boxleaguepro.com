@@ -886,6 +886,10 @@
                 <input type="checkbox" id="prov-mod-scoring" style="width:16px;height:16px;accent-color:#0f766e">
                 <span style="color:#0f766e;font-weight:600">🏆 Scoring &amp; Tables</span>
               </label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                <input type="checkbox" id="prov-mod-ai" style="width:16px;height:16px;accent-color:#0f766e">
+                <span style="color:#0f766e;font-weight:600">🤖 AI Assistant</span>
+              </label>
             </div>
             <div style="font-size:11px;color:#14b8a6;margin-top:6px">Match Finder &amp; Mix-Ins always on. Additional modules opt-in at provisioning.</div>
           </div>
@@ -1316,6 +1320,23 @@
             <div id="fill-in-label" style="display:none;font-size:12px;color:#b45309;margin-top:4px;font-weight:600"></div>
           </div>
         </div>
+        <!-- AI Assistant: module-gated -->
+        <div id="ai-availability-card" style="display:none;margin-bottom:12px">
+          <div style="background:linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);border:2px solid #c4b5fd;border-radius:14px;padding:14px 16px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <span style="font-size:20px">&#129302;</span>
+              <span style="font-size:15px;font-weight:700;color:#5b21b6">AI Availability Assistant</span>
+              <span style="font-size:10px;background:#7c3aed;color:#fff;border-radius:4px;padding:2px 6px;font-weight:700;letter-spacing:0.5px">BETA</span>
+            </div>
+            <div style="font-size:12px;color:#6d28d9;margin-bottom:8px;line-height:1.4">Describe when you're free — I'll fill the grid for you. Try: <em>"every day except Tuesday"</em>, <em>"weekday evenings after 6pm"</em>, <em>"weekends only"</em>.</div>
+            <div style="display:flex;gap:6px">
+              <input type="text" id="ai-avail-prompt" class="fi" placeholder="e.g. available every day except Tuesdays" style="flex:1;font-size:14px" onkeydown="if(event.key==='Enter'){event.preventDefault();aiFillAvailability()}">
+              <button class="btn" onclick="aiFillAvailability()" style="background:#7c3aed;color:#fff;border:none;white-space:nowrap;padding:10px 16px;font-size:13px;font-weight:700">&#10024; Fill</button>
+            </div>
+            <div id="ai-avail-result" style="font-size:12px;margin-top:8px"></div>
+          </div>
+        </div>
+
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
           <button class="btn btn-secondary btn-sm" onclick="copyLastWeek()">&#128260; Copy last week</button>
           <button class="btn btn-secondary btn-sm" onclick="clearMyWeek()">&#128465; Clear this week</button>
@@ -3332,10 +3353,12 @@ function adminProvisionClub() {
     }
     const emailKey = sanitizeEmail(email);
     const scoringEnabled = !!(document.getElementById('prov-mod-scoring') || {}).checked;
+    const aiEnabled = !!(document.getElementById('prov-mod-ai') || {}).checked;
     const modules = {
       matchFinder: true,   // core — always on
       mixIns: true,        // core — always on
-      scoring: scoringEnabled
+      scoring: scoringEnabled,
+      ai: aiEnabled
     };
     const updates = {};
     updates['/clubs/' + slug] = {
@@ -4765,22 +4788,231 @@ function getCurrentClubId() {
 }
 
 function isScoringEnabled() {
-  // Super admin sees what players see — gate works realistically.
-  // To test scoring in a club, flip /clubs/{id}/modules/scoring via Admin SDK.
+  return isModuleEnabled('scoring');
+}
+
+function isAIEnabled() {
+  return isModuleEnabled('ai');
+}
+
+function isModuleEnabled(moduleName) {
   var clubId = getCurrentClubId();
   if (!clubId) return false;
-  // Read from scoped club cache first (most reliable)
   if (window._scopedClub && window._scopedClub.id === clubId && window._scopedClub.info && window._scopedClub.info.modules) {
-    return !!window._scopedClub.info.modules.scoring;
+    return !!window._scopedClub.info.modules[moduleName];
   }
   var mods = window._clubModules[clubId];
   if (mods === undefined) {
-    // Not loaded yet — kick off async load, default to OFF for safety.
-    // A subsequent renderAppTabs() call will pick up the correct value.
-    loadClubModules(clubId, function() { try { renderAppTabs(); } catch (e) {} });
+    loadClubModules(clubId, function() { try { renderAppTabs(); renderAIAvailabilityCard(); } catch (e) {} });
     return false;
   }
-  return !!(mods && mods.scoring);
+  return !!(mods && mods[moduleName]);
+}
+
+// Show/hide the AI availability card based on module gate
+function renderAIAvailabilityCard() {
+  var el = document.getElementById('ai-availability-card');
+  if (!el) return;
+  el.style.display = isAIEnabled() ? 'block' : 'none';
+}
+
+/* ══════════════════════════════════════
+   AI AVAILABILITY ASSISTANT — local natural language parser
+   ══════════════════════════════════════ */
+
+// Day aliases → JS day index (0 = Sun, 1 = Mon, ..., 6 = Sat)
+var AI_DAY_MAP = {
+  'sunday': 0, 'sun': 0,
+  'monday': 1, 'mon': 1,
+  'tuesday': 2, 'tue': 2, 'tues': 2,
+  'wednesday': 3, 'wed': 3,
+  'thursday': 4, 'thu': 4, 'thur': 4, 'thurs': 4,
+  'friday': 5, 'fri': 5,
+  'saturday': 6, 'sat': 6
+};
+
+// Parse a time expression like "6pm", "7:30pm", "18:00", "after 6", "before noon"
+// Returns hour as 0-23, or null.
+function aiParseTime(str) {
+  if (!str) return null;
+  var s = String(str).toLowerCase().trim().replace(/\s+/g, '');
+  if (s === 'noon') return 12;
+  if (s === 'midnight') return 0;
+  // Match "6pm", "6:30pm", "18:00", "18"
+  var m = s.match(/^(\d{1,2})(?::(\d{1,2}))?(am|pm)?$/);
+  if (!m) return null;
+  var hour = parseInt(m[1], 10);
+  var ampm = m[3];
+  if (ampm === 'pm' && hour < 12) hour += 12;
+  if (ampm === 'am' && hour === 12) hour = 0;
+  return hour;
+}
+
+// Parse natural language → structured availability plan.
+// Returns { days: Set<0-6>, startHour: int, endHour: int, notes: [] }
+function aiParseAvailability(text) {
+  var input = String(text || '').toLowerCase().trim();
+  if (!input) return null;
+
+  var notes = [];
+  var includedDays = new Set();
+  var excludedDays = new Set();
+  var startHour = 7;  // default earliest slot
+  var endHour = 21;   // default latest slot (slots end at 21:30)
+
+  // Detect "weekdays" / "weekends" / "every day" / "all days"
+  if (/\b(every ?day|all ?days?|any ?time|anytime|all ?week|whole ?week|any ?day)\b/.test(input)) {
+    [0,1,2,3,4,5,6].forEach(function(d) { includedDays.add(d); });
+    notes.push('all days');
+  }
+  if (/\bweekdays?\b/.test(input) && !/(weekends?|weekend)/.test(input.replace(/weekdays?/, ''))) {
+    [1,2,3,4,5].forEach(function(d) { includedDays.add(d); });
+    notes.push('weekdays');
+  }
+  if (/\bweekends?\b/.test(input)) {
+    [0,6].forEach(function(d) { includedDays.add(d); });
+    notes.push('weekends');
+  }
+
+  // Specific days mentioned (e.g. "tuesday and thursday")
+  Object.keys(AI_DAY_MAP).forEach(function(word) {
+    var dayIdx = AI_DAY_MAP[word];
+    var wordRegex = new RegExp('\\b' + word + '\\b');
+    if (wordRegex.test(input)) {
+      // Check if this day is in an "except" clause
+      var exceptMatch = input.match(/\b(except|not|excluding|apart from|but not)[^.]*?\b/);
+      if (exceptMatch && exceptMatch[0].toLowerCase().indexOf(word) !== -1) {
+        excludedDays.add(dayIdx);
+      } else if (includedDays.size === 0 || !/(every ?day|all ?days|weekdays|weekends)/.test(input)) {
+        // Only add as inclusion if we haven't already set a broad category
+        if (includedDays.size < 7) includedDays.add(dayIdx);
+      }
+    }
+  });
+
+  // If no days detected, default to every day
+  if (includedDays.size === 0 && excludedDays.size === 0) {
+    [0,1,2,3,4,5,6].forEach(function(d) { includedDays.add(d); });
+    notes.push('all days (default)');
+  }
+
+  // Apply exclusions
+  excludedDays.forEach(function(d) { includedDays.delete(d); });
+  if (excludedDays.size > 0) {
+    var excludedNames = [];
+    excludedDays.forEach(function(d) { excludedNames.push(['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]); });
+    notes.push('except ' + excludedNames.join(', '));
+  }
+
+  // Time range detection
+  // "evenings" → 5pm-9pm (17-21)
+  // "mornings" → 7am-12pm
+  // "afternoons" → 12pm-5pm
+  if (/\bevenings?\b/.test(input)) { startHour = 17; endHour = 21; notes.push('evenings (5pm–9pm)'); }
+  else if (/\bmornings?\b/.test(input)) { startHour = 7; endHour = 12; notes.push('mornings (7am–12pm)'); }
+  else if (/\bafternoons?\b/.test(input)) { startHour = 12; endHour = 17; notes.push('afternoons (12pm–5pm)'); }
+  else if (/\blate ?nights?\b/.test(input)) { startHour = 19; endHour = 21; notes.push('late (7pm–9pm)'); }
+
+  // "after Xpm" / "before Xpm"
+  var afterMatch = input.match(/after\s+(\d{1,2}(?::\d{1,2})?\s*(?:am|pm)?|\w+)/);
+  if (afterMatch) {
+    var h = aiParseTime(afterMatch[1]);
+    if (h !== null) { startHour = h; notes.push('after ' + formatHourLabel(h)); }
+  }
+  var beforeMatch = input.match(/before\s+(\d{1,2}(?::\d{1,2})?\s*(?:am|pm)?|\w+)/);
+  if (beforeMatch) {
+    var h = aiParseTime(beforeMatch[1]);
+    if (h !== null) { endHour = h; notes.push('before ' + formatHourLabel(h)); }
+  }
+
+  // Range: "6pm-9pm" / "18:00-21:00" / "6-9pm"
+  var rangeMatch = input.match(/(\d{1,2}(?::\d{1,2})?\s*(?:am|pm)?)\s*[-–to]+\s*(\d{1,2}(?::\d{1,2})?\s*(?:am|pm)?)/i);
+  if (rangeMatch) {
+    var s = aiParseTime(rangeMatch[1]);
+    var e = aiParseTime(rangeMatch[2]);
+    // If the end time has pm and start doesn't, assume start is also pm (e.g. "6-9pm")
+    if (rangeMatch[2].toLowerCase().indexOf('pm') !== -1 && rangeMatch[1].toLowerCase().indexOf('am') === -1 && s !== null && s < 12) {
+      s += 12;
+    }
+    if (s !== null && e !== null && s < e) {
+      startHour = s; endHour = e;
+      notes.push(formatHourLabel(s) + '–' + formatHourLabel(e));
+    }
+  }
+
+  // Clamp to valid slot range
+  if (startHour < 7) startHour = 7;
+  if (endHour > 21) endHour = 21;
+  if (endHour <= startHour) endHour = Math.min(startHour + 2, 21);
+
+  return {
+    days: Array.from(includedDays).sort(),
+    startHour: startHour,
+    endHour: endHour,
+    notes: notes
+  };
+}
+
+function formatHourLabel(h) {
+  if (h === 0) return '12am';
+  if (h === 12) return '12pm';
+  if (h < 12) return h + 'am';
+  return (h - 12) + 'pm';
+}
+
+// Apply a parsed plan to the current week — fill in availability slots
+function aiFillAvailability() {
+  var player = getActivePlayer();
+  if (!player) { toast('You need to be linked to a player first'); return; }
+  var input = document.getElementById('ai-avail-prompt').value.trim();
+  var resultEl = document.getElementById('ai-avail-result');
+  if (!input) { resultEl.innerHTML = '<span style="color:#dc2626">Enter a description first</span>'; return; }
+
+  var plan = aiParseAvailability(input);
+  if (!plan || plan.days.length === 0) {
+    resultEl.innerHTML = '<span style="color:#dc2626">I couldn\'t understand that. Try "every day except Tuesday" or "weekday evenings".</span>';
+    return;
+  }
+
+  // Walk through current week dates, apply to matching days
+  var dates = weekDates();
+  var updates = {};
+  var count = 0;
+  dates.forEach(function(d) {
+    var dow = d.getDay();
+    if (plan.days.indexOf(dow) === -1) return;
+    // For each slot that falls within [startHour, endHour)
+    SLOTS.forEach(function(s) {
+      var hour = parseInt(s.slice(0,2), 10);
+      var min = parseInt(s.slice(2), 10);
+      var hourFloat = hour + (min / 60);
+      if (hourFloat >= plan.startHour && hourFloat < plan.endHour) {
+        var key = avk(player, d, s);
+        L.availability[key] = true;
+        updates[key] = true;
+        count++;
+      }
+    });
+  });
+
+  if (count === 0) {
+    resultEl.innerHTML = '<span style="color:#d97706">No slots matched. Try a broader description.</span>';
+    return;
+  }
+
+  // Batch Firebase write
+  fbSetAvailBatch(updates);
+
+  // Re-render UI
+  renderAvailGrid(); renderMySummary(); renderMyMatches(); renderProgress();
+
+  // Success feedback
+  var dayNames = plan.days.map(function(d) { return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]; });
+  resultEl.innerHTML = '<span style="color:#059669;font-weight:600">&#9989; Filled ' + count + ' slots — ' + dayNames.join(', ') + ', ' + formatHourLabel(plan.startHour) + '–' + formatHourLabel(plan.endHour) + '</span>';
+  logAction('ai_fill_availability', player + ' · "' + input + '" → ' + count + ' slots');
+
+  // Clear input after success
+  document.getElementById('ai-avail-prompt').value = '';
 }
 
 // Rebuild the nav tabs — called after async club modules load so the tab list refreshes
@@ -7074,7 +7306,7 @@ function showTab(t) {
     }
   });
 
-  if (t === 'availability') { checkPlayerLink(); }
+  if (t === 'availability') { checkPlayerLink(); renderAIAvailabilityCard(); }
   if (t === 'everyone') { renderAllAvail(); renderMissing(); }
   if (t === 'matches') { renderMatchFinder(); }
   if (t === 'results') { renderStandings(); renderResultsList(); }
