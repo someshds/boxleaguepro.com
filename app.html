@@ -4765,8 +4765,8 @@ function getCurrentClubId() {
 }
 
 function isScoringEnabled() {
-  // Super admin always sees Results tab (for testing / support)
-  if (isAdmin()) return true;
+  // Super admin sees what players see — gate works realistically.
+  // To test scoring in a club, flip /clubs/{id}/modules/scoring via Admin SDK.
   var clubId = getCurrentClubId();
   if (!clubId) return false;
   // Read from scoped club cache first (most reliable)
