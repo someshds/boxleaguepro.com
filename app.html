@@ -1898,6 +1898,28 @@
   </div>
 </div>
 
+<!-- ── Welcome Video Modal (auto-shows once for each user for new feature announcements) ── -->
+<div id="welcome-video-modal" style="display:none;position:fixed;inset:0;z-index:1002;background:rgba(0,0,0,0.85);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeWelcomeVideo()">
+  <div style="background:linear-gradient(135deg, #5b21b6 0%, #7c3aed 50%, #a78bfa 100%);border-radius:20px;width:100%;max-width:720px;max-height:94vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,0.5);position:relative">
+    <button onclick="closeWelcomeVideo()" style="position:absolute;top:12px;right:14px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);border-radius:50%;width:36px;height:36px;font-size:20px;cursor:pointer;color:#fff;z-index:1" aria-label="Close">&times;</button>
+    <div style="padding:28px 28px 24px;color:#fff;text-align:center">
+      <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:5px 14px;font-size:11px;font-weight:800;letter-spacing:1.5px;margin-bottom:14px;text-transform:uppercase">
+        &#129302; New in v4.13.0
+      </div>
+      <div style="font-size:26px;font-weight:900;letter-spacing:-0.5px;line-height:1.15;margin-bottom:8px">Type Your Availability.<br>AI Fills It.</div>
+      <div style="font-size:14px;opacity:0.9;margin-bottom:18px;line-height:1.5">Just describe your week &mdash; <em>&ldquo;every day except Tuesday&rdquo;</em> &mdash; and the AI fills your grid.</div>
+      <div style="border-radius:14px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,0.4);margin-bottom:18px;background:#000">
+        <iframe id="welcome-video-iframe" width="100%" height="auto" src="" title="BoxLeague Pro — AI Availability Assistant" frameborder="0" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen style="display:block;width:100%;aspect-ratio:16/9;height:auto;border:0"></iframe>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button onclick="closeWelcomeVideo(true)" style="background:#fff;color:#5b21b6;border:none;border-radius:10px;padding:12px 22px;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,0.25)">Got it &mdash; take me to the app</button>
+        <button onclick="closeWelcomeVideo()" style="background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:10px;padding:12px 22px;font-size:13px;font-weight:600;cursor:pointer">Remind me later</button>
+      </div>
+      <div style="font-size:11px;opacity:0.75;margin-top:16px">You'll see this once per new feature. We won't show it again.</div>
+    </div>
+  </div>
+</div>
+
 <!-- ── Profile Modal ── -->
 <div id="profile-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeProfile()">
   <div style="background:#fff;border-radius:16px;width:100%;max-width:420px;padding:0;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden">
@@ -4009,6 +4031,9 @@ function buildTopMenu() {
   h += '<button class="top-bar-menu-item" role="menuitem" onclick="topBarNav(\'help\')">' +
        '<span class="top-bar-menu-icon">&#10067;</span><span class="top-bar-menu-item-label">Help &amp; guides</span>' +
        '</button>';
+  h += '<button class="top-bar-menu-item" role="menuitem" onclick="topBarNav(\'watch-intro\')">' +
+       '<span class="top-bar-menu-icon">&#127910;</span><span class="top-bar-menu-item-label">Watch AI intro</span>' +
+       '</button>';
   h += '<button class="top-bar-menu-item" role="menuitem" onclick="topBarNav(\'changelog\')">' +
        '<span class="top-bar-menu-icon">&#128226;</span><span class="top-bar-menu-item-label">What&rsquo;s new</span>' +
        '</button>';
@@ -4093,6 +4118,10 @@ function topBarNav(action) {
     }
     if (action === 'contact') {
       if (typeof openContactModal === 'function') openContactModal();
+      return;
+    }
+    if (action === 'watch-intro') {
+      if (typeof openWelcomeVideo === 'function') openWelcomeVideo();
       return;
     }
     if (action === 'signout') {
@@ -4616,6 +4645,9 @@ function getDefaultAvatar() {
 
 function onAuthSuccess() {
   logAction('sign_in', currentUser.email);
+  // Show the welcome video once per user for new-feature announcements.
+  // Fires after a short delay so it doesn't clash with routing/screens.
+  try { maybeShowWelcomeVideo(); } catch (e) {}
   loadUserLeagues();
   loadUserHomeClub(() => {
     // v4.8.0: load clubAdmin memberships once per session so scoped-welcome
@@ -10266,6 +10298,43 @@ function openContactModal() {
 }
 function closeContactModal() {
   document.getElementById('contact-modal').style.display = 'none';
+}
+
+/* ── Welcome Video Modal ──
+   Auto-shows once per signed-in user for each new feature announcement.
+   Tracked via localStorage key `blp_welcome_video_seen_<videoId>`.
+   Current video: v4.13.0 AI Availability Assistant (YouTube qdm_v5exxZY).
+   To announce a new feature, bump CURRENT_WELCOME_VIDEO_ID below. */
+const CURRENT_WELCOME_VIDEO_ID = 'qdm_v5exxZY';
+const CURRENT_WELCOME_VIDEO_KEY = 'blp_welcome_video_seen_' + CURRENT_WELCOME_VIDEO_ID;
+
+function openWelcomeVideo() {
+  const iframe = document.getElementById('welcome-video-iframe');
+  if (iframe) {
+    iframe.src = 'https://www.youtube-nocookie.com/embed/' + CURRENT_WELCOME_VIDEO_ID + '?autoplay=1&rel=0';
+  }
+  document.getElementById('welcome-video-modal').style.display = 'flex';
+}
+
+function closeWelcomeVideo(markSeen) {
+  const modal = document.getElementById('welcome-video-modal');
+  const iframe = document.getElementById('welcome-video-iframe');
+  if (iframe) iframe.src = '';  // Stop playback
+  if (modal) modal.style.display = 'none';
+  // Mark seen whether dismissed or "got it" clicked, so we don't re-nag.
+  // "Remind me later" just closes without marking — but to keep UX simple we mark either way.
+  try { localStorage.setItem(CURRENT_WELCOME_VIDEO_KEY, new Date().toISOString()); } catch (e) {}
+}
+
+function maybeShowWelcomeVideo() {
+  // Only show if the user is signed in (otherwise landing page handles it)
+  if (!currentUser) return;
+  // Only show once per user per video
+  try {
+    if (localStorage.getItem(CURRENT_WELCOME_VIDEO_KEY)) return;
+  } catch (e) { return; }
+  // Don't show on top of auth/loading — wait a moment after sign-in settles
+  setTimeout(function() { openWelcomeVideo(); }, 1200);
 }
 
 /* ── Changelog ── */
