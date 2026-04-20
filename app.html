@@ -1577,7 +1577,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.13.3 · Build 20260420</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.13.4 · Build 20260420</div>
   </div>
 </div>
 
@@ -3056,7 +3056,7 @@ function adminRebuildIndex() {
             el.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:8px 0">Error: ' + err.message + '</div>';
           });
         }
-      }, () => { loaded++; if (loaded === ids.length && Object.keys(updates).length > 0) db.ref().update(updates); });
+      }, () => { loaded++; if (loaded === ids.length && Object.keys(updates).length > 0) db.ref().update(updates).catch(err => { console.error('[rebuildIndex] secondary write failed:', err); }); });
     });
   }, () => {
     el.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:8px 0">Cannot read /codes. Check Firebase rules.</div>';
@@ -3656,10 +3656,13 @@ function adminRejectApplication(appId) {
   db.ref().update(updates).then(function() {
     toast('Application rejected');
     adminLoadApplications();
+  }).catch(function(err) {
+    toast('Failed to reject application: ' + (err.message || err));
   });
 }
 
 function esc(s) { if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/\\/g,'&#92;').replace(/`/g,'&#96;'); }
+function safeHref(url) { if (!url) return ''; const s = String(url).trim(); return /^https?:\/\//i.test(s) ? esc(s) : ''; }
 function val(id) { return document.getElementById(id).value.trim(); }
 function toast(msg, duration) {
   const el = document.getElementById('toast');
@@ -4567,7 +4570,7 @@ function addContactToGHL(name, email) {
       marketing: true,
       timestamp: Date.now(),
       source: 'signup'
-    }).catch(err => { console.error('Consent write failed:', err); });
+    }).catch(err => { console.error('Consent write failed:', err); toast('Note: consent preference could not be saved — please try again'); });
   }
 }
 
@@ -5968,6 +5971,8 @@ function createOnboardClub() {
     allClubs[ref.key] = clubData;
     selectOnboardClub(ref.key, name, bookingUrl);
     toast('Club created!');
+  }).catch(err => {
+    toast('Failed to create club: ' + (err.message || err));
   });
 }
 
@@ -6250,6 +6255,8 @@ function createClubFromCreate() {
   ref.set(clubData).then(() => {
     selectClubForCreate(ref.key, name);
     toast('Club created!');
+  }).catch(err => {
+    toast('Failed to create club: ' + (err.message || err));
   });
 }
 
@@ -6331,6 +6338,8 @@ function createClubFromSearch() {
   ref.set(clubData).then(() => {
     selectClub(ref.key, name);
     toast('Club created!');
+  }).catch(err => {
+    toast('Failed to create club: ' + (err.message || err));
   });
 }
 
@@ -7274,7 +7283,9 @@ function saveSettings() {
 
 function bookCourtHtml() {
   if (!clubBookingUrl) return '';
-  return `<a href="${esc(clubBookingUrl)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:#059669;color:#fff;border-radius:12px;font-size:16px;font-weight:700;text-decoration:none;transition:background 0.2s;box-shadow:0 4px 12px rgba(5,150,105,0.3)" onmouseover="this.style.background='#047857'" onmouseout="this.style.background='#059669'">&#127934; Book a Court</a>`;
+  const safeUrl = safeHref(clubBookingUrl);
+  if (!safeUrl) return ''; // reject javascript: and other non-http(s) schemes
+  return `<a href="${safeUrl}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:#059669;color:#fff;border-radius:12px;font-size:16px;font-weight:700;text-decoration:none;transition:background 0.2s;box-shadow:0 4px 12px rgba(5,150,105,0.3)" onmouseover="this.style.background='#047857'" onmouseout="this.style.background='#059669'">&#127934; Book a Court</a>`;
 }
 
 function saveBookingUrl() {
@@ -7287,6 +7298,8 @@ function saveBookingUrl() {
     db.ref('/clubs/' + cid + '/bookingUrl').set(url || null).then(() => {
       if (allClubs[cid]) allClubs[cid].bookingUrl = url;
       toast(url ? 'Booking URL saved!' : 'Booking URL removed');
+    }).catch(err => {
+      toast('Failed to save booking URL: ' + (err.message || err));
     });
   } else {
     toast(url ? 'Booking URL saved!' : 'Booking URL removed');
@@ -7482,7 +7495,9 @@ function showTab(t) {
 function fbSaveResult(matchKey, resultData) {
   L.results[matchKey] = resultData;
   if (FIREBASE_READY && activeLeagueId) {
-    db.ref('/leagues/' + activeLeagueId + '/results/' + matchKey).set(resultData);
+    db.ref('/leagues/' + activeLeagueId + '/results/' + matchKey).set(resultData).catch(err => {
+      toast('Failed to save result: ' + (err.message || err));
+    });
   }
   localSave();
   renderStandings(); renderResultsList();
@@ -7491,7 +7506,9 @@ function fbSaveResult(matchKey, resultData) {
 function fbDeleteResult(matchKey) {
   delete L.results[matchKey];
   if (FIREBASE_READY && activeLeagueId) {
-    db.ref('/leagues/' + activeLeagueId + '/results/' + matchKey).set(null);
+    db.ref('/leagues/' + activeLeagueId + '/results/' + matchKey).set(null).catch(err => {
+      toast('Failed to delete result: ' + (err.message || err));
+    });
   }
   localSave();
   renderStandings(); renderResultsList();
