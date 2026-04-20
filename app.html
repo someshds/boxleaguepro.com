@@ -1597,7 +1597,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.14.1 · Build 20260420</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.14.2 · Build 20260420</div>
   </div>
 </div>
 
@@ -3351,7 +3351,7 @@ function adminLoadClubs() {
               <div style="font-size:11px;color:#6b7280">${esc(id)}${count > 0 ? ' &middot; ' + count + ' league' + (count !== 1 ? 's' : '') : ''}${club.bookingUrl ? ' &middot; 🔗 ' + esc(club.bookingUrl) : ''}</div>
               ${suspicious ? '<div style="font-size:10px;color:#b91c1c;margin-top:2px">Likely created by a user who typed a league name into the club field. Safe to delete if no one is using it.</div>' : ''}
             </div>
-            <button onclick="adminDeleteClub('${esc(id)}','${esc((club.name || 'Unnamed').replace(/'/g, ''))}',${count})" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;margin-left:8px">Delete</button>
+            <button onclick="adminDeleteClub(${jsAttr(id)},${jsAttr((club.name || 'Unnamed').replace(/'/g, ''))},${count})" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;margin-left:8px">Delete</button>
           </div>`;
         }).join('');
     }
@@ -3502,8 +3502,8 @@ function adminProvisionClub() {
           '<div style="font-size:12px;color:#047857;margin-bottom:8px">Send this link to ' + esc(email) + ' &mdash; their players will land straight in the ' + esc(name) + ' sandbox:</div>' +
           '<div style="background:#fff;border:1px solid #a7f3d0;border-radius:6px;padding:8px 10px;font-family:monospace;font-size:12px;word-break:break-all;margin-bottom:8px">' + esc(shareUrl) + '</div>' +
           '<div style="display:flex;gap:8px">' +
-            '<button onclick="provCopyUrl(\'' + esc(shareUrl).replace(/&#39;/g, "\\'") + '\')" style="background:#059669;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">Copy link</button>' +
-            '<button onclick="window.open(\'' + esc(shareUrl).replace(/&#39;/g, "\\'") + '\',\'_blank\')" style="background:#0891b2;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">Open</button>' +
+            '<button onclick="provCopyUrl(' + jsAttr(shareUrl) + ')" style="background:#059669;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">Copy link</button>' +
+            '<button onclick="window.open(' + jsAttr(shareUrl) + ',\'_blank\')" style="background:#0891b2;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">Open</button>' +
           '</div>' +
         '</div>';
       // Clear form
@@ -3587,7 +3587,7 @@ function adminAttachSlugToExistingClub() {
           '<div style="font-weight:700;color:#065f46;margin-bottom:6px">&#9989; Slug attached to ' + esc(club.name || cleanKey) + '</div>' +
           '<div style="font-size:12px;color:#047857;margin-bottom:8px">Share link:</div>' +
           '<div style="background:#fff;border:1px solid #a7f3d0;border-radius:6px;padding:8px 10px;font-family:monospace;font-size:12px;word-break:break-all;margin-bottom:8px">' + esc(shareUrl) + '</div>' +
-          '<button onclick="provCopyUrl(\'' + esc(shareUrl).replace(/&#39;/g, "\\'") + '\')" style="background:#059669;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">Copy link</button>' +
+          '<button onclick="provCopyUrl(' + jsAttr(shareUrl) + ')" style="background:#059669;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">Copy link</button>' +
         '</div>';
       toast('Slug "' + slug + '" attached');
     }).catch(function(err) {
@@ -3683,6 +3683,13 @@ function adminRejectApplication(appId) {
 
 function esc(s) { if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/\\/g,'&#92;').replace(/`/g,'&#96;'); }
 function safeHref(url) { if (!url) return ''; const s = String(url).trim(); return /^https?:\/\//i.test(s) ? esc(s) : ''; }
+// v4.14.2: safe embedding of a user-controlled string as a JS argument inside an
+// HTML onclick="..." attribute. Defeats the "onclick breakout via &#39; decode"
+// vector — see full-audit-20260420.md §2 HIGH: onclick-attribute breakout.
+// Usage:   onclick="fn(${jsAttr(name)})"   — not   onclick="fn(${jsAttr(name)})"
+// JSON.stringify produces a double-quoted JS literal; esc() HTML-escapes the
+// enclosing quotes so the HTML parser doesn't terminate the attribute early.
+function jsAttr(s) { return esc(JSON.stringify(s == null ? '' : String(s))); }
 function val(id) { return document.getElementById(id).value.trim(); }
 function toast(msg, duration) {
   const el = document.getElementById('toast');
@@ -6102,7 +6109,7 @@ function renderWelcomeLeagues() {
   wrap.style.display = 'block';
   list.innerHTML = ids.map(id => {
     const lg = userLeagues[id];
-    return `<div class="league-card" onclick="enterLeague('${esc(id)}')" style="margin-bottom:8px">
+    return `<div class="league-card" onclick="enterLeague(${jsAttr(id)})" style="margin-bottom:8px">
       <div class="league-card-name">${leagueFormatBadge(lg)}${esc(lg.name || 'Unnamed League')}</div>
       <div class="league-card-meta">${esc(lg.clubName || '')}${lg.clubName ? ' &middot; ' : ''}${esc(lg.sport || '')}</div>
     </div>`;
@@ -6165,8 +6172,8 @@ function renderMyLeagues() {
   if (filtered.length === 0) { wrap.style.display = 'none'; return; }
   wrap.style.display = 'block';
   el.innerHTML = filtered.map(([id, lg]) => {
-    const deleteBtn = admin ? `<button onclick="deleteLeague('${esc(id)}', event)" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap" title="Delete league">&#128465; Delete</button>` : '';
-    return `<div class="league-card" onclick="enterLeague('${esc(id)}')" style="display:flex;justify-content:space-between;align-items:center">
+    const deleteBtn = admin ? `<button onclick="deleteLeague(${jsAttr(id)}, event)" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap" title="Delete league">&#128465; Delete</button>` : '';
+    return `<div class="league-card" onclick="enterLeague(${jsAttr(id)})" style="display:flex;justify-content:space-between;align-items:center">
       <div>
         <div class="league-card-name">${leagueFormatBadge(lg)}${esc(lg.name || 'Unnamed League')}</div>
         <div class="league-card-meta">${esc(lg.clubName || '')}${lg.clubName ? ' &middot; ' : ''}${esc(lg.sport || '')}</div>
@@ -6392,7 +6399,7 @@ function clubSearchGeneric(query, resultsEl, createEl, onSelect, opts) {
   const itemClass = (opts && opts.itemClass) || 'club-list-item';
   if (shown.length > 0) {
     resultsEl.innerHTML = shown.map(([id, c]) =>
-      `<div class="${itemClass}" onclick="${onSelect}('${esc(id)}','${esc(c.name)}','${esc(c.bookingUrl || '')}')" style="cursor:pointer">
+      `<div class="${itemClass}" onclick="${onSelect}(${jsAttr(id)},${jsAttr(c.name)},${jsAttr(c.bookingUrl || '')})" style="cursor:pointer">
         <span class="club-list-item-name">${esc(c.name)}</span>
         <span class="club-list-item-count">&rarr;</span>
       </div>`
@@ -8073,7 +8080,7 @@ function renderGroups() {
         <div class="team-name" style="color:${color}">${esc(g.name)}</div>
         <div style="display:flex;gap:6px;align-items:center">
           <span class="team-count">${(g.players||[]).length} player${(g.players||[]).length!==1?'s':''}</span>
-          <button class="btn btn-danger btn-sm" onclick="removeGroup('${esc(g.id)}')" style="padding:5px 10px;font-size:12px">Remove</button>
+          <button class="btn btn-danger btn-sm" onclick="removeGroup(${jsAttr(g.id)})" style="padding:5px 10px;font-size:12px">Remove</button>
         </div>
       </div>
       <div class="team-players">
@@ -8274,7 +8281,7 @@ function renderMembers() {
                 ${allPlayers.map(p => `<option value="${esc(p)}" ${m.playerName===p?'selected':''}>${esc(p)}</option>`).join('')}
                </select>` : `<span class="badge" style="background:#fef3c7;color:#92400e">Not linked</span>`
           }
-          ${isOrg && m.role !== 'organiser' ? `<button onclick="removeMember('${esc(key)}')" style="background:none;border:none;color:#dc2626;font-size:12px;font-weight:600;cursor:pointer;padding:4px 8px" title="Remove member">&#10005;</button>` : ''}
+          ${isOrg && m.role !== 'organiser' ? `<button onclick="removeMember(${jsAttr(key)})" style="background:none;border:none;color:#dc2626;font-size:12px;font-weight:600;cursor:pointer;padding:4px 8px" title="Remove member">&#10005;</button>` : ''}
         </div>
       </div>
     </div>`;
@@ -8645,9 +8652,9 @@ function renderMyMatches() {
         <div style="font-size:12px;margin-top:4px;color:${agreedCount === allPlayers.length ? '#059669' : 'var(--amber)'}">${agreedCount}/${allPlayers.length} confirmed${myAgreed ? ' (you ✓)' : ''}</div>
         ${resultSummary ? `<div style="font-size:12px;color:#7c3aed;margin-top:2px;font-weight:600">&#127942; Result: ${esc(resultSummary)}</div>` : ''}
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
-          ${!myAgreed ? `<button class="btn btn-sm btn-primary" onclick="toggleAgreed('${esc(matchKey)}')" style="font-size:12px;padding:4px 10px">Confirm date</button>` : ''}
-          ${scoringOn ? `<button class="btn btn-sm ${result ? 'btn-secondary' : 'btn-primary'}" onclick="openScoreEntry('${esc(matchKey)}')" style="font-size:12px;padding:4px 10px">&#127942; ${result ? 'Edit score' : 'Enter score'}</button>` : ''}
-          <button class="btn btn-sm btn-secondary" onclick="addMatchToCalendar('${esc(matchKey)}')" style="font-size:12px;padding:4px 10px">&#128197; Add to calendar</button>
+          ${!myAgreed ? `<button class="btn btn-sm btn-primary" onclick="toggleAgreed(${jsAttr(matchKey)})" style="font-size:12px;padding:4px 10px">Confirm date</button>` : ''}
+          ${scoringOn ? `<button class="btn btn-sm ${result ? 'btn-secondary' : 'btn-primary'}" onclick="openScoreEntry(${jsAttr(matchKey)})" style="font-size:12px;padding:4px 10px">&#127942; ${result ? 'Edit score' : 'Enter score'}</button>` : ''}
+          <button class="btn btn-sm btn-secondary" onclick="addMatchToCalendar(${jsAttr(matchKey)})" style="font-size:12px;padding:4px 10px">&#128197; Add to calendar</button>
         </div>
       </div>`;
     }
@@ -8662,7 +8669,7 @@ function renderMyMatches() {
       </div>
       ${slots.length > 0 ? `<div class="sug-slots" style="margin-top:6px">${slots.slice(0,3).map(s => `<span class="sug-slot">${fmtFull(s.date)} &middot; ${slotLabel(s.slot)}</span>`).join('')}</div>` : ''}
       <div style="margin-top:6px">
-        <button class="btn btn-sm btn-secondary" onclick="openAddMatchModal('${esc(opp.id)}')" style="font-size:11px;padding:4px 10px">&#10133; Already arranged? Add it</button>
+        <button class="btn btn-sm btn-secondary" onclick="openAddMatchModal(${jsAttr(opp.id)})" style="font-size:11px;padding:4px 10px">&#10133; Already arranged? Add it</button>
       </div>
     </div>`;
   }).join('');
@@ -8950,10 +8957,10 @@ function addMatchToCalendar(matchKey) {
         ${meta.location ? '<div>' + esc(meta.location) + '</div>' : ''}
       </div>
       <div style="display:flex;flex-direction:column;gap:10px">
-        <button onclick="openGoogleCalendar('${esc(matchKey)}')" style="background:#4285F4;color:#fff;border:none;border-radius:10px;padding:12px 16px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        <button onclick="openGoogleCalendar(${jsAttr(matchKey)})" style="background:#4285F4;color:#fff;border:none;border-radius:10px;padding:12px 16px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
           <span style="font-size:16px">🗓️</span> Google Calendar
         </button>
-        <button onclick="downloadMatchIcs('${esc(matchKey)}')" style="background:#111;color:#fff;border:none;border-radius:10px;padding:12px 16px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        <button onclick="downloadMatchIcs(${jsAttr(matchKey)})" style="background:#111;color:#fff;border:none;border-radius:10px;padding:12px 16px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
           <span style="font-size:16px">🍎</span> Apple Calendar / .ics
         </button>
         <button onclick="closeCalPopup()" style="background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px">Cancel</button>
@@ -9093,10 +9100,10 @@ function renderMatchFinder() {
       </div>
       ${getAgreedHtml(m.matchKey, m.booked)}
       <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-        <button class="btn btn-primary btn-sm" onclick="openScoreEntry('${esc(m.matchKey)}')" style="font-size:12px">${L.results[m.matchKey] ? '&#127942; Edit Score' : '&#127942; Enter Score'}</button>
-        <button class="btn btn-secondary btn-sm" onclick="addMatchToCalendar('${esc(m.matchKey)}')" style="font-size:12px">&#128197; Add to calendar</button>
-        <button class="btn btn-secondary btn-sm" onclick="toggleEditBooking('${esc(m.matchKey)}')" style="font-size:12px">&#9998; Edit booking</button>
-        <button class="btn btn-secondary btn-sm" onclick="unbookMatch('${esc(m.matchKey)}')" style="font-size:12px;color:#dc2626;border-color:#fca5a5">Cancel booking</button>
+        <button class="btn btn-primary btn-sm" onclick="openScoreEntry(${jsAttr(m.matchKey)})" style="font-size:12px">${L.results[m.matchKey] ? '&#127942; Edit Score' : '&#127942; Enter Score'}</button>
+        <button class="btn btn-secondary btn-sm" onclick="addMatchToCalendar(${jsAttr(m.matchKey)})" style="font-size:12px">&#128197; Add to calendar</button>
+        <button class="btn btn-secondary btn-sm" onclick="toggleEditBooking(${jsAttr(m.matchKey)})" style="font-size:12px">&#9998; Edit booking</button>
+        <button class="btn btn-secondary btn-sm" onclick="unbookMatch(${jsAttr(m.matchKey)})" style="font-size:12px;color:#dc2626;border-color:#fca5a5">Cancel booking</button>
       </div>
       <div id="edit-panel-${safeKey}" style="display:none;margin-top:10px;padding:12px;background:#f8fafc;border:1px solid var(--border);border-radius:10px">
         <div style="font-size:14px;font-weight:700;margin-bottom:10px">Edit Booking</div>
@@ -9121,8 +9128,8 @@ function renderMatchFinder() {
           </div>
         </div>
         <div style="display:flex;gap:8px">
-          <button class="btn btn-primary btn-sm" onclick="saveBookingEdit('${esc(m.matchKey)}')" style="font-size:12px;flex:1">Save changes</button>
-          <button class="btn btn-secondary btn-sm" onclick="toggleEditBooking('${esc(m.matchKey)}')" style="font-size:12px">Cancel</button>
+          <button class="btn btn-primary btn-sm" onclick="saveBookingEdit(${jsAttr(m.matchKey)})" style="font-size:12px;flex:1">Save changes</button>
+          <button class="btn btn-secondary btn-sm" onclick="toggleEditBooking(${jsAttr(m.matchKey)})" style="font-size:12px">Cancel</button>
         </div>
       </div>
     </div>`;
@@ -9142,7 +9149,7 @@ function renderMatchFinder() {
         <div style="font-size:13px;color:var(--muted);margin-bottom:8px">${allP.map(p => esc(p)).join(', ')}</div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:4px;font-weight:600">Tap a slot to book it:</div>
         <div class="sug-slots">
-          ${topSlots.map(s => `<span class="sug-slot" onclick="bookMatch('${esc(m.matchKey)}','${s.date}','${s.slot}')">\u{1F4C5} ${fmtFull(s.date)} &middot; ${slotLabel(s.slot)}</span>`).join('')}
+          ${topSlots.map(s => `<span class="sug-slot" onclick="bookMatch(${jsAttr(m.matchKey)},'${s.date}','${s.slot}')">\u{1F4C5} ${fmtFull(s.date)} &middot; ${slotLabel(s.slot)}</span>`).join('')}
           ${m.slots.length > 5 ? `<span class="sug-slot" style="background:#f3f4f6;color:var(--muted);border-color:#e5e7eb;cursor:default">+${m.slots.length - 5} more</span>` : ''}
         </div>
       </div>`;
@@ -9296,7 +9303,7 @@ function openAddMatchModal(preselectOpponentId) {
 
     <div style="display:flex;gap:8px">
       <button class="btn btn-secondary" onclick="closeAddMatchModal()" style="flex:1">Cancel</button>
-      <button class="btn btn-primary" onclick="saveAddMatchModal('${esc(teamAFixedId)}')" style="flex:2">&#9989; Add match</button>
+      <button class="btn btn-primary" onclick="saveAddMatchModal(${jsAttr(teamAFixedId)})" style="flex:2">&#9989; Add match</button>
     </div>
   `;
   modal.style.display = 'flex';
@@ -9494,7 +9501,7 @@ function getAgreedHtml(matchKey, booked) {
   h += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">`;
   h += `<span style="font-size:13px;font-weight:600;color:var(--text)">Date confirmed: ${agreedCount}/${allPlayers.length}</span>`;
   if (myPlayer && allPlayers.includes(myPlayer)) {
-    h += `<button class="btn btn-sm ${iAgreed ? 'btn-primary' : 'btn-secondary'}" onclick="toggleAgreed('${esc(matchKey)}')" style="font-size:12px;padding:4px 10px">${iAgreed ? '✓ Confirmed' : 'Confirm date'}</button>`;
+    h += `<button class="btn btn-sm ${iAgreed ? 'btn-primary' : 'btn-secondary'}" onclick="toggleAgreed(${jsAttr(matchKey)})" style="font-size:12px;padding:4px 10px">${iAgreed ? '✓ Confirmed' : 'Confirm date'}</button>`;
   }
   h += `</div>`;
   h += `<div style="display:flex;flex-wrap:wrap;gap:4px">`;
@@ -9664,20 +9671,20 @@ function renderOpenMatches() {
 
     let actionsHtml = '';
     if (!isFull && !iJoined && myName) {
-      actionsHtml += `<button class="btn btn-success" onclick="joinOpenMatch('${esc(m.id)}')" style="font-size:15px;padding:10px 20px;border-radius:10px;font-weight:800;box-shadow:0 3px 10px rgba(34,197,94,0.3)">&#127934; Join This Game</button>`;
+      actionsHtml += `<button class="btn btn-success" onclick="joinOpenMatch(${jsAttr(m.id)})" style="font-size:15px;padding:10px 20px;border-radius:10px;font-weight:800;box-shadow:0 3px 10px rgba(34,197,94,0.3)">&#127934; Join This Game</button>`;
     } else if (iJoined) {
-      actionsHtml += `<button class="btn btn-danger btn-sm" onclick="leaveOpenMatch('${esc(m.id)}')">Leave Game</button>`;
+      actionsHtml += `<button class="btn btn-danger btn-sm" onclick="leaveOpenMatch(${jsAttr(m.id)})">Leave Game</button>`;
     } else if (isFull && !iJoined) {
       actionsHtml += `<span style="font-size:14px;color:var(--muted);font-weight:700;background:#f1f5f9;padding:8px 14px;border-radius:8px">Game is full</span>`;
     }
     if ((isCreator || iJoined) && !isFull) {
-      actionsHtml += `<button class="btn btn-sm" onclick="showAddPlayerToMatch('${esc(m.id)}')" style="background:#f0fdf4;color:#059669;border:1px solid #bbf7d0;font-weight:700;padding:8px 14px;font-size:13px">+ Add Player</button>`;
+      actionsHtml += `<button class="btn btn-sm" onclick="showAddPlayerToMatch(${jsAttr(m.id)})" style="background:#f0fdf4;color:#059669;border:1px solid #bbf7d0;font-weight:700;padding:8px 14px;font-size:13px">+ Add Player</button>`;
     }
-    actionsHtml += `<button class="btn btn-sm btn-whatsapp" onclick="whatsAppShareMatch('${esc(m.id)}')" style="font-weight:700;padding:8px 14px;font-size:13px">Share to WhatsApp</button>`;
-    actionsHtml += `<button class="btn btn-sm" onclick="shareOpenMatch('${esc(m.id)}')" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700;padding:8px 14px;font-size:13px">Copy to Share</button>`;
+    actionsHtml += `<button class="btn btn-sm btn-whatsapp" onclick="whatsAppShareMatch(${jsAttr(m.id)})" style="font-weight:700;padding:8px 14px;font-size:13px">Share to WhatsApp</button>`;
+    actionsHtml += `<button class="btn btn-sm" onclick="shareOpenMatch(${jsAttr(m.id)})" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700;padding:8px 14px;font-size:13px">Copy to Share</button>`;
     if (isCreator) {
-      actionsHtml += `<button class="btn btn-sm" onclick="editOpenMatch('${esc(m.id)}')" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700">Edit</button>`;
-      actionsHtml += `<button class="btn btn-secondary btn-sm" onclick="deleteOpenMatch('${esc(m.id)}')">Delete</button>`;
+      actionsHtml += `<button class="btn btn-sm" onclick="editOpenMatch(${jsAttr(m.id)})" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700">Edit</button>`;
+      actionsHtml += `<button class="btn btn-secondary btn-sm" onclick="deleteOpenMatch(${jsAttr(m.id)})">Delete</button>`;
     }
     if (!myName) {
       actionsHtml = `<span style="font-size:13px;color:var(--amber);font-weight:600">Link your account to a player name to join</span>`;
@@ -9706,7 +9713,7 @@ function renderOpenMatches() {
         <span class="om-spots ${isFull ? 'full' : 'available'}">${isFull ? 'Full' : spotsLeft + '/' + maxP + ' Slots Available'}</span>
       </div>
       ${m.notes ? `<div style="margin-top:8px;font-size:13px;color:var(--muted);font-style:italic">${esc(m.notes)}</div>` : ''}
-      <div onclick="${iJoined || isCreator ? `toggleOmCourtBooked('${esc(m.id)}')` : ''}" style="margin-top:8px;padding:8px 12px;border-radius:10px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;${iJoined || isCreator ? 'cursor:pointer;' : ''}${m.courtBooked ? 'background:#f0fdf4;border:1.5px solid #86efac;color:#059669' : 'background:#fef9c3;border:1.5px solid #fde047;color:#a16207'}">
+      <div onclick="${iJoined || isCreator ? `toggleOmCourtBooked(${jsAttr(m.id)})` : ''}" style="margin-top:8px;padding:8px 12px;border-radius:10px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;${iJoined || isCreator ? 'cursor:pointer;' : ''}${m.courtBooked ? 'background:#f0fdf4;border:1.5px solid #86efac;color:#059669' : 'background:#fef9c3;border:1.5px solid #fde047;color:#a16207'}">
         ${m.courtBooked ? '&#9989; Court Booked' + (m.courtBookedBy ? '<span style="font-weight:500;font-size:12px;opacity:0.8;margin-left:4px">by ' + esc(m.courtBookedBy.split(' ')[0]) + '</span>' : '') : '&#9888;&#65039; Court Not Booked'}${iJoined || isCreator ? '<span style="margin-left:auto;font-size:11px;font-weight:600;opacity:0.7">tap to change</span>' : ''}
       </div>
       <div class="om-actions">${actionsHtml}</div>
@@ -10089,7 +10096,7 @@ function editOpenMatch(matchId) {
       </div>
       <div style="display:flex;gap:10px;margin-top:20px">
         <button class="btn btn-secondary" onclick="closeEditOpenMatch()" style="flex:1">Cancel</button>
-        <button class="btn btn-primary" onclick="saveOpenMatchEdit('${esc(matchId)}')" style="flex:1">Save Changes</button>
+        <button class="btn btn-primary" onclick="saveOpenMatchEdit(${jsAttr(matchId)})" style="flex:1">Save Changes</button>
       </div>
     </div>`;
 
@@ -10358,7 +10365,7 @@ function renderComments() {
         <div class="comment-header">
           <span class="comment-name">${esc(c.name || 'Unknown')}${adminUser && c.email ? '<span style="font-size:10px;color:var(--muted);margin-left:4px">(' + esc(c.email) + ')</span>' : ''}</span>
           <span class="comment-time">${timeAgo}</span>
-          ${canDelete ? `<button class="comment-delete" onclick="deleteComment('${esc(c.id)}')" title="Delete">&#128465;</button>` : ''}
+          ${canDelete ? `<button class="comment-delete" onclick="deleteComment(${jsAttr(c.id)})" title="Delete">&#128465;</button>` : ''}
         </div>
         <div class="comment-text">${esc(c.text)}</div>
       </div>
@@ -10561,7 +10568,7 @@ function showAddPlayerToMatch(matchId) {
       html += `<div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:8px">Or select from league players:</div>`;
       html += `<div style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto">`;
       available.forEach(p => {
-        html += `<button onclick="addExistingPlayerToMatch('${esc(p)}')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:1.5px solid #e2e8f0;background:#fff;cursor:pointer;text-align:left;font-size:14px;font-weight:600;color:#1a1a1a;transition:all 0.15s" onmouseover="this.style.background='#f0fdf4';this.style.borderColor='#86efac'" onmouseout="this.style.background='#fff';this.style.borderColor='#e2e8f0'">${avatarWithPhoto(p)}<span>${esc(p)}</span></button>`;
+        html += `<button onclick="addExistingPlayerToMatch(${jsAttr(p)})" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:1.5px solid #e2e8f0;background:#fff;cursor:pointer;text-align:left;font-size:14px;font-weight:600;color:#1a1a1a;transition:all 0.15s" onmouseover="this.style.background='#f0fdf4';this.style.borderColor='#86efac'" onmouseout="this.style.background='#fff';this.style.borderColor='#e2e8f0'">${avatarWithPhoto(p)}<span>${esc(p)}</span></button>`;
       });
       html += `</div>`;
     } else {
@@ -10707,7 +10714,7 @@ function renderQStep() {
 
   if (step.type === 'options') {
     html += step.options.map(o =>
-      `<button class="q-option" onclick="qSelectOption('${step.id}','${esc(o.value)}')">
+      `<button class="q-option" onclick="qSelectOption('${step.id}',${jsAttr(o.value)})">
         ${esc(o.label)}
         ${o.desc ? '<div class="q-option-desc">' + esc(o.desc) + '</div>' : ''}
       </button>`
