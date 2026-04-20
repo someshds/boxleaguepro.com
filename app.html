@@ -559,6 +559,23 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     @media (min-width: 600px) { .content { padding: 24px; } }
+
+    /* v4.13.5: tablet breakpoint — use the extra real estate instead of looking like a stretched phone */
+    @media (min-width: 768px) {
+      .content { max-width: 820px; padding: 28px; }
+      .welcome-body { max-width: 680px; }
+      .wizard-body { max-width: 640px; }
+      .auth-form { max-width: 420px; }
+      .auth-divider { max-width: 420px; }
+    }
+
+    /* v4.13.5: global focus ring for keyboard users — was being suppressed by `button{outline:none}` defaults. Only shows for keyboard focus, never for mouse. */
+    :focus-visible {
+      outline: 2px solid #1d4ed8;
+      outline-offset: 2px;
+      border-radius: 6px;
+    }
+    button:focus-visible, .wc-card:focus-visible, .option-card:focus-visible { outline-offset: 3px; }
   </style>
 </head>
 <body>
@@ -1577,7 +1594,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.13.4 · Build 20260420</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.13.5 · Build 20260420</div>
   </div>
 </div>
 
@@ -4442,7 +4459,7 @@ function saveProfile() {
     return;
   }
 
-  if (!FIREBASE_READY) { toast('Cannot save'); return; }
+  if (!FIREBASE_READY) { toast('Cannot save — you appear to be offline. Check your connection and try again.'); return; }
 
   const emailKey = sanitizeEmail(currentUser.email);
   const member = L.members[emailKey];
@@ -6568,7 +6585,8 @@ async function createLeagueInClub() {
     showCreateShareStep(leagueId, name);
   }).catch(err => {
     console.error('Create league error:', err);
-    toast('Error creating league');
+    // v4.13.5: surface actual error so Grant can debug from user reports
+    toast('Could not create league: ' + (err && err.message ? err.message : 'unknown error. Try again, or contact support.'));
   });
 }
 
@@ -6622,7 +6640,8 @@ function joinAndEnterLeague(leagueId) {
       startWizard(leagueId, info.name);
     }).catch(err => {
       console.error('Join league error:', err);
-      toast('Error joining league — please try again');
+      // v4.13.5: surface actual error — silent generic messages trained users to re-tap endlessly
+      toast('Could not join league: ' + (err && err.message ? err.message : 'please try again or contact support'));
     });
   }, err => {
     console.error('League lookup error:', err);
@@ -6667,7 +6686,8 @@ function adminEnterLeague(leagueId, clubId) {
     enterLeagueMain(leagueId, synthInfo, true);
   }).catch(function(e) {
     console.error('[admin-enter-league]', e);
-    toast('Could not open league');
+    // v4.13.5: surface actual error
+    toast('Could not open league: ' + (e && e.message ? e.message : 'try again'));
   });
 }
 
@@ -7434,7 +7454,7 @@ function fbSetBooked(matchKey, slotData) {
         if (current) return; // Already booked — abort
         return slotData;
       }, (err, committed) => {
-        if (err) { toast('Booking error — try again'); return; }
+        if (err) { toast('Booking error: ' + (err.message || 'try again')); return; }
         if (!committed) { toast('This match was already booked by someone else'); delete L.booked[matchKey]; renderMatchFinder(); renderMyMatches(); }
       });
     } else {
@@ -8507,11 +8527,34 @@ function renderMyMatches() {
   const card = document.getElementById('my-matches-card');
   const body = document.getElementById('my-matches-body');
   const blEl = document.getElementById('mm-booking-link');
-  if (!player || L.groups.length < 2) { card.style.display = 'none'; return; }
+  // v4.13.5: show helpful empty-state instead of hiding the card entirely — users
+  // were bouncing when the card vanished with no guidance on what to do next.
+  if (!player) {
+    card.style.display = 'block';
+    body.innerHTML = '<div style="padding:16px;color:#6b7280;font-size:14px;background:#f9fafb;border-radius:10px;text-align:center"><div style="font-size:24px;margin-bottom:6px">👋</div>Link your account to a player name first (My Profile or the onboarding wizard), then your matches will show up here.</div>';
+    if (blEl) blEl.innerHTML = '';
+    return;
+  }
+  if (L.groups.length < 2) {
+    card.style.display = 'block';
+    body.innerHTML = '<div style="padding:16px;color:#6b7280;font-size:14px;background:#f9fafb;border-radius:10px;text-align:center"><div style="font-size:24px;margin-bottom:6px">⏳</div>No teams in this league yet — check back after your organiser sets them up.</div>';
+    if (blEl) blEl.innerHTML = '';
+    return;
+  }
   const myGroup = L.groups.find(g => (g.players || []).includes(player));
-  if (!myGroup) { card.style.display = 'none'; return; }
+  if (!myGroup) {
+    card.style.display = 'block';
+    body.innerHTML = '<div style="padding:16px;color:#6b7280;font-size:14px;background:#f9fafb;border-radius:10px;text-align:center"><div style="font-size:24px;margin-bottom:6px">🎾</div>You\'re not in a team yet in this league. Ask your organiser to add you, or go to Settings to add yourself.</div>';
+    if (blEl) blEl.innerHTML = '';
+    return;
+  }
   const opponents = L.groups.filter(g => g.id !== myGroup.id);
-  if (opponents.length === 0) { card.style.display = 'none'; return; }
+  if (opponents.length === 0) {
+    card.style.display = 'block';
+    body.innerHTML = '<div style="padding:16px;color:#6b7280;font-size:14px;background:#f9fafb;border-radius:10px;text-align:center"><div style="font-size:24px;margin-bottom:6px">🏆</div>You\'re the only team so far! Invite others so you have opponents to play.</div>';
+    if (blEl) blEl.innerHTML = '';
+    return;
+  }
 
   card.style.display = 'block';
   body.innerHTML = opponents.map(opp => {
@@ -9292,6 +9335,8 @@ function updateBookingNotes(matchKey) {
 function toggleCourtBooked(matchKey) {
   const booked = L.booked[matchKey];
   if (!booked) return;
+  // v4.13.5: confirm when REMOVING a booking — misclicks here mislead other players
+  if (booked.courtBooked && !confirm('Remove court-booked confirmation for this match? Other players will see the court as unbooked again.')) return;
   booked.courtBooked = !booked.courtBooked;
   fbSetBooked(matchKey, booked);
   renderMatchFinder(); renderMyMatches();
