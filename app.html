@@ -1182,6 +1182,9 @@
     </div>
   </div>
 
+  <!-- v4.14.1: "Coming up next" hero — shows next booked match prominently at the top of the league screen. Populated by renderNextMatchHero(). -->
+  <div id="next-match-hero" style="display:none;margin:10px 16px 0;background:linear-gradient(135deg,#059669,#10b981);color:#fff;border-radius:14px;padding:14px 18px;box-shadow:0 6px 20px rgba(5,150,105,0.25)"></div>
+
   <div id="deadline-banner" class="deadline-banner"></div>
 
   <!-- Dev Notice Banner -->
@@ -1594,7 +1597,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.14.0 · Build 20260420</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.14.1 · Build 20260420</div>
   </div>
 </div>
 
@@ -7168,6 +7171,10 @@ function goToHub() {
   clubBookingUrl = '';
   mixInMode = false;
   L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {}, results: {} };
+  // v4.14.1: hide the next-match hero explicitly — its visibility check runs in renderMyMatches(),
+  // which isn't called again after listeners detach, so the card could otherwise show stale data.
+  const hero = document.getElementById('next-match-hero');
+  if (hero) hero.style.display = 'none';
   showScreen('welcome');
 }
 
@@ -8522,7 +8529,64 @@ function clearMyWeek() {
 }
 
 /* ── My matches ── */
+// v4.14.1: "Coming up next" hero — surfaces the player's next booked match at
+// the top of the league screen. Answers the #1 question players open the app
+// with ("when am I playing next?") in zero taps. Hidden when there's no
+// upcoming match or the player isn't linked yet.
+function renderNextMatchHero() {
+  const hero = document.getElementById('next-match-hero');
+  if (!hero) return;
+  if (!activeLeagueId || mixInMode) { hero.style.display = 'none'; return; }
+  const player = getMyPlayerName();
+  if (!player || !L.groups || L.groups.length < 2) { hero.style.display = 'none'; return; }
+  const myGroup = L.groups.find(g => (g.players || []).includes(player));
+  if (!myGroup) { hero.style.display = 'none'; return; }
+
+  // Find upcoming booked matches where myGroup is involved
+  const today = new Date(); today.setHours(0,0,0,0);
+  const upcoming = [];
+  Object.entries(L.booked || {}).forEach(([matchKey, booked]) => {
+    if (!booked || !booked.date) return;
+    const parts = matchKey.split('~~');
+    if (!parts.includes(myGroup.id)) return;
+    const bookedDate = new Date(booked.date + 'T00:00:00');
+    if (isNaN(bookedDate.getTime()) || bookedDate < today) return;
+    upcoming.push({ matchKey, booked, parts });
+  });
+  if (upcoming.length === 0) { hero.style.display = 'none'; return; }
+
+  upcoming.sort((a, b) => (a.booked.date || '').localeCompare(b.booked.date || ''));
+  const next = upcoming[0];
+  const oppId = next.parts.find(id => id !== myGroup.id);
+  const opp = L.groups.find(g => g.id === oppId);
+  const oppName = opp ? opp.name : '(unknown)';
+  const allPlayers = [...(myGroup.players || []), ...(opp && opp.players || [])];
+  const agreed = next.booked.agreed || {};
+  const myAgreed = !!agreed[player];
+  const agreedCount = allPlayers.filter(p => agreed[p]).length;
+  const scoringOn = typeof isScoringEnabled === 'function' && isScoringEnabled();
+  const hasResult = scoringOn && L.results && L.results[next.matchKey];
+  const btn = 'background:rgba(255,255,255,0.22);color:#fff;border:1px solid rgba(255,255,255,0.35);border-radius:9px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap';
+
+  hero.innerHTML =
+    '<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;opacity:0.85;margin-bottom:4px">&#127934; COMING UP NEXT</div>' +
+    '<div style="font-size:20px;font-weight:800;line-height:1.2">vs ' + esc(oppName) + '</div>' +
+    '<div style="font-size:14px;font-weight:600;margin-top:4px;opacity:0.95">' + fmtFull(next.booked.date) + ' &middot; ' + slotLabel(next.booked.slot) + '</div>' +
+    (next.booked.courtBooked
+      ? '<div style="font-size:12px;opacity:0.9;margin-top:2px">&#9989; Court booked</div>'
+      : '<div style="font-size:12px;opacity:0.9;margin-top:2px">&#9888;&#65039; Court not yet booked</div>') +
+    (upcoming.length > 1 ? '<div style="font-size:11px;opacity:0.75;margin-top:2px">+' + (upcoming.length - 1) + ' more upcoming match' + (upcoming.length - 1 === 1 ? '' : 'es') + '</div>' : '') +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">' +
+      (!myAgreed ? '<button onclick="toggleAgreed(\'' + esc(next.matchKey) + '\')" style="' + btn + '">&#9989; Confirm date</button>' : '<button disabled style="' + btn + ';opacity:0.8;cursor:default">&#9989; You\'ve confirmed (' + agreedCount + '/' + allPlayers.length + ')</button>') +
+      '<button onclick="addMatchToCalendar(\'' + esc(next.matchKey) + '\')" style="' + btn + '">&#128197; Calendar</button>' +
+      (scoringOn ? '<button onclick="openScoreEntry(\'' + esc(next.matchKey) + '\')" style="' + btn + '">&#127942; ' + (hasResult ? 'Edit score' : 'Enter score') + '</button>' : '') +
+    '</div>';
+  hero.style.display = 'block';
+}
+
 function renderMyMatches() {
+  // v4.14.1: keep the hero card in sync — same triggers (availability + booked updates)
+  renderNextMatchHero();
   const player = getMyPlayerName();
   const card = document.getElementById('my-matches-card');
   const body = document.getElementById('my-matches-body');
@@ -8557,6 +8621,9 @@ function renderMyMatches() {
   }
 
   card.style.display = 'block';
+  // v4.14.1: score-entry button on My Matches card — was Match-Finder-only.
+  // Players opening the app after a match expect to record the result here.
+  const scoringOn = typeof isScoringEnabled === 'function' && isScoringEnabled();
   body.innerHTML = opponents.map(opp => {
     const matchKey = [myGroup.id, opp.id].sort().join('~~');
     const booked = L.booked[matchKey];
@@ -8565,14 +8632,21 @@ function renderMyMatches() {
       const agreed = booked.agreed || {};
       const agreedCount = allPlayers.filter(p => agreed[p]).length;
       const myAgreed = player && agreed[player];
+      // v4.14.1: if this match has a recorded result, show it inline
+      const result = scoringOn ? (L.results && L.results[matchKey]) : null;
+      const resultSummary = result && Array.isArray(result.scores) && result.scores.length
+        ? result.scores.map(s => s[0] + '-' + s[1]).join(', ')
+        : '';
       return `<div class="my-match ready">
         <div style="font-size:15px;font-weight:700">vs ${esc(opp.name)}</div>
         <div style="font-size:14px;color:#059669;font-weight:600;margin-top:4px">&#9989; Booked: ${fmtFull(booked.date)} &middot; ${slotLabel(booked.slot)}</div>
         ${booked.courtBooked ? '<div style="font-size:12px;color:#059669;margin-top:2px">✅ Court booked</div>' : '<div style="font-size:12px;color:var(--amber);margin-top:2px">⚠️ Court not yet booked</div>'}
         ${booked.notes ? `<div style="font-size:12px;color:var(--muted);margin-top:2px">📝 ${esc(booked.notes)}</div>` : ''}
         <div style="font-size:12px;margin-top:4px;color:${agreedCount === allPlayers.length ? '#059669' : 'var(--amber)'}">${agreedCount}/${allPlayers.length} confirmed${myAgreed ? ' (you ✓)' : ''}</div>
+        ${resultSummary ? `<div style="font-size:12px;color:#7c3aed;margin-top:2px;font-weight:600">&#127942; Result: ${esc(resultSummary)}</div>` : ''}
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
           ${!myAgreed ? `<button class="btn btn-sm btn-primary" onclick="toggleAgreed('${esc(matchKey)}')" style="font-size:12px;padding:4px 10px">Confirm date</button>` : ''}
+          ${scoringOn ? `<button class="btn btn-sm ${result ? 'btn-secondary' : 'btn-primary'}" onclick="openScoreEntry('${esc(matchKey)}')" style="font-size:12px;padding:4px 10px">&#127942; ${result ? 'Edit score' : 'Enter score'}</button>` : ''}
           <button class="btn btn-sm btn-secondary" onclick="addMatchToCalendar('${esc(matchKey)}')" style="font-size:12px;padding:4px 10px">&#128197; Add to calendar</button>
         </div>
       </div>`;
