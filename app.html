@@ -171,6 +171,11 @@
     .top-bar-menu-btn:hover { background: rgba(255,255,255,0.25); }
     .top-bar-menu-btn-label { font-size: 14px; font-weight: 700; }
     @media (max-width: 480px) { .top-bar-menu-btn-label { display: none; } }
+    /* v4.13.1: Explicit Home button — users were losing their way back from leagues/mix-ins. */
+    .top-bar-home-btn { background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 18px; cursor: pointer; padding: 6px 12px; border-radius: 10px; font-weight: 700; flex-shrink: 0; display: flex; align-items: center; gap: 6px; height: 38px; }
+    .top-bar-home-btn:hover { background: rgba(255,255,255,0.25); }
+    .top-bar-home-btn-label { font-size: 14px; font-weight: 700; }
+    @media (max-width: 480px) { .top-bar-home-btn-label { display: none; } }
 
     /* Menu dropdown */
     .top-bar-menu { display: none; position: fixed; top: calc(var(--top-bar-h) + 6px); right: 12px; background: #fff; color: var(--text); min-width: 260px; max-width: calc(100vw - 24px); max-height: calc(100vh - var(--top-bar-h) - 24px); overflow-y: auto; border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.05); z-index: 201; padding: 8px 0; }
@@ -567,6 +572,11 @@
     <span class="top-bar-logo-text">BoxLeague Pro</span>
   </button>
   <div class="top-bar-location" id="top-bar-location">&nbsp;</div>
+  <!-- v4.13.1: Explicit Home button so users can always get back to the main screen from inside a league or mix-in -->
+  <button class="top-bar-home-btn" onclick="topBarGoHome()" aria-label="Go to home screen" title="Home">
+    <span aria-hidden="true">&#127968;</span>
+    <span class="top-bar-home-btn-label">Home</span>
+  </button>
   <button class="top-bar-menu-btn" onclick="toggleTopMenu(event)" aria-haspopup="true" aria-expanded="false" aria-controls="top-bar-menu" id="top-bar-menu-btn">
     <span aria-hidden="true">&#9776;</span>
     <span class="top-bar-menu-btn-label">Menu</span>
@@ -1565,7 +1575,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.13.0 · Build 20260418</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.13.1 · Build 20260420</div>
   </div>
 </div>
 
