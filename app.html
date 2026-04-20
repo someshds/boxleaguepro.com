@@ -1577,7 +1577,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.13.2 · Build 20260420</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.13.3 · Build 20260420</div>
   </div>
 </div>
 
@@ -5500,23 +5500,24 @@ async function scopedSubmitCreateLeague() {
     var leagueId = leagueRef.key;
     var updates = {};
     var memberKey = sanitizeEmail(currentUser.email);
+    // v4.13.3: null-guard every field — Firebase SDK rejects any update containing undefined.
     updates['/leagues/' + leagueId] = {
-      info: { name: name, sport: sport, format: format, code: code, clubId: clubId, clubName: clubName, organiserUid: currentUser.uid, createdAt: Date.now() },
-      groups: {}, availability: {}, settings: { leagueName: name, deadline: deadline }, booked: {},
+      info: { name: name || '', sport: sport || '', format: format || '', code: code || '', clubId: clubId || '', clubName: clubName || '', organiserUid: currentUser.uid, createdAt: Date.now() },
+      groups: {}, availability: {}, settings: { leagueName: name || '', deadline: deadline || '' }, booked: {},
       members: {}
     };
     if (!isSuperAdminOnly) {
       updates['/leagues/' + leagueId + '/members/' + memberKey] = {
-        uid: currentUser.uid, name: currentUser.displayName || currentUser.email, email: currentUser.email,
+        uid: currentUser.uid, name: currentUser.displayName || currentUser.email || '', email: currentUser.email || '',
         role: 'organiser', playerName: '', partnerName: '', joinedAt: Date.now()
       };
       updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = {
-        name: name, sport: sport, format: format, code: code, role: 'organiser', clubId: clubId, clubName: clubName
+        name: name || '', sport: sport || '', format: format || '', code: code || '', role: 'organiser', clubId: clubId || '', clubName: clubName || ''
       };
     }
-    updates['/clubLeagues/' + clubId + '/' + leagueId] = { name: name, sport: sport, format: format };
+    updates['/clubLeagues/' + clubId + '/' + leagueId] = { name: name || '', sport: sport || '', format: format || '' };
     updates['/codes/' + code] = leagueId;
-    updates['/leagueIndex/' + leagueId] = { name: name, sport: sport, format: format, clubId: clubId, clubName: clubName, createdAt: Date.now() };
+    updates['/leagueIndex/' + leagueId] = { name: name || '', sport: sport || '', format: format || '', clubId: clubId || '', clubName: clubName || '', createdAt: Date.now() };
 
     db.ref().update(updates).then(function() {
       logAction('create_league_scoped' + (isSuperAdminOnly ? '_super_seed' : ''), name + ' at ' + clubName);
@@ -6544,13 +6545,14 @@ async function createLeagueInClub() {
       role: 'organiser', playerName: '', partnerName: '', joinedAt: Date.now()
     };
   }
+  // v4.13.3: null-guard every field — Firebase SDK rejects any update containing undefined.
   updates['/leagues/' + leagueId] = leagueNode;
   if (!isSuperAdminOnly) {
-    updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = { name, sport, format, code, role: 'organiser', clubId: selectedClubId, clubName: selectedClubName };
+    updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = { name: name || '', sport: sport || '', format: format || '', code: code || '', role: 'organiser', clubId: selectedClubId || '', clubName: selectedClubName || '' };
   }
-  updates['/clubLeagues/' + selectedClubId + '/' + leagueId] = { name, sport, format };
+  updates['/clubLeagues/' + selectedClubId + '/' + leagueId] = { name: name || '', sport: sport || '', format: format || '' };
   updates['/codes/' + code] = leagueId;
-  updates['/leagueIndex/' + leagueId] = { name, sport, format, clubId: selectedClubId, clubName: selectedClubName, createdAt: Date.now() };
+  updates['/leagueIndex/' + leagueId] = { name: name || '', sport: sport || '', format: format || '', clubId: selectedClubId || '', clubName: selectedClubName || '', createdAt: Date.now() };
 
   db.ref().update(updates).then(() => {
     logAction('create_league' + (isSuperAdminOnly ? '_super_seed' : ''), name + ' at ' + selectedClubName);
@@ -6828,9 +6830,10 @@ function wizSaveData() {
     // Create or update team
     if (!existingTeamId) {
       const teamId = 'T' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
-      const players = wizIsSingles ? [myName] : [myName, partnerName];
+      const players = wizIsSingles ? [myName || ''] : [myName || '', partnerName || ''];
+      // v4.13.3: null-guard teamName so a blank wizard field can't kill the write
       updates['/leagues/' + wizLeagueId + '/groups/' + teamId] = {
-        id: teamId, name: teamName, players: players
+        id: teamId, name: teamName || myName || 'Team', players: players
       };
     }
 
@@ -10705,16 +10708,18 @@ async function finishGuided() {
     const clubName = qData.club;
 
     if (FIREBASE_READY) {
+      // v4.13.3: null-guard every field — critical for email/password signups where
+      // currentUser.displayName can be null and would silently kill the whole create.
       const leagueId = db.ref('/leagues').push().key;
       const updates = {};
       updates['/leagues/' + leagueId] = {
-        info: { name, sport, code, clubId, clubName, organiserUid: currentUser.uid, createdAt: Date.now() },
-        groups: {}, availability: {}, settings: { leagueName: name }, booked: {},
-        members: { [sanitizeEmail(currentUser.email)]: { uid: currentUser.uid, name: currentUser.displayName, email: currentUser.email, role: 'organiser', playerName: '', partnerName: '', joinedAt: Date.now() } },
+        info: { name: name || '', sport: sport || '', code: code || '', clubId: clubId || '', clubName: clubName || '', organiserUid: currentUser.uid, createdAt: Date.now() },
+        groups: {}, availability: {}, settings: { leagueName: name || '' }, booked: {},
+        members: { [sanitizeEmail(currentUser.email)]: { uid: currentUser.uid, name: currentUser.displayName || currentUser.email || '', email: currentUser.email || '', role: 'organiser', playerName: '', partnerName: '', joinedAt: Date.now() } },
         openMatches: {}, comments: {}
       };
-      updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = { name, sport, code, role: 'organiser', clubId, clubName };
-      updates['/clubLeagues/' + clubId + '/' + leagueId] = { name, sport };
+      updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = { name: name || '', sport: sport || '', code: code || '', role: 'organiser', clubId: clubId || '', clubName: clubName || '' };
+      updates['/clubLeagues/' + clubId + '/' + leagueId] = { name: name || '', sport: sport || '' };
       updates['/codes/' + code] = leagueId;
       db.ref().update(updates).then(() => {
         // Now enter the wizard with pre-filled name/partner
