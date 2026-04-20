@@ -687,6 +687,8 @@
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button onclick="scopedCreateLeague()" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">+ New League</button>
+          <!-- v4.13.2: Create Mix-In Game — previously no way to make one from the club welcome once an admin had already created one -->
+          <button onclick="enterMixInAsScopedClub()" style="background:#0d9488;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">&#129309; New Mix-In Game</button>
           <button onclick="scopedBulkAddPlayers()" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">&#128101; Bulk Add Players</button>
           <button onclick="scopedManageAdmins()" style="background:#f59e0b;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">&#128100; Manage Organisers</button>
           <button onclick="scopedShareInvite()" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">&#128279; Share Club Link</button>
@@ -1575,7 +1577,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.13.1 · Build 20260420</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.13.2 · Build 20260420</div>
   </div>
 </div>
 
@@ -6583,13 +6585,25 @@ function joinAndEnterLeague(leagueId) {
     if (!info) { toast('League not found — it may have been deleted'); return; }
 
     const updates = {};
+    // v4.13.2: Null-guard every field. Firebase SDK rejects the whole update if ANY
+    // value is undefined, and legacy leagues (like the demo ones) had partial /info
+    // objects missing code/sport/format/clubName. That caused silent join failures —
+    // players saw a toast flash past, nothing in the DB changed, and the UI was stuck.
     updates['/leagues/' + leagueId + '/members/' + sanitizeEmail(currentUser.email)] = {
-      uid: currentUser.uid, name: currentUser.displayName, email: currentUser.email,
+      uid: currentUser.uid,
+      name: currentUser.displayName || '',
+      email: currentUser.email || '',
       role: 'player', playerName: '', partnerName: '', joinedAt: Date.now()
     };
     // v4.7.3: carry format through to userLeagues so singles leagues stay singles on re-entry
     updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = {
-      name: info.name, sport: info.sport, format: info.format || '', code: info.code, role: 'player', clubId: info.clubId, clubName: info.clubName
+      name: info.name || '',
+      sport: info.sport || '',
+      format: info.format || '',
+      code: info.code || '',
+      role: 'player',
+      clubId: info.clubId || '',
+      clubName: info.clubName || ''
     };
 
     db.ref().update(updates).then(() => {
