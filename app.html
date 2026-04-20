@@ -1597,7 +1597,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.14.2 · Build 20260420</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.14.3 · Build 20260420</div>
   </div>
 </div>
 
@@ -4895,6 +4895,52 @@ function isClubAdminFor(clubId) {
   return (window._clubAdminFor || []).indexOf(clubId) !== -1;
 }
 
+// v4.14.3: centralised auth gates for sensitive functions. These are defence-
+// in-depth JS checks — the real security boundary is the Firebase rules file
+// (firebase.rules.proposed.json). Until rules are deployed, these gates are
+// the only thing preventing a signed-in user from running destructive
+// functions from their browser console.
+
+// True if current user can manage the currently-active league (rename, delete
+// teams, overwrite groups, etc.). Organiser of the league, club admin of its
+// club, or super admin.
+function canManageActiveLeague() {
+  if (!currentUser || !activeLeagueId) return false;
+  if (isAdmin()) return true;
+  const info = userLeagues[activeLeagueId];
+  if (info && info.role === 'organiser') return true;
+  if (info && info.clubId && isClubAdminFor(info.clubId)) return true;
+  return false;
+}
+
+// True if current user can manage a specific club (change booking URL,
+// add admins, provision leagues). Club admin for that club or super admin.
+function canManageClub(clubId) {
+  if (!currentUser) return false;
+  if (isAdmin()) return true;
+  if (!clubId) return false;
+  return isClubAdminFor(clubId);
+}
+
+// True if current user can delete/edit a comment. Author, organiser, or admin.
+function canManageComment(comment) {
+  if (!currentUser) return false;
+  if (isAdmin()) return true;
+  if (comment && comment.uid && comment.uid === currentUser.uid) return true;
+  if (comment && comment.email && comment.email === currentUser.email) return true;
+  return canManageActiveLeague();
+}
+
+// True if current user can delete/edit an open (mix-in) match. Creator or admin.
+function canManageOpenMatch(match) {
+  if (!currentUser) return false;
+  if (isAdmin()) return true;
+  if (!match) return false;
+  if (match.createdBy && match.createdBy === currentUser.email) return true;
+  if (match.createdByUid && match.createdByUid === currentUser.uid) return true;
+  return false;
+}
+
 // Club module config — modules are set at provisioning time by super admin.
 // Default: scoring OFF for any club without explicit config (safe for existing clubs).
 // Cache keyed by clubId, populated on league entry via loadClubModules().
@@ -7241,6 +7287,8 @@ function localSave() {
 }
 
 function fbSetGroups() {
+  // v4.14.3: gate — full-teams overwrite is organiser-only
+  if (!canManageActiveLeague()) { toast('Only the organiser can update teams'); return; }
   const obj = {}; L.groups.forEach(g => { obj[g.id] = g; });
   const ref = leagueRef('groups');
   if (ref) ref.set(obj); else localSave();
@@ -7262,6 +7310,8 @@ function fbSetAvailBatch(updates) {
 }
 
 function saveSettings() {
+  // v4.14.3: gate — league rename is organiser-only
+  if (!canManageActiveLeague()) { toast('Only the organiser can change league settings'); return; }
   const newName = val('inp-league-name');
   if (!newName) { toast('Please enter a league name'); return; }
   L.settings.leagueName = newName;
@@ -7323,6 +7373,10 @@ function bookCourtHtml() {
 }
 
 function saveBookingUrl() {
+  // v4.14.3: gate — booking URL is club-admin-only (chains into the Book-a-Court XSS vector)
+  const leagueInfo = userLeagues[activeLeagueId];
+  const clubId = leagueInfo && leagueInfo.clubId;
+  if (!canManageClub(clubId)) { toast('Only a club admin can change the booking URL'); return; }
   const url = (document.getElementById('inp-booking-url').value || '').trim();
   clubBookingUrl = url;
   // Save to club record in Firebase
@@ -8099,6 +8153,8 @@ function showGroupForm() {
 function hideGroupForm() { document.getElementById('add-group-form').style.display = 'none'; document.getElementById('inp-gplayer1').value = ''; document.getElementById('inp-gplayer2').value = ''; }
 
 function addGroup() {
+  // v4.14.3: gate — only organisers/admins manage teams
+  if (!canManageActiveLeague()) { toast('Only the organiser can add teams'); return; }
   const p1 = val('inp-gplayer1');
   const isDoubles = L.settings && (L.settings.format === 'doubles' || L.settings.format === 'mixed');
   const p2 = isDoubles ? val('inp-gplayer2') : '';
@@ -8116,6 +8172,8 @@ function addGroup() {
 }
 
 function removeGroup(id) {
+  // v4.14.3: gate — only organisers/admins remove teams
+  if (!canManageActiveLeague()) { toast('Only the organiser can remove teams'); return; }
   const group = L.groups.find(g => g.id === id);
   if (!group) return;
   const playerNames = group.players || [];
@@ -8225,6 +8283,8 @@ function loadTemplate(type) {
 }
 
 function applyTemplate() {
+  // v4.14.3: gate — bulk team add is organiser-only
+  if (!canManageActiveLeague()) { toast('Only the organiser can bulk-add teams'); return; }
   const raw = document.getElementById('inp-template').value.trim();
   if (!raw) { toast('Enter some names first'); return; }
   const lines = raw.split('\n').map(l => l.trim()).filter(l => l);
@@ -8289,6 +8349,8 @@ function renderMembers() {
 }
 
 function linkMember(memberKey, playerName) {
+  // v4.14.3: gate — linking a member to a team is organiser-only
+  if (!canManageActiveLeague()) { toast('Only the organiser can link members to teams'); return; }
   if (!playerName) return;
   // M3: Check if this playerName is already linked to another member
   for (const [key, m] of Object.entries(L.members || {})) {
@@ -10005,6 +10067,9 @@ function toggleOmCourtBooked(matchId) {
 }
 
 function deleteOpenMatch(matchId) {
+  // v4.14.3: gate — only the match creator (or admin) can delete a mix-in game
+  const match = (L.openMatches || {})[matchId];
+  if (!canManageOpenMatch(match)) { toast('Only the game creator can delete this'); return; }
   if (!confirm('Delete this open match?')) return;
   if (FIREBASE_READY) {
     db.ref(omPath() + '/' + matchId).remove();
@@ -10136,6 +10201,9 @@ function filterOmeSlots() {
 
 function saveOpenMatchEdit(matchId) {
   if (!currentUser) { toast('Please sign in'); return; } // M26: null check
+  // v4.14.3: gate — only the match creator (or admin) can edit a mix-in game
+  const existingMatch = (L.openMatches || {})[matchId];
+  if (!canManageOpenMatch(existingMatch)) { toast('Only the game creator can edit this'); return; }
   const title = document.getElementById('ome-title').value.trim() || 'Open Game';
   const sport = document.getElementById('ome-sport').value;
   const level = document.getElementById('ome-level').value;
@@ -10410,6 +10478,11 @@ function postComment() {
 }
 
 function deleteComment(commentId) {
+  // v4.14.3: gate — only the author, organiser, or admin can delete a comment.
+  // Previously the UI hid the delete button for non-authors but the function
+  // itself was reachable from the JS console.
+  const comment = (L.comments || {})[commentId];
+  if (!canManageComment(comment)) { toast("Only the author or organiser can delete this"); return; }
   const path = commentsPath();
   if (!path) return;
   if (FIREBASE_READY) {
