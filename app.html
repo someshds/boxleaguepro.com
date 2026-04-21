@@ -1172,7 +1172,11 @@
       </button>
     </div>
     <div class="app-league-name" id="app-league-name"></div>
-    <div class="app-league-code" id="app-league-code-wrap">League code: <span id="app-league-code" onclick="copyLeagueCode()" title="Tap to copy"></span></div>
+    <!-- v4.15.0: league code display removed from header. Consistent with v4.14.7
+         which removed all code-entry UI — codes are legacy, everyone joins via
+         club links. Hidden stubs retained so any legacy JS that sets textContent
+         on #app-league-code doesn't throw. -->
+    <div class="app-league-code" id="app-league-code-wrap" style="display:none"><span id="app-league-code"></span></div>
     <div class="progress-bar-wrap" id="progress-wrap" style="display:none">
       <div class="progress-label">
         <span id="progress-text">0 of 0 players submitted</span>
@@ -1596,7 +1600,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.14.9 · Build 20260421</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.15.0 · Build 20260421</div>
   </div>
 </div>
 
