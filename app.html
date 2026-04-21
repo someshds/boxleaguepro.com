@@ -1596,7 +1596,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.14.4 · Build 20260421</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.14.5 · Build 20260421</div>
   </div>
 </div>
 
@@ -7371,15 +7371,15 @@ function bookCourtHtml() {
 }
 
 function saveBookingUrl() {
-  // v4.14.3: gate — booking URL is club-admin-only (chains into the Book-a-Court XSS vector)
-  const leagueInfo = userLeagues[activeLeagueId];
-  const clubId = leagueInfo && leagueInfo.clubId;
-  if (!canManageClub(clubId)) { toast('Only a club admin can change the booking URL'); return; }
-  const url = (document.getElementById('inp-booking-url').value || '').trim();
-  clubBookingUrl = url;
-  // Save to club record in Firebase
+  // v4.14.3: gate — booking URL is club-admin-only (chains into the Book-a-Court XSS vector).
+  // v4.14.5 fix: de-duplicated `const leagueInfo` that was bricking the whole inline script
+  // (SyntaxError: "Identifier 'leagueInfo' has already been declared"). Now one declaration,
+  // reused for the permission check AND the subsequent save.
   const leagueInfo = userLeagues[activeLeagueId];
   const cid = leagueInfo && leagueInfo.clubId;
+  if (!canManageClub(cid)) { toast('Only a club admin can change the booking URL'); return; }
+  const url = (document.getElementById('inp-booking-url').value || '').trim();
+  clubBookingUrl = url;
   if (cid && FIREBASE_READY) {
     db.ref('/clubs/' + cid + '/bookingUrl').set(url || null).then(() => {
       if (allClubs[cid]) allClubs[cid].bookingUrl = url;
