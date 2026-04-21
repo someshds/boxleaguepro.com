@@ -836,7 +836,7 @@
   <div class="browse-header">
     <div style="display:flex;justify-content:space-between;align-items:start">
       <div style="display:flex;align-items:center;gap:10px">
-        <button onclick="showScreen('welcome')" title="Home" style="display:flex;align-items:center;justify-content:center;padding:6px 14px;border-radius:10px;border:1px solid rgba(0,0,0,0.1);background:#f0fdf4;color:#059669;cursor:pointer;font-size:14px;font-weight:700;transition:background 0.2s" onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'">&larr; Home</button>
+        <button onclick="topBarGoHome()" title="Home" style="display:flex;align-items:center;justify-content:center;padding:6px 14px;border-radius:10px;border:1px solid rgba(0,0,0,0.1);background:#f0fdf4;color:#059669;cursor:pointer;font-size:14px;font-weight:700;transition:background 0.2s" onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'">&larr; Home</button>
         <div>
           <div class="browse-greeting">Welcome,</div>
           <div class="browse-name" id="browse-user-name"></div>
@@ -1596,7 +1596,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.14.8 · Build 20260421</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.14.9 · Build 20260421</div>
   </div>
 </div>
 
@@ -3880,38 +3880,16 @@ function showScreen(id) {
         hcWrap.style.display = 'none';
       }
     }
-    // v4.8.0: if scoped to a club (?club=<slug>), render the scoped sandbox
-    // welcome instead of the normal multi-club welcome. Safe to call on every
-    // welcome-show — renderScopedWelcome() is idempotent and handles both
-    // toggle and repopulation.
-    //
-    // v4.14.8: defensive re-resolve from URL. If the URL has ?club=<slug> but
-    // window._scopedClub is null (lost somehow — e.g. after a league enter/exit
-    // cycle on a directly-keyed club like demo-club), re-run resolveScopedClub
-    // before falling back to the normal welcome. Otherwise tapping Home from
-    // inside a league sent users to the normal/browse welcome with the club
-    // scope forgotten. Grant hit this on demo-club (21 Apr).
+    // v4.8.0: if scoped to a club (?club=<slug>), render the scoped sandbox welcome.
+    // v4.14.9: scoped welcome only renders if _scopedClub is currently set.
+    // topBarGoHome() / goToHub() now clear _scopedClub + strip ?club= from the URL
+    // so tapping Home always lands on the generic app-home with the 3 hero images.
+    // Scoped welcome is the LANDING after a fresh ?club= link, not a sticky "club home".
     try {
-      const clubParam = new URLSearchParams(window.location.search).get('club');
-      if (!window._scopedClub && clubParam && FIREBASE_READY && typeof resolveScopedClub === 'function') {
-        resolveScopedClub(clubParam, function(result) {
-          if (result) {
-            window._scopedClub = { id: result.id, info: result.info };
-            try { renderScopedWelcome(); } catch (e) { console.warn('[scoped-welcome] render error after re-resolve', e); }
-          } else {
-            // Bad slug — fall back to normal welcome
-            const sc = document.getElementById('scoped-welcome-content');
-            const nc = document.getElementById('normal-welcome-content');
-            const sub = document.getElementById('welcome-subtitle');
-            if (sc) sc.style.display = 'none';
-            if (nc) nc.style.display = '';
-            if (sub) sub.style.display = '';
-          }
-        });
-      } else if (window._scopedClub) {
+      if (window._scopedClub) {
         renderScopedWelcome();
       } else {
-        // Make sure normal content is visible (in case scope was cleared)
+        // Normal welcome — show the 3 hero-image cards (Box Leagues + Friendly Mix-Ins)
         const sc = document.getElementById('scoped-welcome-content');
         const nc = document.getElementById('normal-welcome-content');
         const sub = document.getElementById('welcome-subtitle');
@@ -3981,11 +3959,30 @@ function updateTopBarLocation(screenId) {
 function topBarGoHome() {
   closeTopMenu();
   if (!currentUser) return;
+  // v4.14.9: Home always takes the user to the app-home (3-hero-image welcome),
+  // not the scoped-club welcome. Clearing _scopedClub + stripping ?club= from
+  // the URL means a subsequent refresh also lands on app-home.
+  clearScopedClub();
   if (activeLeagueId || mixInMode) {
     goToHub();
   } else {
     showScreen('welcome');
   }
+}
+
+// v4.14.9: centralised helper — clear scoped-club state + the URL param so Home
+// button behaviour is consistent across directly-keyed clubs (demo-club) and
+// slug-mapped clubs (eastgrinsteadclub). Previously the URL retained ?club=<x>
+// which caused odd behaviour after a league enter/exit cycle.
+function clearScopedClub() {
+  window._scopedClub = null;
+  try {
+    const u = new URL(window.location.href);
+    if (u.searchParams.has('club')) {
+      u.searchParams.delete('club');
+      window.history.replaceState({}, '', u.pathname + (u.search || '') + u.hash);
+    }
+  } catch (e) { /* URL API unsupported — not critical */ }
 }
 
 function toggleTopMenu(ev) {
