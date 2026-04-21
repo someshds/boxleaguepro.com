@@ -1600,7 +1600,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.15.2 · Build 20260421</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.15.3 · Build 20260421</div>
   </div>
 </div>
 
@@ -1613,6 +1613,34 @@
       <button onclick="closeChangelog()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <div style="padding:20px" id="changelog-content">
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.15.2 &middot; 21 Apr 2026</span>
+          <span style="background:#10b981;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">POLISH &amp; FIXES</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Auto-recognise your club on sign-in</strong> &mdash; sign in from any link and the app takes you straight to your home club&rsquo;s page. No need to remember the club link URL</li>
+          <li><strong>Cleaner layout</strong> &mdash; removed the floating Help/New/Feedback widget (was covering app content on mobile) and the &ldquo;App in active development&rdquo; banner. All those actions are still in the ☰ Menu</li>
+          <li><strong>🏠 Home button</strong> always takes you to the main welcome screen with Box Leagues + Mix-Ins picker. Consistent everywhere</li>
+          <li><strong>League codes deprecated</strong> &mdash; everyone joins via club links now. &ldquo;Got a code?&rdquo; entry box and &ldquo;League code: XYZ&rdquo; display removed from all screens</li>
+          <li><strong>&ldquo;Your Leagues&rdquo; list removed from main welcome</strong> &mdash; your home club&rsquo;s welcome page is your home. Your leagues show there with ✓ JOINED tags</li>
+          <li><strong>Better empty states</strong> &mdash; &ldquo;Your matches to arrange&rdquo; card now shows helpful guidance when empty (instead of vanishing)</li>
+        </ul>
+      </div>
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#dcfce7;color:#166534;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.14.1 &middot; 20 Apr 2026</span>
+          <span style="background:#059669;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">HERO + SCORE ENTRY</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>🎾 &ldquo;Coming up next&rdquo; hero card</strong> &mdash; green banner at the top of every league screen showing your next booked match: opponent, date, slot, court status, and three one-tap buttons (Confirm date / Calendar / Enter score). Answers &ldquo;where&rsquo;s my match?&rdquo; in zero taps</li>
+          <li><strong>🏆 Enter Score button on My Matches card</strong> &mdash; you can now record scores directly from the Availability tab, not just from Match Finder. Score shows inline once entered</li>
+          <li><strong>🏠 Home button in top bar</strong> &mdash; was just the logo before; now an explicit labelled button so you always know how to get back</li>
+          <li><strong>🤝 New Mix-In Game button</strong> on the Club Organiser Tools panel &mdash; create a mix-in directly from your club welcome screen</li>
+          <li><strong>Guided setup fixed</strong> &mdash; organisers signing in without a club link can now create their first league (was silently failing since an earlier release)</li>
+          <li><strong>20+ bug fixes &amp; security hardening behind the scenes</strong> &mdash; silent-failure writes, XSS vectors, ungated admin functions. All closed. No UI change, just more robust underneath</li>
+        </ul>
+      </div>
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="background:#ede9fe;color:#5b21b6;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.13.0 &middot; 18 Apr 2026</span>
