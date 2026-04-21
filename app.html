@@ -771,9 +771,9 @@
       </div>
     </div>
 
-    <div class="welcome-existing">
-      <a onclick="skipWelcome()">Got a league code? Join with code &rarr;</a>
-    </div>
+    <!-- v4.14.7: "Got a league code? Join with code" link removed — codes are legacy now,
+         everyone joins via club links. -->
+    <div class="welcome-existing" style="display:none"></div>
   </div>
 </div>
 
@@ -956,15 +956,12 @@
       </div>
     </div>
 
-    <!-- Three options -->
-    <!-- v4.9.9: browse-options simplified — club search removed. Club is set from club link.
-         Join code kept for direct league entry. "Find your club" and "Add a League" cards removed. -->
-    <div id="browse-options">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;padding:12px 14px">
-        <input id="browse-join-code" class="fi" placeholder="Got a code? Paste it here" style="flex:1;margin:0;font-size:15px;border:1.5px solid #d1d5db;border-radius:8px;padding:10px 12px" maxlength="8" onkeydown="if(event.key==='Enter')browseJoinByCode()">
-        <button class="btn btn-primary btn-sm" onclick="browseJoinByCode()" style="white-space:nowrap;padding:10px 16px;font-size:14px;border-radius:8px">Join</button>
-      </div>
-    </div>
+    <!-- v4.14.7: code-entry bar removed. Everyone joins via club links (?club=<slug>) now;
+         the standalone code flow was legacy clutter. browseJoinByCode() function kept in JS
+         for any bookmarked deep links, just no UI surfacing it. Hidden input retained so
+         any code that reads #browse-join-code.value keeps working. -->
+    <div id="browse-options"></div>
+    <input type="hidden" id="browse-join-code" value="">
 
     <!-- v4.9.9: JOIN FLOW — club search removed. Club auto-selected from club link / home club. -->
     <div id="join-flow" style="display:none">
@@ -1599,7 +1596,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.14.6 · Build 20260421</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.14.7 · Build 20260421</div>
   </div>
 </div>
 
@@ -2405,7 +2402,7 @@ function leaveLeague() {
   if (!activeLeagueId || !FIREBASE_READY) { toast('Cannot leave in demo mode'); return; }
   const lg = userLeagues[activeLeagueId];
   const leagueName = lg ? lg.name : 'this league';
-  if (!confirm('Leave "' + leagueName + '"?\n\nThis will remove you from the league, including your availability and any booked matches.\n\nYou can rejoin later with the league code.')) return;
+  if (!confirm('Leave "' + leagueName + '"?\n\nThis will remove you from the league, including your availability and any booked matches.\n\nYou can rejoin later via your club link.')) return;
 
   const emailKey = sanitizeEmail(currentUser.email);
   const member = L.members[emailKey];
@@ -10729,11 +10726,10 @@ const Q_STEPS = [
     { value: 'create', label: 'Start a new league', desc: 'I want to create a league and invite my players' },
     { value: 'mixin', label: 'Find a casual game', desc: 'I just want to play — no league needed' },
   ]},
-  { id: 'hasCode', question: 'Do you have a league code?', hint: 'Your league organiser may have sent you a code or link to join.', type: 'options', show: () => qData.goal === 'join', options: [
-    { value: 'yes', label: 'Yes, I have a code', desc: 'A short code like ABC123 — your organiser will have sent it to you. It takes you straight to the correct league.' },
-    { value: 'no', label: 'No', desc: 'I\'ll browse the leagues at my club' },
-  ]},
-  { id: 'code', question: 'Enter your league code', hint: 'Type or paste the code your organiser sent you.', type: 'input', placeholder: 'e.g. ABC123', show: () => qData.goal === 'join' && qData.hasCode === 'yes' },
+  // v4.14.7: hasCode + code steps removed — codes are legacy. Joiners skip
+  // straight to the club-link / browse flow in finishGuided(). The qData.hasCode
+  // field is still initialised (for backwards compat in finishGuided's guards)
+  // but users never see or set it.
   { id: 'sport', question: 'What sport do you play?', hint: 'This helps us set up your league correctly.', type: 'options', show: () => qData.goal === 'create', options: [
     { value: 'tennis', label: 'Tennis', desc: '' },
     { value: 'padel', label: 'Padel', desc: '' },
@@ -10887,27 +10883,10 @@ function skipGuided() {
 async function finishGuided() {
   if (FIREBASE_READY && currentUser) db.ref('/users/' + currentUser.uid + '/guidedDone').set(true);
 
-  if (qData.goal === 'join' && qData.hasCode === 'yes' && qData.code) {
-    // Join by code
-    if (FIREBASE_READY) {
-      db.ref('/codes/' + qData.code.toUpperCase()).once('value', snap => {
-        const leagueId = snap.val();
-        if (leagueId) {
-          joinAndEnterLeague(leagueId);
-        } else {
-          toast('Code not found — please check and try again');
-          showScreen('welcome');
-        }
-      });
-    } else {
-      toast('Code lookup not available in demo mode');
-      showScreen('welcome');
-    }
-    return;
-  }
-
-  if (qData.goal === 'join' && qData.hasCode === 'no') {
-    // Go to browse with join flow
+  // v4.14.7: join flow simplified — codes are legacy. Any "join" goal now routes
+  // to browse so the user can pick their league from their club's list (they
+  // should have arrived via ?club=<slug> already; if not they need a club link).
+  if (qData.goal === 'join') {
     selectedGameType = null;
     goToBrowse();
     setTimeout(() => showJoinFlow(), 200);
@@ -11273,7 +11252,7 @@ const EXPLAINERS = {
       '<strong>Organise Your Doubles Box League Matches</strong> — team up with a partner and take on other pairs',
       '<strong>Create or Join Friendly Mix-In Games</strong> — post a game and let anyone at your club join',
       'Got a <strong>club link</strong> from your organiser? Open it directly — you\'ll land on your club\'s own welcome screen with everything you need',
-      'Already in a league? Scroll down to <strong>"Your Leagues"</strong> or use <strong>"Join with code"</strong> at the bottom'
+      'Already in a league? Your organiser will share a club link — open it and you land straight in the right club'
     ]
   },
   browse: {
@@ -11282,7 +11261,6 @@ const EXPLAINERS = {
     subtitle: 'Join or manage your box leagues',
     steps: [
       '<strong>Your club is set from your club link</strong> — your organiser shares a link and you land straight in your club\'s leagues',
-      'Got a <strong>league code</strong>? Enter it in the "Join by code" box to jump straight in',
       '<strong>Got an invite link?</strong> Open it directly to land straight in your league',
       '<strong>Club organisers</strong> create new leagues from the Club Organiser Tools panel on the club welcome screen'
     ]
