@@ -1600,7 +1600,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.15.4 · Build 20260424</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.15.5 · Build 20260424</div>
   </div>
 </div>
 
@@ -1892,6 +1892,17 @@
       <button onclick="closeAddPlayer()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <div style="padding:20px" id="add-player-content"></div>
+  </div>
+</div>
+
+<!-- ── Notify Players Modal · v4.15.5 ── -->
+<div id="notify-players-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeNotifyPlayers()">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e2e8f0">
+      <div style="font-size:17px;font-weight:700">&#128226; Notify Players</div>
+      <button onclick="closeNotifyPlayers()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
+    </div>
+    <div style="padding:20px" id="notify-players-content"></div>
   </div>
 </div>
 
@@ -9825,6 +9836,9 @@ function renderOpenMatches() {
     }
     organiserActionsHtml += `<button class="btn btn-sm btn-whatsapp" onclick="whatsAppShareMatch(${jsAttr(m.id)})" style="font-weight:700;padding:8px 14px;font-size:13px">Share to WhatsApp</button>`;
     organiserActionsHtml += `<button class="btn btn-sm" onclick="shareOpenMatch(${jsAttr(m.id)})" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700;padding:8px 14px;font-size:13px">Copy to Share</button>`;
+    if ((isCreator || isOrganiser) && players.length > 0) {
+      organiserActionsHtml += `<button class="btn btn-sm" onclick="showNotifyPlayers(${jsAttr(m.id)})" style="background:#fdf4ff;color:#7c3aed;border:1px solid #e9d5ff;font-weight:700;padding:8px 14px;font-size:13px">&#128226; Notify Players</button>`;
+    }
     if (isCreator) {
       organiserActionsHtml += `<button class="btn btn-sm" onclick="editOpenMatch(${jsAttr(m.id)})" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700">Edit</button>`;
       organiserActionsHtml += `<button class="btn btn-secondary btn-sm" onclick="deleteOpenMatch(${jsAttr(m.id)})">Delete</button>`;
@@ -10765,6 +10779,170 @@ function _loadClubMembersForModal(clubId, alreadyIn) {
       }).catch(finish);
     });
   }).catch(() => { _renderAddPlayerMemberList([], 'Select from club players:'); });
+}
+
+/* ── Notify Players (v4.15.5) ── */
+let _notifyMatchId = null;
+let _notifyEmailMap = {};
+
+function showNotifyPlayers(matchId) {
+  _notifyMatchId = matchId;
+  _notifyEmailMap = {};
+  const m = L.openMatches && L.openMatches[matchId];
+  if (!m) { toast('Game not found'); return; }
+  const players = m.players || [];
+  const dateStr = m.date ? new Date(m.date + 'T00:00').toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' }) : 'TBC';
+  const timeStr = m.time || 'TBC';
+  const venueStr = esc(m.venue || L.settings.leagueName || 'League');
+  const courtStr = m.court ? esc(m.court) : '';
+
+  let summaryHtml = `<div style="background:#f8fafc;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:14px">
+    <div style="font-weight:700;margin-bottom:6px">${esc(m.title || 'Open Game')}</div>
+    <div style="color:var(--muted);display:flex;flex-direction:column;gap:3px">
+      <span>&#128197; ${dateStr} &nbsp;&#9201; ${timeStr}</span>
+      <span>&#128205; ${venueStr}${courtStr ? ' &mdash; Court ' + courtStr : ''}</span>
+    </div>
+  </div>`;
+
+  let playersHtml = '<div style="font-weight:700;font-size:13px;margin-bottom:8px">Players (' + players.length + ')</div>';
+  playersHtml += '<div id="notify-player-rows">';
+  players.forEach((p, i) => {
+    playersHtml += `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9">
+      <span style="font-size:14px;font-weight:600">${esc(p)}</span>
+      <span id="notify-status-${i}" style="font-size:12px;color:var(--muted)">&#8987; resolving...</span>
+    </div>`;
+  });
+  playersHtml += '</div>';
+
+  const content = document.getElementById('notify-players-content');
+  if (!content) return;
+  content.innerHTML = summaryHtml + playersHtml +
+    `<button id="notify-send-btn" onclick="sendMixInNotifications()" style="margin-top:18px;width:100%;padding:12px;background:#7c3aed;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">&#128226; Send Notifications</button>
+     <div id="notify-send-result" style="margin-top:10px;text-align:center;font-size:13px"></div>`;
+
+  const modal = document.getElementById('notify-players-modal');
+  modal.style.display = 'flex';
+
+  const clubId = userHomeClub && userHomeClub.id;
+  if (clubId && FIREBASE_READY) {
+    _resolvePlayerEmails(clubId, players, function(emailMap) {
+      _notifyEmailMap = emailMap;
+      players.forEach((p, i) => {
+        const el = document.getElementById('notify-status-' + i);
+        if (!el) return;
+        if (emailMap[p]) {
+          el.textContent = '✓ ' + emailMap[p];
+          el.style.color = '#059669';
+        } else {
+          el.textContent = 'No email found';
+          el.style.color = '#dc2626';
+        }
+      });
+    });
+  } else {
+    players.forEach((_, i) => {
+      const el = document.getElementById('notify-status-' + i);
+      if (el) { el.textContent = 'Not available'; el.style.color = '#dc2626'; }
+    });
+  }
+}
+
+function closeNotifyPlayers() {
+  const modal = document.getElementById('notify-players-modal');
+  if (modal) modal.style.display = 'none';
+  _notifyMatchId = null;
+  _notifyEmailMap = {};
+}
+
+function _resolvePlayerEmails(clubId, playerNames, cb) {
+  db.ref('/clubLeagues/' + clubId).once('value').then(snap => {
+    const leagueIds = Object.keys(snap.val() || {});
+    if (leagueIds.length === 0) { cb({}); return; }
+    const emailMap = {};
+    let done = 0;
+    const finish = () => {
+      done++;
+      if (done === leagueIds.length) cb(emailMap);
+    };
+    leagueIds.forEach(lid => {
+      db.ref('/leagues/' + lid + '/members').once('value').then(mSnap => {
+        const members = mSnap.val() || {};
+        Object.values(members).forEach(mem => {
+          if (mem.playerName && mem.email && !emailMap[mem.playerName]) {
+            emailMap[mem.playerName] = mem.email;
+          }
+        });
+        finish();
+      }).catch(finish);
+    });
+  }).catch(() => cb({}));
+}
+
+function sendMixInNotifications() {
+  const m = L.openMatches && L.openMatches[_notifyMatchId];
+  if (!m) { toast('Game not found'); return; }
+  const btn = document.getElementById('notify-send-btn');
+  const resultEl = document.getElementById('notify-send-result');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+
+  const players = m.players || [];
+  const dateStr = m.date ? new Date(m.date + 'T00:00').toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' }) : 'TBC';
+  const timeStr = m.time || 'TBC';
+  const venueStr = m.venue || (L.settings && L.settings.leagueName) || 'League';
+  const courtStr = m.court || '';
+  const playersStr = players.join(', ');
+
+  const targets = players.filter(p => _notifyEmailMap[p]);
+  if (targets.length === 0) {
+    if (btn) { btn.disabled = false; btn.innerHTML = '&#128226; Send Notifications'; }
+    if (resultEl) { resultEl.textContent = 'No email addresses found for players.'; resultEl.style.color = '#dc2626'; }
+    return;
+  }
+
+  const ghlUrl = _ghlUrl('b');
+  if (!ghlUrl) {
+    if (btn) { btn.disabled = false; btn.innerHTML = '&#128226; Send Notifications'; }
+    toast('Notification service not configured for this club');
+    return;
+  }
+
+  let sent = 0;
+  let failed = 0;
+  const done = () => {
+    sent + failed === targets.length && finishSend();
+  };
+  const finishSend = () => {
+    if (btn) { btn.disabled = false; btn.innerHTML = '&#128226; Send Notifications'; }
+    if (resultEl) {
+      resultEl.textContent = sent + ' notification' + (sent !== 1 ? 's' : '') + ' sent' + (failed ? ', ' + failed + ' failed' : '') + '.';
+      resultEl.style.color = sent > 0 ? '#059669' : '#dc2626';
+    }
+    if (sent > 0) toast('Sent ' + sent + ' game notification' + (sent !== 1 ? 's' : ''));
+  };
+
+  targets.forEach(playerName => {
+    const payload = {
+      event: 'mixin_confirmed',
+      playerName: playerName,
+      email: _notifyEmailMap[playerName],
+      gameTitle: m.title || 'Open Game',
+      sport: m.sport || 'tennis',
+      date: dateStr,
+      time: timeStr,
+      venue: venueStr,
+      court: courtStr,
+      players: playersStr,
+      notes: m.notes || '',
+      clubId: (userHomeClub && userHomeClub.id) || '',
+      clubName: (userHomeClub && userHomeClub.name) || ''
+    };
+    fetch(ghlUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(r => { r.ok ? sent++ : failed++; done(); })
+      .catch(() => { failed++; done(); });
+  });
 }
 
 function closeAddPlayer() {
