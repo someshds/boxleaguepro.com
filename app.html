@@ -1600,7 +1600,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.15.5 · Build 20260424</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.15.6 · Build 20260424</div>
   </div>
 </div>
 
@@ -8723,8 +8723,16 @@ function renderNextMatchHero() {
   const hasResult = scoringOn && L.results && L.results[next.matchKey];
   const btn = 'background:rgba(255,255,255,0.22);color:#fff;border:1px solid rgba(255,255,255,0.35);border-radius:9px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap';
 
+  const fmt = (L.settings && L.settings.format) || '';
+  const sport = (L.settings && L.settings.sport) || 'Tennis';
+  const sportIco = { tennis:'🎾', padel:'🥎', squash:'🏸', racketball:'🏸', badminton:'🏸' };
+  const ico = sportIco[sport.toLowerCase()] || '🏅';
+  const fmtLabel = fmt === 'mixed' ? 'Mixed Doubles' : fmt === 'doubles' ? 'Doubles' : fmt === 'singles' ? 'Singles' : (myGroup.players && myGroup.players.length > 1 ? 'Doubles' : 'Singles');
+  const gameTypeBadge = '<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.35);border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;margin-bottom:6px">' + ico + ' ' + esc(sport.charAt(0).toUpperCase() + sport.slice(1)) + ' &middot; ' + fmtLabel + ' Box League</span>';
+
   hero.innerHTML =
     '<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;opacity:0.85;margin-bottom:4px">&#127934; COMING UP NEXT</div>' +
+    gameTypeBadge +
     '<div style="font-size:20px;font-weight:800;line-height:1.2">vs ' + esc(oppName) + '</div>' +
     '<div style="font-size:14px;font-weight:600;margin-top:4px;opacity:0.95">' + fmtFull(next.booked.date) + ' &middot; ' + slotLabel(next.booked.slot) + '</div>' +
     (next.booked.courtBooked
