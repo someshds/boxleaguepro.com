@@ -1495,7 +1495,7 @@
 
       <div id="mf-booking-link"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-        <button class="btn btn-secondary btn-sm" onclick="openAddMatchModal()" style="font-size:13px">&#10133; Add a match arranged outside the app</button>
+        <button class="btn btn-primary btn-sm" onclick="openAddMatchModal()" style="font-size:13px">&#128197; Book a Match</button>
       </div>
       <div id="match-summary" style="margin-bottom:14px"></div>
       <div id="match-results"></div>
@@ -1600,7 +1600,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.15.6 · Build 20260424</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.15.7 · Build 20260424</div>
   </div>
 </div>
 
@@ -1911,8 +1911,8 @@
   <div style="background:#fff;border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e2e8f0">
       <div>
-        <div style="font-size:17px;font-weight:700">Add a match</div>
-        <div style="font-size:12px;color:#64748b;margin-top:2px">Already arranged outside the app?</div>
+        <div style="font-size:17px;font-weight:700">&#128197; Book a Match</div>
+        <div style="font-size:12px;color:#64748b;margin-top:2px">Select teams, date and time</div>
       </div>
       <button onclick="closeAddMatchModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px" aria-label="Close">&times;</button>
     </div>
@@ -9387,11 +9387,11 @@ function openAddMatchModal(preselectOpponentId) {
   let teamAFixedId = '';
 
   if (isOrg) {
-    // Organiser/admin: pick any two teams
-    teamAOpts = '<option value="">— Select team A —</option>' +
-      L.groups.map(g => `<option value="${esc(g.id)}">${esc(g.name)}</option>`).join('');
-    teamBOpts = '<option value="">— Select team B —</option>' +
-      L.groups.map(g => `<option value="${esc(g.id)}">${esc(g.name)}</option>`).join('');
+    // Organiser/admin: pick any two teams, or create a new one inline
+    const groupOpts = L.groups.map(g => `<option value="${esc(g.id)}">${esc(g.name)}</option>`).join('');
+    const newOpt = '<option value="__new__">&#43; Add new player/team...</option>';
+    teamAOpts = '<option value="">— Select team A —</option>' + groupOpts + newOpt;
+    teamBOpts = '<option value="">— Select team B —</option>' + groupOpts + newOpt;
   } else {
     // Regular player: their team is fixed, pick opponent
     if (!myGroup) { toast('You need to be on a team to add a match'); return; }
@@ -9407,11 +9407,19 @@ function openAddMatchModal(preselectOpponentId) {
 
   const slotOpts = SLOTS.map(s => `<option value="${s}"${s === defaultSlot ? ' selected' : ''}>${slotLabel(s)}</option>`).join('');
 
-  body.innerHTML = `
-    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:13px;color:#1e40af;line-height:1.4">
-      &#128161; Use this when you've already agreed a match face-to-face, over WhatsApp, or by phone. The app will then handle reminders, court status, and calendar invites.
-    </div>
+  const isDoubles = L.settings && (L.settings.format === 'doubles' || L.settings.format === 'mixed');
+  const isMixed = L.settings && L.settings.format === 'mixed';
+  const p2Label = isMixed ? 'Partner name (mixed doubles)' : 'Partner name (doubles)';
+  const newTeamForm = (which) => isOrg ? `
+    <div id="new-team-${which}-wrap" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px;margin-top:8px">
+      <div style="font-size:13px;font-weight:700;color:#059669;margin-bottom:8px">&#43; New player/team</div>
+      <input type="text" id="new-team-${which}-p1" placeholder="Player name" style="width:100%;padding:8px 10px;border:1px solid #bbf7d0;border-radius:7px;font-size:14px;margin-bottom:6px;box-sizing:border-box">
+      ${isDoubles ? `<input type="text" id="new-team-${which}-p2" placeholder="${p2Label}" style="width:100%;padding:8px 10px;border:1px solid #bbf7d0;border-radius:7px;font-size:14px;margin-bottom:6px;box-sizing:border-box">` : ''}
+      <button class="btn btn-sm" onclick="addInlineTeam('${which}')" style="background:#059669;color:#fff;border:none;padding:7px 14px;font-size:13px;font-weight:700">Add team</button>
+      <button class="btn btn-sm btn-secondary" onclick="cancelInlineTeam('${which}')" style="margin-left:6px;font-size:13px">Cancel</button>
+    </div>` : '';
 
+  body.innerHTML = `
     ${teamAFixed
       ? `<div style="margin-bottom:12px">
           <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.03em">Your team</label>
@@ -9419,12 +9427,14 @@ function openAddMatchModal(preselectOpponentId) {
         </div>`
       : `<div style="margin-bottom:12px">
           <label for="add-match-team-a" style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.03em">Team A</label>
-          <select id="add-match-team-a" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;background:#fff">${teamAOpts}</select>
+          <select id="add-match-team-a" onchange="handleAddMatchTeamChange('a')" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;background:#fff">${teamAOpts}</select>
+          ${newTeamForm('a')}
         </div>`}
 
     <div style="margin-bottom:12px">
       <label for="add-match-team-b" style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.03em">${teamAFixed ? 'Opponent' : 'Team B'}</label>
-      <select id="add-match-team-b" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;background:#fff">${teamBOpts}</select>
+      <select id="add-match-team-b" onchange="handleAddMatchTeamChange('b')" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;background:#fff">${teamBOpts}</select>
+      ${newTeamForm('b')}
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
@@ -9470,6 +9480,71 @@ function closeAddMatchModal() {
   if (modal) modal.style.display = 'none';
 }
 
+function handleAddMatchTeamChange(which) {
+  const sel = document.getElementById('add-match-team-' + which);
+  const wrap = document.getElementById('new-team-' + which + '-wrap');
+  if (!sel || !wrap) return;
+  if (sel.value === '__new__') {
+    wrap.style.display = 'block';
+    const p1 = document.getElementById('new-team-' + which + '-p1');
+    if (p1) setTimeout(() => p1.focus(), 50);
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+
+function cancelInlineTeam(which) {
+  const sel = document.getElementById('add-match-team-' + which);
+  const wrap = document.getElementById('new-team-' + which + '-wrap');
+  if (sel) sel.value = '';
+  if (wrap) wrap.style.display = 'none';
+  ['p1', 'p2'].forEach(f => {
+    const el = document.getElementById('new-team-' + which + '-' + f);
+    if (el) el.value = '';
+  });
+}
+
+function addInlineTeam(which) {
+  if (!canManageActiveLeague()) { toast('Only organisers can add teams'); return; }
+  const isDoubles = L.settings && (L.settings.format === 'doubles' || L.settings.format === 'mixed');
+  const p1El = document.getElementById('new-team-' + which + '-p1');
+  const p2El = document.getElementById('new-team-' + which + '-p2');
+  const p1 = (p1El ? p1El.value : '').trim();
+  const p2 = isDoubles ? (p2El ? p2El.value : '').trim() : '';
+  if (!p1) { toast('Enter a player name'); if (p1El) p1El.focus(); return; }
+  if (isDoubles && !p2) { toast('Enter the partner name'); if (p2El) p2El.focus(); return; }
+  const players = isDoubles ? [p1, p2] : [p1];
+  const name = isDoubles ? p1 + ' & ' + p2 : p1;
+  const existing = getAllPlayers();
+  for (const p of players) {
+    if (existing.includes(p)) { toast(p + ' is already in another team'); return; }
+  }
+  const newGroup = { id: 'G' + Date.now(), name, players };
+  L.groups.push(newGroup);
+  const obj = {}; L.groups.forEach(g => { obj[g.id] = g; });
+  const ref = leagueRef('groups');
+  if (ref) ref.set(obj).catch(err => toast('Failed to save team: ' + (err.message || err)));
+
+  // Insert new option before __new__ in both dropdowns, select it in this one
+  ['a', 'b'].forEach(w => {
+    const s = document.getElementById('add-match-team-' + w);
+    if (!s) return;
+    const newOpt = document.createElement('option');
+    newOpt.value = newGroup.id;
+    newOpt.textContent = name;
+    const newOptEl = [...s.options].find(o => o.value === '__new__');
+    if (newOptEl) s.insertBefore(newOpt, newOptEl); else s.appendChild(newOpt);
+    if (w === which) s.value = newGroup.id;
+  });
+
+  // Hide inline form and clear inputs
+  const wrap = document.getElementById('new-team-' + which + '-wrap');
+  if (wrap) wrap.style.display = 'none';
+  if (p1El) p1El.value = '';
+  if (p2El) p2El.value = '';
+  toast(name + ' added!');
+}
+
 function saveAddMatchModal(fixedTeamAId) {
   const teamAId = fixedTeamAId || (document.getElementById('add-match-team-a') || {}).value || '';
   const teamBId = (document.getElementById('add-match-team-b') || {}).value || '';
@@ -9479,8 +9554,8 @@ function saveAddMatchModal(fixedTeamAId) {
   const notes = ((document.getElementById('add-match-notes') || {}).value || '').trim();
   const courtBooked = !!(document.getElementById('add-match-court-booked') || {}).checked;
 
-  if (!teamAId) { toast('Please pick team A'); return; }
-  if (!teamBId) { toast('Please pick the opponent'); return; }
+  if (!teamAId || teamAId === '__new__') { toast('Please select or finish adding team A'); return; }
+  if (!teamBId || teamBId === '__new__') { toast('Please select or finish adding the opponent'); return; }
   if (teamAId === teamBId) { toast('A team can\'t play itself'); return; }
   if (!date) { toast('Please pick a date'); return; }
   if (!slot) { toast('Please pick a start time'); return; }
