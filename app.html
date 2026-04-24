@@ -1600,7 +1600,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.15.3 · Build 20260421</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.15.4 · Build 20260424</div>
   </div>
 </div>
 
@@ -9806,26 +9806,30 @@ function renderOpenMatches() {
 
     let playerNamesHtml = players.map(p => `<span class="om-player-name">${esc(p.split(' ')[0])}</span>`).join('');
 
-    let actionsHtml = '';
+    // Player-facing actions (join/leave/full) — depend on having a linked player name
+    const isOrganiser = isClubAdminFor(userHomeClub && userHomeClub.id);
+    let playerActionsHtml = '';
     if (!isFull && !iJoined && myName) {
-      actionsHtml += `<button class="btn btn-success" onclick="joinOpenMatch(${jsAttr(m.id)})" style="font-size:15px;padding:10px 20px;border-radius:10px;font-weight:800;box-shadow:0 3px 10px rgba(34,197,94,0.3)">&#127934; Join This Game</button>`;
+      playerActionsHtml = `<button class="btn btn-success" onclick="joinOpenMatch(${jsAttr(m.id)})" style="font-size:15px;padding:10px 20px;border-radius:10px;font-weight:800;box-shadow:0 3px 10px rgba(34,197,94,0.3)">&#127934; Join This Game</button>`;
     } else if (iJoined) {
-      actionsHtml += `<button class="btn btn-danger btn-sm" onclick="leaveOpenMatch(${jsAttr(m.id)})">Leave Game</button>`;
+      playerActionsHtml = `<button class="btn btn-danger btn-sm" onclick="leaveOpenMatch(${jsAttr(m.id)})">Leave Game</button>`;
     } else if (isFull && !iJoined) {
-      actionsHtml += `<span style="font-size:14px;color:var(--muted);font-weight:700;background:#f1f5f9;padding:8px 14px;border-radius:8px">Game is full</span>`;
+      playerActionsHtml = `<span style="font-size:14px;color:var(--muted);font-weight:700;background:#f1f5f9;padding:8px 14px;border-radius:8px">Game is full</span>`;
+    } else if (!myName) {
+      playerActionsHtml = `<span style="font-size:13px;color:var(--amber);font-weight:600">Link your account to a player name to join</span>`;
     }
-    if ((isCreator || iJoined) && !isFull) {
-      actionsHtml += `<button class="btn btn-sm" onclick="showAddPlayerToMatch(${jsAttr(m.id)})" style="background:#f0fdf4;color:#059669;border:1px solid #bbf7d0;font-weight:700;padding:8px 14px;font-size:13px">+ Add Player</button>`;
+    // Organiser/share actions — shown regardless of player name link
+    let organiserActionsHtml = '';
+    if (!isFull && (isCreator || iJoined || isOrganiser)) {
+      organiserActionsHtml += `<button class="btn btn-sm" onclick="showAddPlayerToMatch(${jsAttr(m.id)})" style="background:#f0fdf4;color:#059669;border:1px solid #bbf7d0;font-weight:700;padding:8px 14px;font-size:13px">&#43; Add Player</button>`;
     }
-    actionsHtml += `<button class="btn btn-sm btn-whatsapp" onclick="whatsAppShareMatch(${jsAttr(m.id)})" style="font-weight:700;padding:8px 14px;font-size:13px">Share to WhatsApp</button>`;
-    actionsHtml += `<button class="btn btn-sm" onclick="shareOpenMatch(${jsAttr(m.id)})" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700;padding:8px 14px;font-size:13px">Copy to Share</button>`;
+    organiserActionsHtml += `<button class="btn btn-sm btn-whatsapp" onclick="whatsAppShareMatch(${jsAttr(m.id)})" style="font-weight:700;padding:8px 14px;font-size:13px">Share to WhatsApp</button>`;
+    organiserActionsHtml += `<button class="btn btn-sm" onclick="shareOpenMatch(${jsAttr(m.id)})" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700;padding:8px 14px;font-size:13px">Copy to Share</button>`;
     if (isCreator) {
-      actionsHtml += `<button class="btn btn-sm" onclick="editOpenMatch(${jsAttr(m.id)})" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700">Edit</button>`;
-      actionsHtml += `<button class="btn btn-secondary btn-sm" onclick="deleteOpenMatch(${jsAttr(m.id)})">Delete</button>`;
+      organiserActionsHtml += `<button class="btn btn-sm" onclick="editOpenMatch(${jsAttr(m.id)})" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700">Edit</button>`;
+      organiserActionsHtml += `<button class="btn btn-secondary btn-sm" onclick="deleteOpenMatch(${jsAttr(m.id)})">Delete</button>`;
     }
-    if (!myName) {
-      actionsHtml = `<span style="font-size:13px;color:var(--amber);font-weight:600">Link your account to a player name to join</span>`;
-    }
+    const actionsHtml = playerActionsHtml + organiserActionsHtml;
 
     const sportIcons = { tennis: '🎾', padel: '🥎', squash: '🏸', racketball: '🏸', badminton: '🏸', other: '🏅' };
     const levelColors = { fun: '#059669', intermediate: '#d97706', advanced: '#dc2626' };
@@ -10698,34 +10702,69 @@ function showAddPlayerToMatch(matchId) {
   const spotsLeft = maxP - players.length;
   if (spotsLeft <= 0) { toast('Game is full'); return; }
 
-  const allPlayers = getAllPlayers();
   const content = document.getElementById('add-player-content');
-
-  let html = `<div style="font-size:13px;color:#6b7280;margin-bottom:12px">${spotsLeft} slot${spotsLeft !== 1 ? 's' : ''} available. Select a player or type a name.</div>`;
-
-  // Manual entry
-  html += `<div style="margin-bottom:16px">
-    <input class="fi" id="add-player-name" placeholder="Type player name..." style="margin-bottom:8px">
-    <button class="btn btn-primary btn-sm" onclick="addTypedPlayerToMatch()" style="width:100%">Add Player</button>
-  </div>`;
-
-  // Existing players from league
-  if (allPlayers.length > 0) {
-    const available = allPlayers.filter(p => !players.includes(p));
-    if (available.length > 0) {
-      html += `<div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:8px">Or select from league players:</div>`;
-      html += `<div style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto">`;
-      available.forEach(p => {
-        html += `<button onclick="addExistingPlayerToMatch(${jsAttr(p)})" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:1.5px solid #e2e8f0;background:#fff;cursor:pointer;text-align:left;font-size:14px;font-weight:600;color:#1a1a1a;transition:all 0.15s" onmouseover="this.style.background='#f0fdf4';this.style.borderColor='#86efac'" onmouseout="this.style.background='#fff';this.style.borderColor='#e2e8f0'">${avatarWithPhoto(p)}<span>${esc(p)}</span></button>`;
-      });
-      html += `</div>`;
-    } else {
-      html += `<div style="font-size:13px;color:#9ca3af;text-align:center;padding:12px">All league players are already in this game</div>`;
-    }
-  }
-
-  content.innerHTML = html;
+  // Render manual entry + loading placeholder immediately so the modal is usable right away
+  content.innerHTML = `
+    <div style="font-size:13px;color:#6b7280;margin-bottom:12px">${spotsLeft} slot${spotsLeft !== 1 ? 's' : ''} available. Add a player on their behalf.</div>
+    <div style="margin-bottom:16px">
+      <input class="fi" id="add-player-name" placeholder="Type player name..." style="margin-bottom:8px" onkeydown="if(event.key==='Enter')addTypedPlayerToMatch()">
+      <button class="btn btn-primary btn-sm" onclick="addTypedPlayerToMatch()" style="width:100%">+ Add Player</button>
+    </div>
+    <div id="add-player-member-list"><div style="color:#9ca3af;font-size:13px;text-align:center;padding:8px">Loading players&hellip;</div></div>`;
   document.getElementById('add-player-modal').style.display = 'flex';
+  document.getElementById('add-player-name').focus();
+
+  // Sync: populate from league groups (works inside box league mode)
+  const leaguePlayers = getAllPlayers().filter(p => !players.includes(p));
+  if (leaguePlayers.length > 0) {
+    _renderAddPlayerMemberList(leaguePlayers, 'Select from league players:');
+  }
+  // Async: fetch all club members across every league (covers mix-in mode + clubs with many leagues)
+  const clubId = userHomeClub && userHomeClub.id;
+  if (clubId && FIREBASE_READY) {
+    _loadClubMembersForModal(clubId, players);
+  } else if (leaguePlayers.length === 0) {
+    _renderAddPlayerMemberList([], 'Select from club players:');
+  }
+}
+
+function _renderAddPlayerMemberList(available, heading) {
+  const el = document.getElementById('add-player-member-list');
+  if (!el) return; // modal was closed before async completed
+  if (available.length === 0) {
+    el.innerHTML = `<div style="font-size:13px;color:#9ca3af;text-align:center;padding:8px">All club players are already in this game</div>`;
+    return;
+  }
+  let html = `<div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:8px">${esc(heading)}</div>`;
+  html += `<div style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto">`;
+  available.forEach(p => {
+    html += `<button onclick="addExistingPlayerToMatch(${jsAttr(p)})" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:1.5px solid #e2e8f0;background:#fff;cursor:pointer;text-align:left;font-size:14px;font-weight:600;color:#1a1a1a;transition:all 0.15s" onmouseover="this.style.background='#f0fdf4';this.style.borderColor='#86efac'" onmouseout="this.style.background='#fff';this.style.borderColor='#e2e8f0'">${avatarWithPhoto(p)}<span>${esc(p)}</span></button>`;
+  });
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+function _loadClubMembersForModal(clubId, alreadyIn) {
+  db.ref('/clubLeagues/' + clubId).once('value').then(snap => {
+    const leagueIds = Object.keys(snap.val() || {});
+    if (leagueIds.length === 0) { _renderAddPlayerMemberList([], 'Select from club players:'); return; }
+    const playerSet = new Set();
+    let done = 0;
+    const finish = () => {
+      done++;
+      if (done === leagueIds.length) {
+        const available = [...playerSet].filter(p => !alreadyIn.includes(p)).sort();
+        _renderAddPlayerMemberList(available, 'Select from club players:');
+      }
+    };
+    leagueIds.forEach(lid => {
+      db.ref('/leagues/' + lid + '/members').once('value').then(mSnap => {
+        const members = mSnap.val() || {};
+        Object.values(members).forEach(mem => { if (mem.playerName) playerSet.add(mem.playerName); });
+        finish();
+      }).catch(finish);
+    });
+  }).catch(() => { _renderAddPlayerMemberList([], 'Select from club players:'); });
 }
 
 function closeAddPlayer() {
