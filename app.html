@@ -1600,7 +1600,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.15.10 · Build 20260427</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.15.11 · Build 20260427</div>
   </div>
 </div>
 
@@ -3776,10 +3776,28 @@ function genCode() {
 }
 async function genUniqueCode() {
   if (!FIREBASE_READY) return genCode();
+  // v4.15.11 (F-1): the previous read-then-write pattern was a TOCTOU race —
+  // two simultaneous league creations could both see /codes/<code> as empty,
+  // both write league IDs to the multi-path update, and the loser's
+  // info.code would resolve to the winner's leagueId via /codes. We now
+  // RESERVE the code via a transaction; on conflict we retry with a new
+  // code. The actual league.create still happens in createLeagueInClub /
+  // scopedSubmitCreateLeague — they overwrite the placeholder reservation
+  // with the real league ID via the multi-path update.
   for (let attempt = 0; attempt < 10; attempt++) {
     const code = genCode();
-    const snap = await db.ref('/codes/' + code).once('value');
-    if (!snap.exists()) return code;
+    let claimed = false;
+    try {
+      const result = await db.ref('/codes/' + code).transaction(current => {
+        if (current) return; // abort — already claimed
+        return '__pending_' + (currentUser ? currentUser.uid : 'anon') + '_' + Date.now();
+      });
+      claimed = result && result.committed;
+    } catch (e) {
+      // Transaction failed for other reasons (network, rules, etc.) — try next code
+      continue;
+    }
+    if (claimed) return code;
   }
   // Fallback: extend to 8 chars to reduce collision chance
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -4769,9 +4787,24 @@ function onAuthSuccess() {
 
     // Check URL params for shared league link
     const params = new URLSearchParams(window.location.search);
-    const sharedLeagueId = params.get('league');
+    const _rawSharedLeagueId = params.get('league');
     const sharedMixin = params.get('mixin');
-    const sharedClub = params.get('club');
+    const _rawSharedClub = params.get('club');
+    // v4.15.11 (S-6): URL param validators. Without these, raw param values
+    // flow into Firebase paths (`/clubs/<rawParam>`, `/leagues/<rawParam>/info`).
+    // Firebase rejects `.`, `#`, `$`, `[`, `]` but ALLOWS `/` — so a phishing
+    // link `?club=foo/modules` traverses into a child node, and a hostile
+    // pre-write to `/clubs/foo/modules` (rules are wide open) returns
+    // attacker-controlled fields as the "club info". Validate before use.
+    // Slugs match `[a-z][a-z0-9-]*[a-z0-9]` (3-40 chars). Firebase push keys
+    // start with `-` and are 19-22 base64-url chars. Either form is safe.
+    const SLUG_RE = /^[A-Za-z][A-Za-z0-9_-]{1,60}$/;
+    const PUSH_KEY_RE = /^-[A-Za-z0-9_-]{18,30}$/;
+    const _validSlug = (s) => typeof s === 'string' && (SLUG_RE.test(s) || PUSH_KEY_RE.test(s));
+    const sharedLeagueId = _validSlug(_rawSharedLeagueId) ? _rawSharedLeagueId : null;
+    const sharedClub = _validSlug(_rawSharedClub) ? _rawSharedClub : null;
+    if (_rawSharedLeagueId && !sharedLeagueId) { console.warn('Rejecting invalid ?league= param:', _rawSharedLeagueId); toast('Invalid league link — opening main app'); }
+    if (_rawSharedClub && !sharedClub) { console.warn('Rejecting invalid ?club= param:', _rawSharedClub); toast('Invalid club link — opening main app'); }
     if (sharedLeagueId) {
       window.history.replaceState({}, '', window.location.pathname);
       setTimeout(() => { joinAndEnterLeague(sharedLeagueId); }, 500);
@@ -8543,7 +8576,7 @@ function renderMembers() {
         <div style="display:flex;align-items:center;gap:6px">
           ${linked
             ? `<span class="badge badge-booked">Linked: ${esc(m.playerName)}</span>`
-            : isOrg ? `<select class="fi" style="width:auto;padding:6px 10px;font-size:13px" onchange="linkMember('${esc(key)}',this.value)">
+            : isOrg ? `<select class="fi" style="width:auto;padding:6px 10px;font-size:13px" onchange="linkMember(${jsAttr(key)},this.value)">
                 <option value="">Link to player...</option>
                 ${allPlayers.map(p => `<option value="${esc(p)}" ${m.playerName===p?'selected':''}>${esc(p)}</option>`).join('')}
                </select>` : `<span class="badge" style="background:#fef3c7;color:#92400e">Not linked</span>`
@@ -8566,9 +8599,20 @@ function linkMember(memberKey, playerName) {
       return;
     }
   }
+  // v4.15.11 (F-7): catch silent rejection on link write
   const ref = leagueRef('members/' + memberKey + '/playerName');
-  if (ref) ref.set(playerName);
-  else { L.members[memberKey].playerName = playerName; localSave(); renderMembers(); }
+  if (ref) {
+    ref.set(playerName).then(() => {
+      logAction('link_member', memberKey + ' → ' + playerName);
+      toast(`Linked to ${playerName}`);
+      if (currentTab === 'availability') checkPlayerLink();
+    }).catch(err => {
+      console.error('linkMember error:', err);
+      toast('Could not link: ' + (err && err.message ? err.message : 'try again'));
+    });
+    return;
+  }
+  L.members[memberKey].playerName = playerName; localSave(); renderMembers();
   logAction('link_member', memberKey + ' → ' + playerName);
   toast(`Linked to ${playerName}`);
   if (currentTab === 'availability') checkPlayerLink();
@@ -8798,8 +8842,20 @@ function clearMyWeek() {
       if (L.availability[key]) { updates[key] = null; delete L.availability[key]; }
     });
   });
+  // v4.15.11 (F-5): catch silent rejection. Destructive op — silent failure
+  // is worst-case here (user sees clean grid that re-syncs back).
   const ref = leagueRef('availability');
-  if (ref) ref.update(updates); else localSave();
+  if (ref) {
+    ref.update(updates).then(() => {
+      renderAvailGrid(); renderMySummary(); renderMyMatches(); renderProgress();
+      toast('Week cleared');
+    }).catch(err => {
+      console.error('clearMyWeek error:', err);
+      toast('Could not clear: ' + (err && err.message ? err.message : 'try again'));
+    });
+    return;
+  }
+  localSave();
   renderAvailGrid(); renderMySummary(); renderMyMatches(); renderProgress();
   toast('Week cleared');
 }
@@ -9368,7 +9424,7 @@ function renderMatchFinder() {
       ${m.booked.courtNumber ? `<div style="font-size:13px;color:var(--text);margin-top:4px;font-weight:600">Court: ${esc(m.booked.courtNumber)}</div>` : ''}
       <div style="margin-top:8px">
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;color:var(--text)">
-          <input type="checkbox" ${m.booked.courtBooked ? 'checked' : ''} onchange="toggleCourtBooked('${esc(m.matchKey)}')" style="width:16px;height:16px;accent-color:var(--green)">
+          <input type="checkbox" ${m.booked.courtBooked ? 'checked' : ''} onchange="toggleCourtBooked(${jsAttr(m.matchKey)})" style="width:16px;height:16px;accent-color:var(--green)">
           <span style="font-weight:600">${m.booked.courtBooked ? '✅ Court booked' : 'Court booked?'}</span>
         </label>
       </div>
@@ -10737,12 +10793,22 @@ function isSafePhotoUrl(url) {
   catch { return false; }
 }
 
+// v4.15.11 (S-5): photo-fallback handler exposed at module level so the
+// inline onerror can call it without interpolating user-controlled strings
+// into an attribute (which the HTML parser decoded back to apostrophes,
+// breaking out of the JS string and creating an XSS hole).
+window._avatarFallback = function(imgEl, initials, color) {
+  if (!imgEl || !imgEl.parentElement) return;
+  imgEl.parentElement.textContent = initials || '';
+  imgEl.parentElement.style.background = color || '';
+};
+
 function avatarWithPhoto(name) {
   const photo = getMemberPhoto(name);
   if (isSafePhotoUrl(photo)) {
-    const safeInitials = esc(getInitials(name)).replace(/'/g, '&#39;');
-    const safeColor = getPlayerColor(name).replace(/'/g, '');
-    return `<span class="avatar" style="padding:0;overflow:hidden" title="${esc(name)}"><img src="${esc(photo)}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='${safeInitials}';this.parentElement.style.background='${safeColor}'"></span>`;
+    const initials = getInitials(name);
+    const color = getPlayerColor(name);
+    return `<span class="avatar" style="padding:0;overflow:hidden" title="${esc(name)}"><img src="${esc(photo)}" style="width:100%;height:100%;object-fit:cover" onerror="_avatarFallback(this, ${jsAttr(initials)}, ${jsAttr(color)})"></span>`;
   }
   return avatarHtml(name);
 }
@@ -10842,12 +10908,20 @@ function postComment() {
   };
 
   if (FIREBASE_READY) {
-    db.ref(path).push().set(comment);
-  } else {
-    const id = 'c_' + Date.now();
-    L.comments[id] = comment;
-    renderComments();
+    // v4.15.11 (F-8): catch silent rejection. Previously cleared input
+    // unconditionally — user thought their comment posted when it hadn't.
+    db.ref(path).push().set(comment).then(() => {
+      logAction('post_comment', text.substring(0, 80));
+      input.value = '';
+    }).catch(err => {
+      console.error('postComment error:', err);
+      toast('Could not post: ' + (err && err.message ? err.message : 'try again'));
+    });
+    return;
   }
+  const id = 'c_' + Date.now();
+  L.comments[id] = comment;
+  renderComments();
   logAction('post_comment', text.substring(0, 80));
   input.value = '';
 }
@@ -10861,11 +10935,15 @@ function deleteComment(commentId) {
   const path = commentsPath();
   if (!path) return;
   if (FIREBASE_READY) {
-    db.ref(path + '/' + commentId).remove();
-  } else {
-    delete L.comments[commentId];
-    renderComments();
+    // v4.15.11 (F-8): catch silent rejection
+    db.ref(path + '/' + commentId).remove().catch(err => {
+      console.error('deleteComment error:', err);
+      toast('Could not delete: ' + (err && err.message ? err.message : 'try again'));
+    });
+    return;
   }
+  delete L.comments[commentId];
+  renderComments();
 }
 
 function clearAllComments() {
