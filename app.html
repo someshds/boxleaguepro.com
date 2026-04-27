@@ -652,7 +652,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.15.15</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.0</div>
   </div>
 </div>
 
@@ -1245,6 +1245,22 @@
           </div>
           <div style="font-size:12px;color:#9ca3af;margin-top:4px">Players will see a "Book a Court" link on match and open games screens</div>
         </div>
+        <!-- v4.16.0: Scoring system picker — visible only when scoring module is enabled for this club -->
+        <div class="fg" id="scoring-system-picker-wrap" style="display:none">
+          <label class="fl">Scoring System <span style="font-weight:400;color:#9ca3af">(applies to all leagues at this club)</span></label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select class="fi" id="inp-scoring-system" style="flex:1" onchange="renderScoringPreview()">
+              <option value="default">Standard (3 / 1 / 0) — BLP default</option>
+              <option value="reward-attendance">Reward Attendance (3 / 1 / 0 + completion bonus)</option>
+              <option value="scaled-by-result">Scaled by Result (PadelLevels System 7)</option>
+              <option value="competitive">Winners Only (3 / 0 / 0)</option>
+              <option value="participation">Participation (2 / 1 / 0.5)</option>
+              <option value="set-points-plus-played">Set Points + Played Bonus (EGTSC style)</option>
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="saveScoringSystem()" style="white-space:nowrap;padding:10px 18px">Save</button>
+          </div>
+          <div id="scoring-preview" style="font-size:12px;color:#475569;margin-top:8px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;line-height:1.5"></div>
+        </div>
       </div>
 
       <!-- Invite Link -->
@@ -1600,7 +1616,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.15.15 · Build 20260427</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.0 · Build 20260427</div>
   </div>
 </div>
 
@@ -5162,8 +5178,15 @@ window._clubModules = window._clubModules || {};
 function loadClubModules(clubId, cb) {
   if (!clubId || !FIREBASE_READY) { if (cb) cb(null); return; }
   if (window._clubModules[clubId]) { if (cb) cb(window._clubModules[clubId]); return; }
-  db.ref('/clubs/' + clubId + '/modules').once('value').then(function(snap) {
-    var mods = snap.val() || null;
+  // v4.16.0: also fetch the club's scoringSystem alongside modules so
+  // calculateStandings has it available when called outside the scoped flow.
+  Promise.all([
+    db.ref('/clubs/' + clubId + '/modules').once('value'),
+    db.ref('/clubs/' + clubId + '/scoringSystem').once('value')
+  ]).then(function(snaps) {
+    var mods = snaps[0].val() || {};
+    var scoringSystem = snaps[1].val();
+    if (scoringSystem) mods._scoringSystem = scoringSystem;
     window._clubModules[clubId] = mods;
     if (cb) cb(mods);
   }).catch(function() { if (cb) cb(null); });
@@ -5193,6 +5216,162 @@ function isScoringEnabled() {
 
 function isAIEnabled() {
   return isModuleEnabled('ai');
+}
+
+// ══════════════════════════════════════════════════════════════
+// v4.16.0 — PER-CLUB SCORING SYSTEMS
+// Each club picks one of 5 preset systems. Default is the BLP
+// 3/1/0 scheme. Preset choice is stored at /clubs/<id>/scoringSystem
+// (a string ID) and applied by calculateStandings().
+//
+// Why presets and not arbitrary custom configs: across ~100 racquet-
+// sports clubs there are realistically a handful of scoring patterns
+// people actually use. Constraining to presets means clubs pick from
+// a known-good list rather than authoring rules from scratch (which
+// is error-prone and creates support burden). New presets ship as
+// real clubs ask for them, not pre-emptively.
+//
+// First commitment: 'scaled-by-result' (PadelLevels System 7) —
+// ordered by Mike Hawkins / Broughton Padel for v4.16 launch.
+// ══════════════════════════════════════════════════════════════
+const SCORING_PRESETS = {
+  'default': {
+    id: 'default',
+    name: 'Standard (3 / 1 / 0)',
+    short: 'Standard',
+    description: '3 for a win, 1 for a loss, 0 for not played. The classic BoxLeague Pro default.',
+    win: 3, loss: 1, draw: 2,
+    walkoverWin: 3, walkoverConcede: 0,
+    notPlayedPoints: 0,
+    completionBonus: 0
+  },
+  'reward-attendance': {
+    id: 'reward-attendance',
+    name: 'Reward Attendance (3 / 1 / 0 + completion bonus)',
+    short: 'Reward Attendance',
+    description: 'Standard scoring with a +5 bonus for completing every match in the season. Encourages turning up over winning.',
+    win: 3, loss: 1, draw: 2,
+    walkoverWin: 3, walkoverConcede: 0,
+    notPlayedPoints: 0,
+    completionBonus: 5
+  },
+  'scaled-by-result': {
+    id: 'scaled-by-result',
+    name: 'Scaled by Result (PadelLevels System 7)',
+    short: 'Scaled (PL System 7)',
+    description: 'Win 2-0 = 4 pts, Win 2-1 = 3 pts, Loss 2-1 = 2 pts, Loss 2-0 = 1 pt. Walkover win = 2 (lowest reward), walkover concede = 0. Used at Broughton Padel.',
+    scorePattern: 'system7',  // sets-based table below
+    // v4.16.0: walkoverWin set to 2 (below the lowest played-win value of 3)
+    // per Mike Hawkins' description: "reduces the reward for a walkover to
+    // the lowest level possible". To confirm exact value with Mike on his
+    // Broughton walkthrough call.
+    walkoverWin: 2, walkoverConcede: 0,
+    notPlayedPoints: 0,
+    completionBonus: 0
+  },
+  'competitive': {
+    id: 'competitive',
+    name: 'Winners Only (3 / 0 / 0)',
+    short: 'Winners Only',
+    description: '3 for a win, nothing for a loss. Traditional, high-stakes — only the W matters.',
+    win: 3, loss: 0, draw: 1,
+    walkoverWin: 3, walkoverConcede: 0,
+    notPlayedPoints: 0,
+    completionBonus: 0
+  },
+  'participation': {
+    id: 'participation',
+    name: 'Participation (2 / 1 / 0.5)',
+    short: 'Participation',
+    description: '2 for a win, 1 for a loss, 0.5 for not played. Anti-zero — keeps lower-level players engaged when they can\'t commit to every match.',
+    win: 2, loss: 1, draw: 1.5,
+    walkoverWin: 2, walkoverConcede: 0,
+    notPlayedPoints: 0.5,
+    completionBonus: 0
+  },
+  'set-points-plus-played': {
+    id: 'set-points-plus-played',
+    name: 'Set Points + Played Bonus (EGTSC style)',
+    short: 'Set Points + Played',
+    description: '1 point per set won, plus 1 bonus point to BOTH teams for playing the match. Walkover = 2 points to the team who could play, 0 to the conceding team, no played bonus. Used by East Grinstead Tennis Club.',
+    win: 0, loss: 0, draw: 0,  // no flat points; everything comes from sets + played bonus
+    setPoints: 1,
+    matchPlayedBonus: 1,
+    walkoverWin: 2, walkoverConcede: 0,
+    notPlayedPoints: 0,
+    completionBonus: 0
+  }
+};
+
+// Look up the active scoring preset for the active club.
+// Falls back to 'default' if the club hasn't picked one.
+function getActiveScoringPreset() {
+  const clubId = getCurrentClubId();
+  if (!clubId) return SCORING_PRESETS['default'];
+  // Prefer scoped-club info if loaded
+  if (window._scopedClub && window._scopedClub.id === clubId && window._scopedClub.info && window._scopedClub.info.scoringSystem) {
+    const id = window._scopedClub.info.scoringSystem;
+    if (SCORING_PRESETS[id]) return SCORING_PRESETS[id];
+  }
+  // Fall back to in-memory club doc cache populated by loadClubModules
+  const mods = window._clubModules && window._clubModules[clubId];
+  if (mods && mods._scoringSystem && SCORING_PRESETS[mods._scoringSystem]) {
+    return SCORING_PRESETS[mods._scoringSystem];
+  }
+  return SCORING_PRESETS['default'];
+}
+
+// Calculate points for one team's result on one match, given the active preset.
+// Supports:
+//   - Walkover override (preset.walkoverWin / .walkoverConcede)
+//   - System 7 score-pattern (4/3/2/1 by set split)
+//   - Set points (preset.setPoints * sets won) — for EGTSC-style scoring
+//   - Match-played bonus (preset.matchPlayedBonus to both teams when not walkover)
+//   - Flat win/loss/draw points (preset.win / .loss / .draw)
+//
+// All four mechanics combine — a preset can use any subset by setting unused
+// fields to 0. e.g. EGTSC-style uses setPoints + matchPlayedBonus only;
+// classic 3/1/0 uses just win + loss.
+function calculateMatchPoints(preset, result, isWinner) {
+  if (!result) return 0;
+  // Walkover takes precedence: skip everything else, use the walkover-specific points.
+  if (result.walkover) {
+    return isWinner ? (preset.walkoverWin || 0) : (preset.walkoverConcede || 0);
+  }
+  // System 7: result depends on the EXACT set count split (4/3/2/1).
+  // Bypasses the additive model since System 7 has its own table.
+  if (preset.scorePattern === 'system7') {
+    const winnerSets = Math.max(result.setsA || 0, result.setsB || 0);
+    const loserSets = Math.min(result.setsA || 0, result.setsB || 0);
+    if (winnerSets === 2 && loserSets === 0) return isWinner ? 4 : 1;
+    if (winnerSets === 2 && loserSets === 1) return isWinner ? 3 : 2;
+    if (winnerSets === 3 && loserSets === 0) return isWinner ? 4 : 1;
+    if (winnerSets === 3 && loserSets === 1) return isWinner ? 3 : 2;
+    if (winnerSets === 3 && loserSets === 2) return isWinner ? 3 : 2;
+    return isWinner ? 3 : 1; // safe fallback
+  }
+  // Additive model — sum the contributions from each mechanic.
+  let points = 0;
+  // Set points: each team gets points for the sets they won
+  if (preset.setPoints) {
+    const teamSetsWon = isWinner
+      ? Math.max(result.setsA || 0, result.setsB || 0)
+      : Math.min(result.setsA || 0, result.setsB || 0);
+    points += preset.setPoints * teamSetsWon;
+  }
+  // Match-played bonus: both teams get this for any played (non-walkover) match
+  if (preset.matchPlayedBonus) {
+    points += preset.matchPlayedBonus;
+  }
+  // Flat win/loss/draw points
+  if (result.winner === 'draw') {
+    points += preset.draw || 0;
+  } else if (isWinner) {
+    points += preset.win || 0;
+  } else {
+    points += preset.loss || 0;
+  }
+  return points;
 }
 
 function isModuleEnabled(moduleName) {
@@ -7729,6 +7908,96 @@ function clearDeadline() {
   toast('Deadline removed');
 }
 
+// v4.16.0: render a human-readable preview of points-per-outcome for the
+// currently-selected preset. Updates as the dropdown changes — gives
+// organisers confidence before they save.
+function renderScoringPreview() {
+  const sel = document.getElementById('inp-scoring-system');
+  const previewEl = document.getElementById('scoring-preview');
+  if (!sel || !previewEl) return;
+  const preset = SCORING_PRESETS[sel.value];
+  if (!preset) { previewEl.innerHTML = ''; return; }
+
+  // Build a sample outcomes table. Use the same calculator the standings use,
+  // so the preview is guaranteed accurate.
+  const sample20 = { setsA: 2, setsB: 0, gamesA: 12, gamesB: 4, winner: 'A', walkover: false, scores: [[6,2],[6,2]] };
+  const sample21 = { setsA: 2, setsB: 1, gamesA: 14, gamesB: 12, winner: 'A', walkover: false, scores: [[6,4],[4,6],[6,2]] };
+  const wo       = { walkover: true, winner: 'A', loser: 'B' };
+
+  const fmt = (v) => Number.isInteger(v) ? String(v) : v.toFixed(1);
+  const w20 = fmt(calculateMatchPoints(preset, sample20, true));
+  const l20 = fmt(calculateMatchPoints(preset, sample20, false));
+  const w21 = fmt(calculateMatchPoints(preset, sample21, true));
+  const l21 = fmt(calculateMatchPoints(preset, sample21, false));
+  const ww  = fmt(calculateMatchPoints(preset, wo, true));
+  const wl  = fmt(calculateMatchPoints(preset, wo, false));
+
+  let extras = '';
+  if (preset.notPlayedPoints) extras += '<div>Not played: <strong>' + fmt(preset.notPlayedPoints) + ' pt</strong> (after deadline)</div>';
+  if (preset.completionBonus) extras += '<div>Bonus for playing all matches: <strong>+' + fmt(preset.completionBonus) + ' pts</strong></div>';
+
+  previewEl.innerHTML =
+    '<div style="font-weight:600;color:#1e293b;margin-bottom:6px">' + esc(preset.name) + '</div>' +
+    '<div style="color:#64748b;margin-bottom:8px;font-style:italic">' + esc(preset.description) + '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr auto;gap:4px 16px;font-variant-numeric:tabular-nums">' +
+      '<div>Win 2-0</div><div><strong>' + w20 + '</strong> / ' + l20 + '</div>' +
+      '<div>Win 2-1</div><div><strong>' + w21 + '</strong> / ' + l21 + '</div>' +
+      '<div>Walkover</div><div><strong>' + ww + '</strong> / ' + wl + '</div>' +
+    '</div>' +
+    extras;
+}
+
+// v4.16.0: organiser saves the scoring system choice. Persists to
+// /clubs/<clubId>/scoringSystem AND mirrors into the in-memory _scopedClub.info
+// so calculateStandings sees the change immediately without a refresh.
+function saveScoringSystem() {
+  if (!canManageClub(getCurrentClubId())) { toast('Only a club admin can change the scoring system'); return; }
+  const sel = document.getElementById('inp-scoring-system');
+  if (!sel) return;
+  const newSystem = sel.value;
+  if (!SCORING_PRESETS[newSystem]) { toast('Unknown scoring system'); return; }
+
+  const clubId = getCurrentClubId();
+  if (!clubId) { toast('No club in scope'); return; }
+
+  if (!FIREBASE_READY) {
+    toast('Saving scoring system... (offline)');
+    return;
+  }
+
+  db.ref('/clubs/' + clubId + '/scoringSystem').set(newSystem).then(() => {
+    // Mirror into in-memory caches so renderStandings reflects the change immediately
+    if (window._scopedClub && window._scopedClub.id === clubId) {
+      if (!window._scopedClub.info) window._scopedClub.info = {};
+      window._scopedClub.info.scoringSystem = newSystem;
+    }
+    if (window._clubModules && window._clubModules[clubId]) {
+      window._clubModules[clubId]._scoringSystem = newSystem;
+    }
+    toast('Scoring system saved — applies to all leagues at this club');
+    logAction('save_scoring_system', clubId + ' → ' + newSystem);
+    if (currentTab === 'results') renderStandings();
+  }).catch(err => {
+    console.error('saveScoringSystem error:', err);
+    toast('Could not save: ' + (err && err.message ? err.message : 'try again'));
+  });
+}
+
+// v4.16.0: populate the Settings-tab scoring picker on entry. Called from showTab('setup').
+function renderScoringSystemPicker() {
+  const wrap = document.getElementById('scoring-system-picker-wrap');
+  const sel = document.getElementById('inp-scoring-system');
+  if (!wrap || !sel) return;
+  // Only show the picker when scoring module is enabled AND the user is a club admin
+  const showIt = isScoringEnabled() && canManageClub(getCurrentClubId());
+  wrap.style.display = showIt ? 'block' : 'none';
+  if (!showIt) return;
+  // Set the dropdown to the active system
+  const preset = getActiveScoringPreset();
+  sel.value = preset.id;
+  renderScoringPreview();
+}
+
 // HOTFIX 2026-04-15: Migrate legacy '_' match keys to '~~' format in memory.
 // Older versions used '_' as the match-key delimiter between group ids. Group
 // ids contain underscores, so we cannot split by '_' — instead we test every
@@ -7881,7 +8150,7 @@ function showTab(t) {
   if (t === 'matches') { renderMatchFinder(); }
   if (t === 'results') { renderStandings(); renderResultsList(); }
   if (t === 'open') { renderOpenMatches(); }
-  if (t === 'setup') { renderGroups(); renderMembers(); }
+  if (t === 'setup') { renderGroups(); renderMembers(); try { renderScoringSystemPicker(); } catch (e) {} }
 
   // Trigger in-tab guide (replaces explainer modals for tabs that have guides)
   const guideTabId = (t === 'open' && mixInMode) ? 'open' : t;
@@ -7961,13 +8230,27 @@ function openScoreEntry(matchKey) {
   html += '<div id="score-winner-preview" style="text-align:center;font-size:14px;font-weight:600;color:#059669;margin-bottom:12px"></div>';
 
   html += '<div style="display:flex;gap:8px">';
-  html += '<button class="btn btn-primary" onclick="saveScore(\'' + esc(matchKey) + '\',\'' + esc(gA.id) + '\',\'' + esc(gB.id) + '\')" style="flex:1">Save Result</button>';
+  html += '<button class="btn btn-primary" onclick="saveScore(' + jsAttr(matchKey) + ',' + jsAttr(gA.id) + ',' + jsAttr(gB.id) + ')" style="flex:1">Save Result</button>';
   html += '<button class="btn btn-secondary" onclick="closeScoreModal()" style="flex:1">Cancel</button>';
+  html += '</div>';
+
+  // v4.16.0: walkover entry. A walkover is a match that wasn't played because
+  // one team conceded (injury, can't fulfil before deadline, no-show, etc).
+  // Per EGTSC + PadelLevels rules: walkover means the team who could play gets
+  // walkover-win points (varies by preset), the conceding team gets 0, and no
+  // match-played bonus is awarded to either side.
+  html += '<div style="margin-top:14px;padding-top:14px;border-top:1px dashed #e2e8f0">';
+  html += '<div style="font-size:12px;color:#64748b;text-align:center;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Or record a walkover</div>';
+  html += '<div style="display:flex;gap:6px">';
+  html += '<button class="btn btn-sm" onclick="recordWalkover(' + jsAttr(matchKey) + ',' + jsAttr(gA.id) + ',' + jsAttr(gB.id) + ')" style="flex:1;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;font-weight:700">' + esc(gA.name) + ' won (W/O)</button>';
+  html += '<button class="btn btn-sm" onclick="recordWalkover(' + jsAttr(matchKey) + ',' + jsAttr(gB.id) + ',' + jsAttr(gA.id) + ')" style="flex:1;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;font-weight:700">' + esc(gB.name) + ' won (W/O)</button>';
+  html += '</div>';
+  html += '<div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:6px;line-height:1.4">Tap whichever team COULD play. The other team will be marked as having conceded.</div>';
   html += '</div>';
 
   if (existing) {
     html += '<div style="margin-top:12px;text-align:center">';
-    html += '<button class="btn btn-sm" onclick="if(confirm(\'Delete this result?\'))deleteResult(\'' + esc(matchKey) + '\')" style="color:#dc2626;font-size:12px">Delete result</button>';
+    html += '<button class="btn btn-sm" onclick="if(confirm(\'Delete this result?\'))deleteResult(' + jsAttr(matchKey) + ')" style="color:#dc2626;font-size:12px">Delete result</button>';
     html += '</div>';
   }
 
@@ -8069,8 +8352,41 @@ function deleteResult(matchKey) {
   toast('Result deleted');
 }
 
+// v4.16.0: record a walkover. Winner gets the active preset's walkoverWin
+// points; conceding team gets 0. No sets/games entered. The result is flagged
+// `walkover: true` so calculateStandings() applies the walkover-specific
+// scoring rules (which differ from played-match rules in every preset).
+function recordWalkover(matchKey, winnerId, concededById) {
+  if (!isMatchParticipant(matchKey)) { toast('Only match players or the organiser can record this'); return; }
+  if (!winnerId || !concededById || winnerId === concededById) { toast('Invalid walkover'); return; }
+  if (!confirm('Record this as a walkover — ' + (L.groups.find(g => g.id === winnerId) || {}).name + ' wins because the other team conceded?')) return;
+
+  const resultData = {
+    walkover: true,
+    walkoverConcededBy: concededById,
+    winner: winnerId,
+    loser: concededById,
+    setsA: 0, setsB: 0, gamesA: 0, gamesB: 0,
+    scores: [],
+    date: new Date().toISOString().slice(0,10),
+    enteredBy: currentUser ? currentUser.uid : 'anon',
+    enteredAt: new Date().toISOString()
+  };
+
+  fbSaveResult(matchKey, resultData);
+  closeScoreModal();
+  const preset = getActiveScoringPreset();
+  const winnerPts = preset.walkoverWin || 0;
+  toast('Walkover recorded — ' + (L.groups.find(g => g.id === winnerId) || {}).name + ' awarded ' + winnerPts + ' point' + (winnerPts !== 1 ? 's' : ''));
+  logAction('record_walkover', winnerId + ' beat ' + concededById + ' (W/O)');
+}
+
 function calculateStandings() {
+  // v4.16.0: per-club scoring system. Look up the active preset from the club
+  // config and apply its rules. Default is the BLP standard 3/1/0.
+  const preset = getActiveScoringPreset();
   const standings = {};
+
   // Initialize all groups
   L.groups.forEach(function(g) {
     standings[g.id] = {
@@ -8080,6 +8396,8 @@ function calculateStandings() {
       won: 0,
       lost: 0,
       drawn: 0,
+      walkoverWins: 0,
+      walkoverConcedes: 0,
       setsWon: 0,
       setsLost: 0,
       gamesWon: 0,
@@ -8088,10 +8406,13 @@ function calculateStandings() {
     };
   });
 
-  // Process results
-  Object.keys(L.results).forEach(function(matchKey) {
+  // Process recorded results
+  Object.keys(L.results || {}).forEach(function(matchKey) {
     const r = L.results[matchKey];
-    if (!r || !r.scores) return;
+    if (!r) return;
+    // v4.16.0: a walkover record may not have scores (no match was played).
+    // Skip the no-record check for walkovers; require scores otherwise.
+    if (!r.walkover && !r.scores) return;
     const parts = matchKey.split('~~');
     const idA = parts[0], idB = parts[1];
     if (!standings[idA] || !standings[idB]) return;
@@ -8099,30 +8420,73 @@ function calculateStandings() {
     standings[idA].played++;
     standings[idB].played++;
 
-    // Sets
+    // Sets + games (only for played matches; walkovers have 0/0)
     standings[idA].setsWon += r.setsA || 0;
     standings[idA].setsLost += r.setsB || 0;
     standings[idB].setsWon += r.setsB || 0;
     standings[idB].setsLost += r.setsA || 0;
-
-    // Games
     standings[idA].gamesWon += r.gamesA || 0;
     standings[idA].gamesLost += r.gamesB || 0;
     standings[idB].gamesWon += r.gamesB || 0;
     standings[idB].gamesLost += r.gamesA || 0;
 
-    // Points: Win=3, Loss=1, Draw=2
-    if (r.winner === idA) {
-      standings[idA].won++; standings[idA].points += 3;
-      standings[idB].lost++; standings[idB].points += 1;
-    } else if (r.winner === idB) {
-      standings[idB].won++; standings[idB].points += 3;
-      standings[idA].lost++; standings[idA].points += 1;
+    // Walkover bookkeeping
+    if (r.walkover) {
+      if (r.winner === idA) {
+        standings[idA].won++; standings[idA].walkoverWins++;
+        standings[idB].lost++; standings[idB].walkoverConcedes++;
+      } else if (r.winner === idB) {
+        standings[idB].won++; standings[idB].walkoverWins++;
+        standings[idA].lost++; standings[idA].walkoverConcedes++;
+      }
     } else {
-      standings[idA].drawn++; standings[idA].points += 2;
-      standings[idB].drawn++; standings[idB].points += 2;
+      // Played match
+      if (r.winner === idA) { standings[idA].won++; standings[idB].lost++; }
+      else if (r.winner === idB) { standings[idB].won++; standings[idA].lost++; }
+      else { standings[idA].drawn++; standings[idB].drawn++; }
     }
+
+    // Apply preset's points formula
+    standings[idA].points += calculateMatchPoints(preset, r, r.winner === idA);
+    standings[idB].points += calculateMatchPoints(preset, r, r.winner === idB);
   });
+
+  // v4.16.0: not-played points (participation preset) — for every fixture that
+  // SHOULD have been played but wasn't recorded yet. We only know "should have"
+  // when the deadline has passed; before that, missing results are just future.
+  // For now, apply notPlayedPoints to every team for each missing fixture vs
+  // every other team in their box (round-robin assumption).
+  if (preset.notPlayedPoints) {
+    L.groups.forEach(function(gA) {
+      L.groups.forEach(function(gB) {
+        if (gA.id === gB.id) return;
+        const matchKey = [gA.id, gB.id].sort().join('~~');
+        // Each unique pair counted once for points distribution
+        if (gA.id < gB.id && !L.results[matchKey]) {
+          // Only apply not-played points if the deadline has passed (or no deadline set + manual fairness check)
+          const deadline = (L.settings && L.settings.deadline) || '';
+          const deadlineDate = deadline ? new Date(deadline) : null;
+          const deadlinePassed = deadlineDate && Date.now() > deadlineDate.getTime();
+          if (deadlinePassed) {
+            standings[gA.id].points += preset.notPlayedPoints;
+            standings[gB.id].points += preset.notPlayedPoints;
+          }
+        }
+      });
+    });
+  }
+
+  // v4.16.0: completion bonus — applied to teams that played all their fixtures.
+  // "All fixtures" = every other team in the box (round-robin pairings).
+  if (preset.completionBonus) {
+    const teamCount = L.groups.length;
+    const fixturesPerTeam = teamCount - 1; // round-robin
+    L.groups.forEach(function(g) {
+      if (standings[g.id].played >= fixturesPerTeam && fixturesPerTeam > 0) {
+        standings[g.id].points += preset.completionBonus;
+      }
+    });
+  }
 
   // Sort: points desc → set diff desc → game diff desc → name
   return Object.values(standings).sort(function(a, b) {
