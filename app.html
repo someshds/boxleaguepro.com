@@ -1600,7 +1600,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.15.12 · Build 20260427</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.15.13 · Build 20260427</div>
   </div>
 </div>
 
@@ -3799,10 +3799,33 @@ async function genUniqueCode() {
     }
     if (claimed) return code;
   }
-  // Fallback: extend to 8 chars to reduce collision chance
+  // v4.15.13: Fallback used to return an UNRESERVED 8-char code, which
+  // re-introduced the TOCTOU window the transaction was meant to close —
+  // two clients could both fall through, generate the same 8-char code,
+  // and one's multi-path /codes write would silently overwrite the other.
+  // Now extend retries with progressively longer codes (8, 10, 12 chars),
+  // each reservation TRANSACTED. Keyspace at 12 chars is 32^12 ≈ 1e18 —
+  // the loop terminates in practice on attempt 1 of the 8-char round.
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  for (const len of [8, 10, 12]) {
+    for (let attempt = 0; attempt < 10; attempt++) {
+      let code = '';
+      for (let i = 0; i < len; i++) code += chars[Math.floor(Math.random() * chars.length)];
+      let claimed = false;
+      try {
+        const result = await db.ref('/codes/' + code).transaction(current => {
+          if (current) return;
+          return '__pending_' + (currentUser ? currentUser.uid : 'anon') + '_' + Date.now();
+        });
+        claimed = result && result.committed;
+      } catch (e) { continue; }
+      if (claimed) return code;
+    }
+  }
+  // Last resort — should never happen at any plausible scale. Return an
+  // unreserved 14-char code; if this collides we have a different problem.
   let code = '';
-  for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  for (let i = 0; i < 14; i++) code += chars[Math.floor(Math.random() * chars.length)];
   return code;
 }
 // v4.9.3: lowercase + null-safe. Must match the server side (firebase-admin.js)
@@ -4882,7 +4905,15 @@ function onAuthSuccess() {
               if (!clubSnap.exists() || !clubSnap.val()) {
                 userHomeClub = null;
                 if (FIREBASE_READY && currentUser) {
-                  db.ref('/users/' + currentUser.uid + '/homeClub').remove().catch(function(){});
+                  // v4.15.13: surface the remove failure rather than swallowing it.
+                  // If the remove silently rejects (rules deny, network drop) the
+                  // user gets re-auto-scoped into the dead club on every sign-in
+                  // — an infinite-loop UX bug. Surface and log so we know to
+                  // intervene server-side.
+                  db.ref('/users/' + currentUser.uid + '/homeClub').remove().catch(function(err){
+                    console.error('R-1 homeClub remove failed:', err);
+                    toast('Note: could not clear stale club preference — sign in again later or contact support.');
+                  });
                 }
                 toast('Your saved club is no longer available — pick another from below.');
                 showScreen('welcome');
@@ -5129,10 +5160,20 @@ function loadClubModules(clubId, cb) {
 }
 
 function getCurrentClubId() {
-  // Prefer scoped club (URL ?club= param), fallback to active league's clubId
+  // Prefer scoped club (URL ?club= param), then active league's clubId,
+  // then in-memory league settings, then the user's stored homeClub.
+  // v4.15.13: the homeClub fallback was missing in v4.15.10's introduction
+  // of this helper, which broke the `?mixin=1` and `?mixin=1&club=foo` deep
+  // links — those paths set userHomeClub but never set _scopedClub, leaving
+  // canParticipateInMixIn(null) blocking createOpenMatch / joinOpenMatch /
+  // _loadClubMembersForModal / _resolvePlayerEmails / Notify Players webhook
+  // payload. The R-6/R-10 intent of "prefer scoped over home" is preserved
+  // because _scopedClub is checked FIRST — homeClub is only used when
+  // there's no other source.
   if (window._scopedClub && window._scopedClub.id) return window._scopedClub.id;
   if (activeLeagueId && userLeagues[activeLeagueId] && userLeagues[activeLeagueId].clubId) return userLeagues[activeLeagueId].clubId;
   if (L && L.settings && L.settings.clubId) return L.settings.clubId;
+  if (typeof userHomeClub !== 'undefined' && userHomeClub && userHomeClub.id) return userHomeClub.id;
   return null;
 }
 
@@ -5152,7 +5193,15 @@ function isModuleEnabled(moduleName) {
   }
   var mods = window._clubModules[clubId];
   if (mods === undefined) {
-    loadClubModules(clubId, function() { try { renderAppTabs(); renderAIAvailabilityCard(); } catch (e) {} });
+    // v4.15.13: also re-render mix-in cards on cache fill so the Notify
+    // Players button (gated on modules.notifyPlayers) appears without
+    // requiring a user-triggered re-render. Same fan-out pattern as the
+    // existing renderAppTabs / renderAIAvailabilityCard.
+    loadClubModules(clubId, function() {
+      try { renderAppTabs(); } catch (e) {}
+      try { renderAIAvailabilityCard(); } catch (e) {}
+      try { if (typeof renderOpenMatches === 'function') renderOpenMatches(); } catch (e) {}
+    });
     return false;
   }
   return !!(mods && mods[moduleName]);
@@ -7503,20 +7552,36 @@ function fbSetGroups() {
   if (ref) ref.set(obj); else localSave();
 }
 
-// v4.15.10 (S-2): availability slot keys are `<playerName>|<date>|<slot>`.
-// Without a per-key ownership check, anyone in the league could overwrite
-// anyone else's availability from console — defense-in-depth gap until
-// Firebase rules ship. Players may write only to their own keys; organisers
-// (who legitimately fill availability for absent players via the proxy
-// "Fill in for another player" flow) bypass via canManageActiveLeague.
+// v4.15.10 (S-2) + v4.15.13: availability slot keys are
+// `<playerName>|<date>|<slot>`. Without a per-key ownership check, anyone
+// in the league could overwrite anyone else's availability from console.
+//
+// v4.15.13: legitimate writes the gate must allow:
+// 1. The user writing to their own keys (myName).
+// 2. Organisers / club admins / super admins (canManageActiveLeague) writing
+//    on behalf of any player — the "Fill in for another player" admin proxy.
+// 3. **Doubles partners filling in for each other.** populateFillInDropdown
+//    explicitly allows non-organiser doubles partners to set
+//    fillInForPlayer to their teammate's name. The v4.15.10 gate broke this
+//    flow because it only matched keys against myName, silently dropping
+//    partner-fill writes. Now we check whether the key's player is on the
+//    same group as myName (i.e. they're partners).
 function _availKeyOwnedByMe(key) {
   if (canManageActiveLeague()) return true;
   if (!key || typeof key !== 'string') return false;
   const myName = (typeof getMyPlayerName === 'function') ? getMyPlayerName() : '';
   if (!myName) return false;
-  // Honour fill-in-for-another-player (proxy) — organiser-only feature
-  if (typeof fillInForPlayer !== 'undefined' && fillInForPlayer && canManageActiveLeague()) return true;
-  return key.indexOf(myName + '|') === 0;
+  // Direct ownership — the common case
+  if (key.indexOf(myName + '|') === 0) return true;
+  // Doubles-partner flow: a non-organiser may write to their teammate's
+  // keys when filling in. The key's player is the segment before the first '|'.
+  const keyPlayer = key.split('|')[0];
+  if (!keyPlayer || keyPlayer === myName) return false;
+  if (L && Array.isArray(L.groups)) {
+    const myGroup = L.groups.find(g => Array.isArray(g.players) && g.players.indexOf(myName) !== -1);
+    if (myGroup && myGroup.players.indexOf(keyPlayer) !== -1) return true;
+  }
+  return false;
 }
 
 function fbSetAvail(key, isAvailable) {
@@ -9445,7 +9510,7 @@ function renderMatchFinder() {
         </label>
       </div>
       <div style="margin-top:8px">
-        <input type="text" id="notes-${safeKey}" placeholder="Add notes (e.g. meeting point, instructions)..." value="${esc(m.booked.notes || '')}" onblur="updateBookingNotes('${esc(m.matchKey)}')" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg)">
+        <input type="text" id="notes-${safeKey}" placeholder="Add notes (e.g. meeting point, instructions)..." value="${esc(m.booked.notes || '')}" onblur="updateBookingNotes(${jsAttr(m.matchKey)})" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg)">
       </div>
       ${getAgreedHtml(m.matchKey, m.booked)}
       <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
