@@ -1600,7 +1600,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.15.9 · Build 20260427</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.15.10 · Build 20260427</div>
   </div>
 </div>
 
@@ -4663,6 +4663,11 @@ function addContactToGHL(name, email) {
 }
 
 function notifyBooking(matchKey, date, slot) {
+  // v4.15.10 (S-10): rate-limit / auth gate. Without this, any authed user
+  // could iterate every booked match and re-fire GHL webhooks ad infinitum,
+  // exhausting workflow execution quotas. Match participants and league
+  // managers may legitimately re-trigger notifications.
+  if (!isMatchParticipant(matchKey)) return;
   // Get team names and player emails from the match
   const parts = matchKey.split('~~');
   let teamA = parts.length === 2 ? L.groups.find(g => g.id === parts[0]) : null;
@@ -5038,6 +5043,40 @@ function canManageOpenMatch(match) {
   if (!match) return false;
   if (match.createdBy && match.createdBy === currentUser.email) return true;
   if (match.createdByUid && match.createdByUid === currentUser.uid) return true;
+  return false;
+}
+
+// v4.15.10 (S-1): True if current user is a participant on a specific match
+// (their playerName is in either team's players list) — OR has full league
+// management rights. Used to gate score / booking / agreement writes so a
+// player not on the match can't edit it. matchKey format is `<gIdA>~~<gIdB>`.
+function isMatchParticipant(matchKey) {
+  if (!currentUser) return false;
+  if (canManageActiveLeague()) return true;
+  if (!matchKey || !L || !Array.isArray(L.groups)) return false;
+  const myName = (typeof getMyPlayerName === 'function') ? getMyPlayerName() : '';
+  if (!myName) return false;
+  // Support both `~~` (current) and `_` (legacy) delimiters
+  const parts = matchKey.indexOf('~~') !== -1 ? matchKey.split('~~') : matchKey.split('_');
+  if (parts.length !== 2) return false;
+  const teamA = L.groups.find(g => g && g.id === parts[0]);
+  const teamB = L.groups.find(g => g && g.id === parts[1]);
+  const playersA = (teamA && Array.isArray(teamA.players)) ? teamA.players : [];
+  const playersB = (teamB && Array.isArray(teamB.players)) ? teamB.players : [];
+  return playersA.indexOf(myName) !== -1 || playersB.indexOf(myName) !== -1;
+}
+
+// v4.15.10 (S-8): True if current user belongs to a specific club —
+// either it's their stored homeClub, the currently-scoped club, OR they're
+// a club admin / super admin for it. Used to gate mix-in writes (create,
+// join, add player, court-book, notify) so an authed user can't spam mix-ins
+// in clubs they have no relationship with from the browser console.
+function canParticipateInMixIn(clubId) {
+  if (!currentUser || !clubId) return false;
+  if (isAdmin()) return true;
+  if (isClubAdminFor(clubId)) return true;
+  if (window._scopedClub && window._scopedClub.id === clubId) return true;
+  if (userHomeClub && userHomeClub.id === clubId) return true;
   return false;
 }
 
@@ -6704,6 +6743,13 @@ async function createLeagueInClub() {
   if (!selectedClubId) { toast('Please select a club first'); return; }
   if (!sport) { toast('Please select a sport'); return; }
   if (!format) { toast('Please select a format'); return; }
+  // v4.15.10 (S-7): clubAdmin / super-admin gate. Without this, any authed
+  // user could pollute another club's league listing from console. The
+  // scoped sibling scopedSubmitCreateLeague at line 5631 already has this.
+  if (!isAdmin() && !isClubAdminFor(selectedClubId)) {
+    toast('Only a club organiser can create leagues here');
+    return;
+  }
 
   const code = await genUniqueCode();
   const deadline = val('inp-create-league-deadline') || '';
@@ -7408,17 +7454,43 @@ function fbSetGroups() {
   if (ref) ref.set(obj); else localSave();
 }
 
+// v4.15.10 (S-2): availability slot keys are `<playerName>|<date>|<slot>`.
+// Without a per-key ownership check, anyone in the league could overwrite
+// anyone else's availability from console — defense-in-depth gap until
+// Firebase rules ship. Players may write only to their own keys; organisers
+// (who legitimately fill availability for absent players via the proxy
+// "Fill in for another player" flow) bypass via canManageActiveLeague.
+function _availKeyOwnedByMe(key) {
+  if (canManageActiveLeague()) return true;
+  if (!key || typeof key !== 'string') return false;
+  const myName = (typeof getMyPlayerName === 'function') ? getMyPlayerName() : '';
+  if (!myName) return false;
+  // Honour fill-in-for-another-player (proxy) — organiser-only feature
+  if (typeof fillInForPlayer !== 'undefined' && fillInForPlayer && canManageActiveLeague()) return true;
+  return key.indexOf(myName + '|') === 0;
+}
+
 function fbSetAvail(key, isAvailable) {
+  // v4.15.10 (S-2): per-key ownership gate
+  if (!_availKeyOwnedByMe(key)) { return; }
   const ref = leagueRef('availability');
   if (ref) { if (isAvailable) ref.child(key).set(true); else ref.child(key).remove(); }
   else { if(isAvailable) L.availability[key]=true; else delete L.availability[key]; localSave(); }
 }
 
 function fbSetAvailBatch(updates) {
+  // v4.15.10 (S-2): validate every key in the batch — drop any that aren't ours
+  const safeUpdates = {};
+  let dropped = 0;
+  for (const k in updates) {
+    if (_availKeyOwnedByMe(k)) safeUpdates[k] = updates[k];
+    else dropped++;
+  }
+  if (dropped > 0) console.warn('fbSetAvailBatch: dropped ' + dropped + ' slot(s) not owned by current user');
   const ref = leagueRef('availability');
-  if (ref) ref.update(updates);
-  else { Object.entries(updates).forEach(([k,v]) => { if(v) L.availability[k]=true; else delete L.availability[k]; }); localSave(); }
-  const count = Object.keys(updates).length;
+  if (ref) ref.update(safeUpdates);
+  else { Object.entries(safeUpdates).forEach(([k,v]) => { if(v) L.availability[k]=true; else delete L.availability[k]; }); localSave(); }
+  const count = Object.keys(safeUpdates).length;
   const player = getActivePlayer();
   logAction('save_availability', player + ' — ' + count + ' slot(s) changed');
 }
@@ -7509,6 +7581,10 @@ function saveBookingUrl() {
 }
 
 function saveDeadline() {
+  // v4.15.10 (S-9): organiser-only gate. UI hides the controls but console
+  // calls landed without check. Setting a fake deadline triggers chase-flow
+  // banner state for every member.
+  if (!canManageActiveLeague()) { toast('Only the organiser can change the deadline'); return; }
   const dlVal = document.getElementById('inp-deadline').value;
   if (!dlVal) { toast('Please pick a date and time first'); return; }
   L.settings.deadline = dlVal;
@@ -7519,6 +7595,8 @@ function saveDeadline() {
 }
 
 function clearDeadline() {
+  // v4.15.10 (S-9): organiser-only gate
+  if (!canManageActiveLeague()) { toast('Only the organiser can clear the deadline'); return; }
   document.getElementById('inp-deadline').value = '';
   L.settings.deadline = '';
   const ref = leagueRef('settings');
@@ -7627,6 +7705,10 @@ function migrateLegacyAvailability() {
 }
 
 function fbSetBooked(matchKey, slotData) {
+  // v4.15.10 (S-1): defense-in-depth match-participant gate. Even if a
+  // console caller bypasses the higher-level functions (toggleAgreed,
+  // saveBookingEdit, etc.), this low-level helper enforces the same.
+  if (!isMatchParticipant(matchKey)) return;
   if (slotData) L.booked[matchKey] = slotData; else delete L.booked[matchKey];
   const ref = leagueRef('booked');
   if (ref) {
@@ -7695,6 +7777,9 @@ function showTab(t) {
 // Points: Win = 3, Loss = 1, Not played = 0 (encourages playing all matches)
 
 function fbSaveResult(matchKey, resultData) {
+  // v4.15.10 (S-1): defense-in-depth — even if a console caller bypasses
+  // saveScore's participant gate, this low-level helper enforces the same.
+  if (!isMatchParticipant(matchKey)) return;
   L.results[matchKey] = resultData;
   if (FIREBASE_READY && activeLeagueId) {
     db.ref('/leagues/' + activeLeagueId + '/results/' + matchKey).set(resultData).catch(err => {
@@ -7706,6 +7791,8 @@ function fbSaveResult(matchKey, resultData) {
 }
 
 function fbDeleteResult(matchKey) {
+  // v4.15.10 (S-1): defense-in-depth match-participant gate
+  if (!isMatchParticipant(matchKey)) return;
   delete L.results[matchKey];
   if (FIREBASE_READY && activeLeagueId) {
     db.ref('/leagues/' + activeLeagueId + '/results/' + matchKey).set(null).catch(err => {
@@ -7810,6 +7897,10 @@ function closeScoreModal() {
 }
 
 function saveScore(matchKey, gAId, gBId) {
+  // v4.15.10 (S-1): match-participant gate. Without this any authed user
+  // could falsify results from console; v4.14.4 was scheduled to ship this
+  // and never did. Participants OR league managers may edit.
+  if (!isMatchParticipant(matchKey)) { toast('Only match players or the organiser can record this result'); return; }
   const scores = [];
   for (let i = 0; i < 5; i++) {
     const a = parseInt(document.getElementById('score-a-' + i).value);
@@ -7847,6 +7938,8 @@ function saveScore(matchKey, gAId, gBId) {
 }
 
 function deleteResult(matchKey) {
+  // v4.15.10 (S-1): match-participant gate
+  if (!isMatchParticipant(matchKey)) { toast('Only match players or the organiser can delete this result'); return; }
   fbDeleteResult(matchKey);
   closeScoreModal();
   toast('Result deleted');
@@ -9668,6 +9761,8 @@ function unbookMatch(matchKey) {
 }
 
 function updateBookingNotes(matchKey) {
+  // v4.15.10 (S-1): match-participant gate
+  if (!isMatchParticipant(matchKey)) { toast('Only match players or the organiser can edit notes'); return; }
   const input = document.getElementById('notes-' + matchKey.replace(/[^a-zA-Z0-9]/g,''));
   if (!input) return;
   const booked = L.booked[matchKey];
@@ -9679,6 +9774,8 @@ function updateBookingNotes(matchKey) {
 }
 
 function toggleCourtBooked(matchKey) {
+  // v4.15.10 (S-1): match-participant gate
+  if (!isMatchParticipant(matchKey)) { toast('Only match players or the organiser can update court status'); return; }
   const booked = L.booked[matchKey];
   if (!booked) return;
   // v4.13.5: confirm when REMOVING a booking — misclicks here mislead other players
@@ -9697,6 +9794,8 @@ function toggleEditBooking(matchKey) {
 }
 
 function saveBookingEdit(matchKey) {
+  // v4.15.10 (S-1): match-participant gate
+  if (!isMatchParticipant(matchKey)) { toast('Only match players or the organiser can edit this booking'); return; }
   const safeKey = matchKey.replace(/[^a-zA-Z0-9]/g,'');
   const booked = L.booked[matchKey];
   if (!booked) return;
@@ -9728,6 +9827,9 @@ function saveBookingEdit(matchKey) {
 function toggleAgreed(matchKey) {
   const player = getMyPlayerName();
   if (!player) { toast('Sign in to confirm'); return; }
+  // v4.15.10 (S-1): match-participant gate. Without this any authed user
+  // could "agree" on behalf of anyone whose playerName they happen to share.
+  if (!isMatchParticipant(matchKey)) { toast('Only match players can confirm this'); return; }
   const booked = L.booked[matchKey];
   if (!booked) return;
   if (!booked.agreed) booked.agreed = {};
@@ -9935,7 +10037,11 @@ function renderOpenMatches() {
     let playerNamesHtml = players.map(p => `<span class="om-player-name">${esc(p.split(' ')[0])}</span>`).join('');
 
     // Player-facing actions (join/leave/full) — depend on having a linked player name
-    const isOrganiser = isClubAdminFor(userHomeClub && userHomeClub.id);
+    // v4.15.10 (R-6): use the active scoped club, not the user's stored
+    // homeClub. With the v4.15.2 auto-scope landed, these can diverge — a
+    // club admin viewing a different club via ?club= URL would otherwise
+    // see ghost organiser controls based on their HOME club admin rights.
+    const isOrganiser = isClubAdminFor(getCurrentClubId());
     let playerActionsHtml = '';
     if (!isFull && !iJoined && myName) {
       playerActionsHtml = `<button class="btn btn-success" onclick="joinOpenMatch(${jsAttr(m.id)})" style="font-size:15px;padding:10px 20px;border-radius:10px;font-weight:800;box-shadow:0 3px 10px rgba(34,197,94,0.3)">&#127934; Join This Game</button>`;
@@ -10172,6 +10278,12 @@ function filterOmSlots() {
 }
 
 function createOpenMatch() {
+  // v4.15.10 (S-8): club-membership gate. Refuses to create a mix-in game
+  // unless the caller belongs to the active club (via homeClub, scoped club,
+  // or club-admin role). Stops console-spawn of phantom games in clubs the
+  // attacker has no relationship with.
+  const _omClubId = (typeof getCurrentClubId === 'function') ? getCurrentClubId() : null;
+  if (mixInMode && !canParticipateInMixIn(_omClubId)) { toast('You can only create games in your own club'); return; }
   const title = document.getElementById('om-title').value.trim() || 'Open Game';
   const sport = document.getElementById('om-sport').value;
   const level = document.getElementById('om-level').value;
@@ -10226,6 +10338,9 @@ function createOpenMatch() {
 function joinOpenMatch(matchId) {
   const myName = getMyPlayerName();
   if (!myName) { toast('Link your account first'); return; }
+  // v4.15.10 (S-8): club-membership gate
+  const _joinClubId = (typeof getCurrentClubId === 'function') ? getCurrentClubId() : null;
+  if (mixInMode && !canParticipateInMixIn(_joinClubId)) { toast('You can only join games in your own club'); return; }
   const match = L.openMatches[matchId];
   if (!match) return;
   const players = match.players || [];
@@ -10283,6 +10398,14 @@ function leaveOpenMatch(matchId) {
 
 function toggleOmCourtBooked(matchId) {
   if (!currentUser) { toast('Please sign in'); return; } // M26: null check
+  // v4.15.10 (S-8): require user to be a participant on the match OR be a
+  // legitimate manager (creator / club admin). Mirrors the UI gate, but
+  // closes the console-call bypass.
+  const _ttMatch = (L.openMatches || {})[matchId];
+  if (!_ttMatch) return;
+  const _ttMyName = getMyPlayerName();
+  const _ttJoined = _ttMyName && (_ttMatch.players || []).indexOf(_ttMyName) !== -1;
+  if (!_ttJoined && !canManageOpenMatch(_ttMatch)) { toast('Only players in this game can update court status'); return; }
   const match = L.openMatches[matchId];
   if (!match) return;
   const newVal = !match.courtBooked;
@@ -10893,7 +11016,10 @@ function showAddPlayerToMatch(matchId) {
     _renderAddPlayerMemberList(leaguePlayers, 'Select from league players:');
   }
   // Async: fetch all club members across every league (covers mix-in mode + clubs with many leagues)
-  const clubId = userHomeClub && userHomeClub.id;
+  // v4.15.10 (R-6): use the active scoped club, not stored homeClub. Stops a
+  // club admin viewing a different club via ?club= URL from pulling the wrong
+  // club's player roster into this modal.
+  const clubId = getCurrentClubId();
   if (clubId && FIREBASE_READY) {
     _loadClubMembersForModal(clubId, players);
   } else if (leaguePlayers.length === 0) {
@@ -10989,7 +11115,11 @@ function showNotifyPlayers(matchId) {
   const modal = document.getElementById('notify-players-modal');
   modal.style.display = 'flex';
 
-  const clubId = userHomeClub && userHomeClub.id;
+  // v4.15.10 (R-10): use the active scoped club, not stored homeClub.
+  // Stops emails being looked up in the wrong club's leagues, which could
+  // either find no matches (silent failure) or worst case match a same-named
+  // player in a different club and email the wrong person.
+  const clubId = getCurrentClubId();
   if (clubId && FIREBASE_READY) {
     _resolvePlayerEmails(clubId, players, function(emailMap) {
       _notifyEmailMap = emailMap;
@@ -11105,8 +11235,11 @@ function sendMixInNotifications() {
       court: courtStr,
       players: playersStr,
       notes: m.notes || '',
-      clubId: (userHomeClub && userHomeClub.id) || '',
-      clubName: (userHomeClub && userHomeClub.name) || ''
+      // v4.15.10 (R-10): tag the webhook payload with the ACTIVE scoped club,
+      // not the user's stored homeClub. Otherwise notifications sent from a
+      // ?club= scoped session get attributed to the wrong club's data.
+      clubId: getCurrentClubId() || '',
+      clubName: (window._scopedClub && window._scopedClub.info && window._scopedClub.info.name) || (userHomeClub && userHomeClub.name) || ''
     };
     fetch(ghlUrl, {
       method: 'POST',
@@ -11138,6 +11271,11 @@ function addTypedPlayerToMatch() {
 function addPlayerToOpenMatch(matchId, playerName) {
   const m = L.openMatches[matchId];
   if (!m) { toast('Game not found'); closeAddPlayer(); return; }
+  // v4.15.10 (S-8): only the creator, an existing participant, or a club
+  // admin can add players to a mix-in. Mirrors the UI gate at line 9929.
+  const _myNameAdd = getMyPlayerName();
+  const _iJoinedAdd = _myNameAdd && (m.players || []).indexOf(_myNameAdd) !== -1;
+  if (!_iJoinedAdd && !canManageOpenMatch(m)) { toast('Only players in this game or the organiser can add others'); return; }
   const players = m.players || [];
   const maxP = m.maxPlayers || 4;
   if (players.includes(playerName)) { toast(playerName + ' is already in this game'); return; }
