@@ -1600,7 +1600,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.15.11 · Build 20260427</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.15.12 · Build 20260427</div>
   </div>
 </div>
 
@@ -2215,7 +2215,7 @@
      v4.8.0 — SCOPED CLUB MODALS
      Shown only when ?club=<slug> is active and user is a clubAdmin.
      ══════════════════════════════════════════════════════ -->
-<div id="scoped-modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:9998;backdrop-filter:blur(2px)" onclick="closeScopedModal(event)"></div>
+<div id="scoped-modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:9998;backdrop-filter:blur(2px)" onmousedown="_scopedBackdropDownTarget=event.target.id" onclick="closeScopedModal(event)"></div>
 
 <!-- Create-league modal -->
 <div id="scoped-create-league-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;padding:24px;width:calc(100% - 40px);max-width:440px;max-height:90vh;overflow-y:auto;z-index:9999;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
@@ -5692,8 +5692,24 @@ function openScopedModal(modalId) {
   document.getElementById('scoped-modal-backdrop').style.display = '';
   document.getElementById(modalId).style.display = '';
 }
+// v4.15.12: track where mousedown started on the backdrop. The native
+// <input type="date"> calendar popup renders as an OS-level overlay
+// anchored to the input but extending beyond the modal's bounding box.
+// When the user clicks a date in that overflow area, the actual click
+// event lands on the backdrop div underneath — closing the modal mid-
+// interaction. Fix: only close if BOTH mousedown AND mouseup happened
+// on the backdrop itself. Drag-from-input-to-backdrop no longer closes.
+window._scopedBackdropDownTarget = null;
 function closeScopedModal(ev) {
-  if (ev && ev.target && ev.target.id !== 'scoped-modal-backdrop') return;
+  if (ev && ev.target) {
+    if (ev.target.id !== 'scoped-modal-backdrop') return;
+    // Click landed on the backdrop — but did the mousedown also start there?
+    if (window._scopedBackdropDownTarget !== 'scoped-modal-backdrop') {
+      window._scopedBackdropDownTarget = null;
+      return;
+    }
+  }
+  window._scopedBackdropDownTarget = null;
   document.getElementById('scoped-modal-backdrop').style.display = 'none';
   document.getElementById('scoped-create-league-modal').style.display = 'none';
   document.getElementById('scoped-bulk-add-modal').style.display = 'none';
