@@ -652,7 +652,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.0</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.1</div>
   </div>
 </div>
 
@@ -1616,7 +1616,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.0 · Build 20260427</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.1 · Build 20260428</div>
   </div>
 </div>
 
@@ -5243,7 +5243,10 @@ const SCORING_PRESETS = {
     win: 3, loss: 1, draw: 2,
     walkoverWin: 3, walkoverConcede: 0,
     notPlayedPoints: 0,
-    completionBonus: 0
+    completionBonus: 0,
+    // v4.16.1: short footnote rendered beneath the standings table so every
+    // viewer can see the scoring rule the table is being calculated under.
+    tableFootnote: 'Win = 3 pts · Loss = 1 pt · Not played = 0 pts'
   },
   'reward-attendance': {
     id: 'reward-attendance',
@@ -5253,7 +5256,8 @@ const SCORING_PRESETS = {
     win: 3, loss: 1, draw: 2,
     walkoverWin: 3, walkoverConcede: 0,
     notPlayedPoints: 0,
-    completionBonus: 5
+    completionBonus: 5,
+    tableFootnote: 'Win = 3 · Loss = 1 · +5 bonus for playing every match'
   },
   'scaled-by-result': {
     id: 'scaled-by-result',
@@ -5267,7 +5271,8 @@ const SCORING_PRESETS = {
     // Broughton walkthrough call.
     walkoverWin: 2, walkoverConcede: 0,
     notPlayedPoints: 0,
-    completionBonus: 0
+    completionBonus: 0,
+    tableFootnote: 'Win 2-0 = 4 · Win 2-1 = 3 · Loss 2-1 = 2 · Loss 2-0 = 1 · Walkover = 2 / 0'
   },
   'competitive': {
     id: 'competitive',
@@ -5277,7 +5282,8 @@ const SCORING_PRESETS = {
     win: 3, loss: 0, draw: 1,
     walkoverWin: 3, walkoverConcede: 0,
     notPlayedPoints: 0,
-    completionBonus: 0
+    completionBonus: 0,
+    tableFootnote: 'Win = 3 pts · Loss = 0 pts · Only winning earns points'
   },
   'participation': {
     id: 'participation',
@@ -5287,7 +5293,8 @@ const SCORING_PRESETS = {
     win: 2, loss: 1, draw: 1.5,
     walkoverWin: 2, walkoverConcede: 0,
     notPlayedPoints: 0.5,
-    completionBonus: 0
+    completionBonus: 0,
+    tableFootnote: 'Win = 2 · Loss = 1 · Not played = 0.5 (after deadline)'
   },
   'set-points-plus-played': {
     id: 'set-points-plus-played',
@@ -5299,7 +5306,8 @@ const SCORING_PRESETS = {
     matchPlayedBonus: 1,
     walkoverWin: 2, walkoverConcede: 0,
     notPlayedPoints: 0,
-    completionBonus: 0
+    completionBonus: 0,
+    tableFootnote: '1 pt per set won + 1 pt for playing · Walkover = 2 / 0'
   }
 };
 
@@ -8359,7 +8367,11 @@ function deleteResult(matchKey) {
 function recordWalkover(matchKey, winnerId, concededById) {
   if (!isMatchParticipant(matchKey)) { toast('Only match players or the organiser can record this'); return; }
   if (!winnerId || !concededById || winnerId === concededById) { toast('Invalid walkover'); return; }
-  if (!confirm('Record this as a walkover — ' + (L.groups.find(g => g.id === winnerId) || {}).name + ' wins because the other team conceded?')) return;
+  // v4.16.1: graceful fallback if groups aren't loaded — previously the
+  // confirm message read "Record this as a walkover — undefined wins…".
+  const winnerTeam = (Array.isArray(L.groups) ? L.groups.find(g => g && g.id === winnerId) : null);
+  const winnerLabel = (winnerTeam && winnerTeam.name) || 'the winning team';
+  if (!confirm('Record this as a walkover — ' + winnerLabel + ' wins because the other team conceded?')) return;
 
   const resultData = {
     walkover: true,
@@ -8377,7 +8389,8 @@ function recordWalkover(matchKey, winnerId, concededById) {
   closeScoreModal();
   const preset = getActiveScoringPreset();
   const winnerPts = preset.walkoverWin || 0;
-  toast('Walkover recorded — ' + (L.groups.find(g => g.id === winnerId) || {}).name + ' awarded ' + winnerPts + ' point' + (winnerPts !== 1 ? 's' : ''));
+  // v4.16.1: same defensive lookup as the confirm dialog above.
+  toast('Walkover recorded — ' + winnerLabel + ' awarded ' + winnerPts + ' point' + (winnerPts !== 1 ? 's' : ''));
   logAction('record_walkover', winnerId + ' beat ' + concededById + ' (W/O)');
 }
 
@@ -8478,11 +8491,18 @@ function calculateStandings() {
 
   // v4.16.0: completion bonus — applied to teams that played all their fixtures.
   // "All fixtures" = every other team in the box (round-robin pairings).
+  // v4.16.1: walkover-conceders no longer earn the completion bonus. The
+  // standings.played counter increments for both teams when a walkover is
+  // recorded (so the table's "P" column reflects scheduled matches), but the
+  // spirit of the Reward-Attendance preset is "showed up to every match".
+  // A team that conceded didn't show up — they shouldn't get the bonus.
+  // The team who received the walkover-win DID show up and is still credited.
   if (preset.completionBonus) {
     const teamCount = L.groups.length;
     const fixturesPerTeam = teamCount - 1; // round-robin
     L.groups.forEach(function(g) {
-      if (standings[g.id].played >= fixturesPerTeam && fixturesPerTeam > 0) {
+      const eligiblePlayed = standings[g.id].played - (standings[g.id].walkoverConcedes || 0);
+      if (eligiblePlayed >= fixturesPerTeam && fixturesPerTeam > 0) {
         standings[g.id].points += preset.completionBonus;
       }
     });
@@ -8538,7 +8558,12 @@ function renderStandings() {
   });
 
   html += '</tbody></table>';
-  html += '<div style="font-size:11px;color:#94a3b8;margin-top:8px;text-align:center">Win = 3 pts · Loss = 1 pt · Not played = 0 pts</div>';
+  // v4.16.1: footnote now reflects the active per-club preset, so the rule
+  // shown matches the rule the table is being calculated under. Previously
+  // hardcoded to "3/1/0" — wrong for System 7 / EGTSC / participation clubs.
+  const footnotePreset = getActiveScoringPreset();
+  const footnoteText = footnotePreset.tableFootnote || 'Scoring: ' + (footnotePreset.short || footnotePreset.name || 'custom');
+  html += '<div style="font-size:11px;color:#94a3b8;margin-top:8px;text-align:center">' + esc(footnoteText) + '</div>';
   el.innerHTML = html;
 }
 
@@ -8577,17 +8602,30 @@ function renderResultsList() {
     completed.sort(function(a, b) { return (b.result.enteredAt || '').localeCompare(a.result.enteredAt || ''); });
     html += completed.map(function(m) {
       const r = m.result;
-      const scoreStr = r.scores.map(function(s) { return s[0] + '-' + s[1]; }).join(', ');
+      // v4.16.1: walkover-aware rendering. Walkovers have r.scores = [], which
+      // previously rendered an empty score line and an unstyled card — looked
+      // like the result was broken. Now we render an explicit "Walkover" badge
+      // + the conceding team's name so it's obvious what happened.
+      const isWalkover = !!r.walkover;
+      const scoreStr = isWalkover
+        ? 'Walkover'
+        : (Array.isArray(r.scores) ? r.scores.map(function(s) { return s[0] + '-' + s[1]; }).join(', ') : '');
       const winnerName = r.winner === m.gA.id ? m.gA.name : r.winner === m.gB.id ? m.gB.name : 'Draw';
       const isWinnerA = r.winner === m.gA.id;
       const isWinnerB = r.winner === m.gB.id;
-      return '<div class="match-card" style="border-left:4px solid #059669;margin-bottom:8px">' +
+      const cardBorder = isWalkover ? '#f59e0b' : '#059669';
+      const scoreColor = isWalkover ? '#92400e' : '#1e293b';
+      const captionColor = isWalkover ? '#92400e' : '#059669';
+      const caption = isWalkover
+        ? '&#128227; ' + esc(winnerName) + ' wins (W/O — opponent conceded)'
+        : '&#127942; ' + esc(winnerName) + ' wins';
+      return '<div class="match-card" style="border-left:4px solid ' + cardBorder + ';margin-bottom:8px">' +
         '<div style="display:flex;justify-content:space-between;align-items:center">' +
         '<div style="font-size:15px"><span style="font-weight:' + (isWinnerA ? '800' : '400') + '">' + esc(m.gA.name) + '</span> <span style="color:#9ca3af">vs</span> <span style="font-weight:' + (isWinnerB ? '800' : '400') + '">' + esc(m.gB.name) + '</span></div>' +
         '<button class="btn btn-sm" onclick="openScoreEntry(\'' + esc(m.matchKey) + '\')" style="font-size:11px;padding:3px 8px">Edit</button>' +
         '</div>' +
-        '<div style="font-size:18px;font-weight:800;color:#1e293b;margin-top:4px">' + scoreStr + '</div>' +
-        '<div style="font-size:12px;color:#059669;font-weight:600;margin-top:2px">&#127942; ' + esc(winnerName) + ' wins' + (r.date ? ' · ' + fmtFull(r.date) : '') + '</div>' +
+        '<div style="font-size:18px;font-weight:800;color:' + scoreColor + ';margin-top:4px">' + scoreStr + '</div>' +
+        '<div style="font-size:12px;color:' + captionColor + ';font-weight:600;margin-top:2px">' + caption + (r.date ? ' · ' + fmtFull(r.date) : '') + '</div>' +
         '</div>';
     }).join('');
   }
@@ -8628,7 +8666,14 @@ function shareStandingsWhatsApp() {
       const parts = key.split('~~');
       const gA = L.groups.find(function(g) { return g.id === parts[0]; });
       const gB = L.groups.find(function(g) { return g.id === parts[1]; });
-      if (gA && gB && r.scores) {
+      if (!gA || !gB) return;
+      // v4.16.1: walkovers have r.scores=[] which previously rendered as a
+      // blank score line in the share text. Render an explicit "Walkover"
+      // line so recipients see what happened.
+      if (r.walkover) {
+        const winName = r.winner === gA.id ? (gA.name || '?') : (gB.name || '?');
+        text += (gA.name || '?') + ' vs ' + (gB.name || '?') + ': Walkover (' + winName + ' wins)\n';
+      } else if (Array.isArray(r.scores) && r.scores.length > 0) {
         const scoreStr = r.scores.map(function(s) { return s[0] + '-' + s[1]; }).join(', ');
         text += (gA.name || '?') + ' vs ' + (gB.name || '?') + ': ' + scoreStr + '\n';
       }
