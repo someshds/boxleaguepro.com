@@ -652,7 +652,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.4</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.5</div>
   </div>
 </div>
 
@@ -1616,7 +1616,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.4 · Build 20260506</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.5 · Build 20260506</div>
   </div>
 </div>
 
@@ -5913,12 +5913,35 @@ function scopedCreateLeague() {
   if (hint) {
     hint.innerHTML = '&#127942; New league will be added to <strong>' + esc(scope.info.name || '') + '</strong>';
   }
+  // v4.16.5: read club-level defaults so single-sport clubs (e.g. Broughton
+  // Padel = padel-only, doubles-only) pre-fill the form sensibly instead of
+  // making admins re-pick the same values every time. Falls back to the
+  // original tennis/doubles/blank defaults if the club doc doesn't have
+  // these fields. Also hides format options the club has marked disallowed.
+  var info = scope.info || {};
+  var defaultFormat = info.defaultFormat || 'doubles';
+  var defaultSport = info.sport || 'tennis';
+  var defaultDeadline = info.defaultDeadline || '';
+  var allowedFormats = info.allowedFormats || null;
+
   // Reset fields
   document.getElementById('scoped-cl-name').value = '';
-  document.getElementById('scoped-cl-format').value = 'doubles';
-  document.getElementById('scoped-cl-format').dataset.userTouched = '';
-  document.getElementById('scoped-cl-sport').value = 'tennis';
-  document.getElementById('scoped-cl-deadline').value = '';
+  var formatSel = document.getElementById('scoped-cl-format');
+  // Filter out any format the club has marked disallowed
+  Array.from(formatSel.options).forEach(function(opt) {
+    if (allowedFormats) {
+      var ok = !!allowedFormats[opt.value];
+      opt.hidden = !ok;
+      opt.disabled = !ok;
+    } else {
+      opt.hidden = false;
+      opt.disabled = false;
+    }
+  });
+  formatSel.value = defaultFormat;
+  formatSel.dataset.userTouched = '';
+  document.getElementById('scoped-cl-sport').value = defaultSport;
+  document.getElementById('scoped-cl-deadline').value = defaultDeadline;
   document.getElementById('scoped-cl-msg').innerHTML = '';
   setTimeout(function() { document.getElementById('scoped-cl-name').focus(); }, 100);
 }
