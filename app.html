@@ -652,7 +652,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.6</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.7</div>
   </div>
 </div>
 
@@ -1616,7 +1616,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.6 · Build 20260506</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.7 · Build 20260506</div>
   </div>
 </div>
 
@@ -6242,6 +6242,18 @@ async function scopedSubmitBulkAdd() {
       var updates = {};
       var totalRows = 0;
       var summaryParts = [];
+      // v4.16.7: previously this wrote {playerName,partnerName,...} which the
+      // renderer doesn't recognise — manually-added teams use {id,name,players}
+      // (see addGroup() ~line 8909) and that's the shape the standings table,
+      // match-finder, and member list all walk. Bulk-added rows therefore
+      // never appeared in the box. Now writes the canonical shape; email
+      // metadata is retained on the same record for the future email-based
+      // pre-allocation flow.
+      var idCounter = 0;
+      function makeId() {
+        idCounter++;
+        return 'G' + Date.now().toString(36) + '-' + idCounter;
+      }
       leagueIds.forEach(function(lid) {
         var bucket = buckets[lid];
         var league = bucket.league;
@@ -6253,15 +6265,19 @@ async function scopedSubmitBulkAdd() {
         bucket.rows.forEach(function(row) {
           if (isSingles) {
             newGroups.push({
-              playerName: row.name,
+              id: makeId(),
+              name: row.name,
+              players: [row.name],
               email: row.email || '',
               addedBy: currentUser.email,
               addedAt: Date.now()
             });
           } else {
+            var partnerName = row.partnerName || '(partner TBD)';
             newGroups.push({
-              playerName: row.name,
-              partnerName: row.partnerName || '(partner TBD)',
+              id: makeId(),
+              name: row.name + ' & ' + partnerName,
+              players: [row.name, partnerName],
               email: row.email || '',
               partnerEmail: row.partnerEmail || '',
               addedBy: currentUser.email,
