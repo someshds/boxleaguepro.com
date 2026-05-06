@@ -485,6 +485,14 @@
     /* ── Toast ── */
     .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--primary-dark); color: #fff; padding: 12px 22px; border-radius: 24px; font-size: 14px; font-weight: 600; z-index: 10001; opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: normal; max-width: calc(100vw - 32px); text-align: center; }
     .toast.show { opacity: 1; }
+    /* v4.16.9: swap full <-> abbreviated team names by viewport. Both
+       spans are rendered in the DOM; CSS picks which one is visible
+       so the swap happens live on resize without re-rendering. */
+    .team-name-compact { display: none; }
+    @media (max-width: 599px) {
+      .team-name-full { display: none; }
+      .team-name-compact { display: inline; }
+    }
 
     /* ── AIFA CTA Banner ── */
     .aifa-cta-banner { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 32px 20px; text-align: center; border-top: 2px solid #2563eb; }
@@ -652,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.8</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.9</div>
   </div>
 </div>
 
@@ -1616,7 +1624,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.8 · Build 20260506</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.9 · Build 20260506</div>
   </div>
 </div>
 
@@ -3759,6 +3767,29 @@ function safeHref(url) { if (!url) return ''; const s = String(url).trim(); retu
 // enclosing quotes so the HTML parser doesn't terminate the attribute early.
 function jsAttr(s) { return esc(JSON.stringify(s == null ? '' : String(s))); }
 function val(id) { return document.getElementById(id).value.trim(); }
+
+// v4.16.9: shorten "Jane Doe" -> "Jane D." for compact contexts (mobile
+// standings, narrow tables). Single-word names ("Madonna", "Pelé") are
+// left untouched. Picks the LAST whitespace-separated token as the
+// surname, which handles "Grant de Swardt" -> "Grant S." correctly
+// (lowercase prefixes like "de", "van", "van der" don't become the
+// initial). For team names we abbreviate each side of the " & ".
+function abbreviateName(full) {
+  var s = String(full || '').trim();
+  if (!s) return '';
+  var parts = s.split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  var first = parts[0];
+  var last = parts[parts.length - 1];
+  var initial = last.charAt(0).toUpperCase();
+  return first + ' ' + initial + '.';
+}
+function abbreviateTeamName(name) {
+  var s = String(name || '');
+  if (!s) return '';
+  // Team-name format: "Jane Doe & John Smith" or just one name for singles
+  return s.split('&').map(function(side) { return abbreviateName(side.trim()); }).join(' & ');
+}
 function toast(msg, duration) {
   const el = document.getElementById('toast');
   el.textContent = msg; el.classList.add('show');
@@ -8684,7 +8715,13 @@ function renderStandings() {
     const isTop = pos === 1 && s.played > 0;
     html += '<tr style="border-bottom:1px solid #f1f5f9;background:' + rowBg + (isTop ? ';background:linear-gradient(90deg,#f0fdf4,#fff)' : '') + '">';
     html += '<td style="padding:10px 6px;font-weight:700;font-size:' + (pos <= 3 ? '18px' : '14px') + '">' + posIcon + '</td>';
-    html += '<td style="padding:10px 6px;font-weight:600;' + (isTop ? 'color:#059669' : '') + '">' + esc(s.name) + '</td>';
+    // v4.16.9: dual-render team name. Full form on desktop, "Jane D. & John S."
+    // on narrow viewports — CSS rules at .team-name-full / .team-name-compact
+    // swap which one is visible so resize is live with no re-render.
+    html += '<td style="padding:10px 6px;font-weight:600;' + (isTop ? 'color:#059669' : '') + '">'
+         + '<span class="team-name-full">' + esc(s.name) + '</span>'
+         + '<span class="team-name-compact">' + esc(abbreviateTeamName(s.name)) + '</span>'
+         + '</td>';
     html += '<td style="text-align:center;padding:10px 4px">' + s.played + '</td>';
     html += '<td style="text-align:center;padding:10px 4px;color:#059669;font-weight:600">' + s.won + '</td>';
     html += '<td style="text-align:center;padding:10px 4px;color:#dc2626">' + s.lost + '</td>';
