@@ -652,7 +652,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.7</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.8</div>
   </div>
 </div>
 
@@ -1616,7 +1616,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.7 · Build 20260506</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.8 · Build 20260506</div>
   </div>
 </div>
 
@@ -2041,12 +2041,12 @@
           <div style="font-size:13px;font-weight:600;color:#6b7280">&#129489;&#8205;&#129489; Doubles Partner</div>
           <div id="profile-partner-doubles-badge" style="display:none;font-size:10px;font-weight:800;color:#15803d;background:#dcfce7;padding:2px 8px;border-radius:10px">USED IN THIS LEAGUE</div>
         </div>
-        <input class="fi" id="profile-partner" placeholder="Your doubles partner's name" style="margin-bottom:12px">
+        <input class="fi" id="profile-partner" placeholder="Your doubles partner's full name (e.g. James Smith)" style="margin-bottom:12px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
           <div style="font-size:13px;font-weight:600;color:#6b7280">&#129489;&#8205;&#129491; Mixed Doubles Partner</div>
           <div id="profile-partner-mixed-badge" style="display:none;font-size:10px;font-weight:800;color:#15803d;background:#dcfce7;padding:2px 8px;border-radius:10px">USED IN THIS LEAGUE</div>
         </div>
-        <input class="fi" id="profile-partner-mixed" placeholder="Your mixed doubles partner's name" style="margin-bottom:4px">
+        <input class="fi" id="profile-partner-mixed" placeholder="Your mixed doubles partner's full name (e.g. Jane Doe)" style="margin-bottom:4px">
         <div style="font-size:11px;color:#9ca3af;margin-bottom:12px">Fill in whichever applies. We&rsquo;ll remember both so you don&rsquo;t have to retype when you join a new league.</div>
       </div>
       <!-- Home Club — v4.9.9: Change button + search removed; club is set from the club link -->
@@ -2286,14 +2286,14 @@
     <div style="font-size:18px;font-weight:800">Bulk add players</div>
     <button onclick="closeScopedModal()" style="background:#f3f4f6;border:none;border-radius:8px;width:32px;height:32px;font-size:18px;cursor:pointer">&times;</button>
   </div>
-  <div style="font-size:12px;color:#6b7280;margin-bottom:14px">Paste players one per line. Each line is a name, or <code>name, email</code>. For doubles, write teams as <code>Jane &amp; Bob</code> or <code>Jane, jane@x.com &amp; Bob, bob@x.com</code>.</div>
+  <div style="font-size:12px;color:#6b7280;margin-bottom:14px">Paste players one per line. Each line is a <strong>full name</strong> (first + last), or <code>full name, email</code>. For doubles, write teams as <code>Jane Doe &amp; John Smith</code> or <code>Jane Doe, jane@x.com &amp; John Smith, john@y.com</code>. Full names matter — they keep "Mike A" separate from "Mike B" once your club grows past one box.</div>
 
   <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px">Default league <span style="color:#b91c1c">*</span></label>
   <select id="scoped-ba-league" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;margin-bottom:12px"></select>
   <div style="font-size:11px;color:#6b7280;margin-bottom:12px">Used for any line that isn't under a <code>[Box Name]</code> header. To split a roster across multiple boxes, see below.</div>
 
   <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px">Players <span style="color:#b91c1c">*</span></label>
-  <textarea id="scoped-ba-text" placeholder="[Box 1]&#10;Jane &amp; John&#10;Sarah, sarah@x.com &amp; Tom, tom@y.com&#10;&#10;[Box 2]&#10;Alex &amp; Maria&#10;Mike &amp; Jane" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:monospace;min-height:200px;margin-bottom:10px"></textarea>
+  <textarea id="scoped-ba-text" placeholder="[Box 1]&#10;Jane Doe &amp; John Smith&#10;Sarah Lee, sarah@x.com &amp; Tom Brown, tom@y.com&#10;&#10;[Box 2]&#10;Alex Chen &amp; Maria Patel&#10;Mike Hawkins &amp; Olly Reid" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:monospace;min-height:200px;margin-bottom:10px"></textarea>
   <div style="font-size:11px;color:#6b7280;margin-bottom:14px"><strong>Tip:</strong> add <code>[Box Name]</code> headers in your paste to split players across multiple boxes in one go. Box names must match leagues that already exist at this club.</div>
 
   <div style="display:flex;gap:10px">
@@ -10229,11 +10229,11 @@ function openAddMatchModal(preselectOpponentId) {
 
   const isDoubles = L.settings && (L.settings.format === 'doubles' || L.settings.format === 'mixed');
   const isMixed = L.settings && L.settings.format === 'mixed';
-  const p2Label = isMixed ? 'Partner name (mixed doubles)' : 'Partner name (doubles)';
+  const p2Label = isMixed ? 'Partner full name (mixed doubles)' : 'Partner full name (doubles)';
   const newTeamForm = (which) => isOrg ? `
     <div id="new-team-${which}-wrap" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px;margin-top:8px">
       <div style="font-size:13px;font-weight:700;color:#059669;margin-bottom:8px">&#43; New player/team</div>
-      <input type="text" id="new-team-${which}-p1" placeholder="Player name" style="width:100%;padding:8px 10px;border:1px solid #bbf7d0;border-radius:7px;font-size:14px;margin-bottom:6px;box-sizing:border-box">
+      <input type="text" id="new-team-${which}-p1" placeholder="Player full name (e.g. Jane Doe)" style="width:100%;padding:8px 10px;border:1px solid #bbf7d0;border-radius:7px;font-size:14px;margin-bottom:6px;box-sizing:border-box">
       ${isDoubles ? `<input type="text" id="new-team-${which}-p2" placeholder="${p2Label}" style="width:100%;padding:8px 10px;border:1px solid #bbf7d0;border-radius:7px;font-size:14px;margin-bottom:6px;box-sizing:border-box">` : ''}
       <button class="btn btn-sm" onclick="addInlineTeam('${which}')" style="background:#059669;color:#fff;border:none;padding:7px 14px;font-size:13px;font-weight:700">Add team</button>
       <button class="btn btn-sm btn-secondary" onclick="cancelInlineTeam('${which}')" style="margin-left:6px;font-size:13px">Cancel</button>
@@ -11718,7 +11718,7 @@ function showAddPlayerToMatch(matchId) {
   content.innerHTML = `
     <div style="font-size:13px;color:#6b7280;margin-bottom:12px">${spotsLeft} slot${spotsLeft !== 1 ? 's' : ''} available. Add a player on their behalf.</div>
     <div style="margin-bottom:16px">
-      <input class="fi" id="add-player-name" placeholder="Type player name..." style="margin-bottom:8px" onkeydown="if(event.key==='Enter')addTypedPlayerToMatch()">
+      <input class="fi" id="add-player-name" placeholder="Type player full name (e.g. Jane Doe)..." style="margin-bottom:8px" onkeydown="if(event.key==='Enter')addTypedPlayerToMatch()">
       <button class="btn btn-primary btn-sm" onclick="addTypedPlayerToMatch()" style="width:100%">+ Add Player</button>
     </div>
     <div id="add-player-member-list"><div style="color:#9ca3af;font-size:13px;text-align:center;padding:8px">Loading players&hellip;</div></div>`;
