@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.10</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.11</div>
   </div>
 </div>
 
@@ -1624,7 +1624,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.10 · Build 20260506</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.11 · Build 20260506</div>
   </div>
 </div>
 
@@ -5357,16 +5357,22 @@ const SCORING_PRESETS = {
     id: 'scaled-by-result',
     name: 'Scaled by Result (PadelLevels System 7)',
     short: 'Scaled (PL System 7)',
-    description: 'Win 2-0 = 4 pts, Win 2-1 = 3 pts, Loss 2-1 = 2 pts, Loss 2-0 = 1 pt. Walkover win = 2 (lowest reward), walkover concede = 0. Used at Broughton Padel.',
+    description: 'Win 2-0 = 6 pts / Loss = 2 pts. Win 2-1 = 5 / Loss = 3. Walkover win = 2, walkover concede = 0. +2 bonus if all matches played; concede a walkover and forfeit the bonus. Used at Broughton Padel.',
     scorePattern: 'system7',  // sets-based table below
-    // v4.16.0: walkoverWin set to 2 (below the lowest played-win value of 3)
-    // per Mike Hawkins' description: "reduces the reward for a walkover to
-    // the lowest level possible". To confirm exact value with Mike on his
-    // Broughton walkthrough call.
+    // v4.16.11: actual point values from Mike Hawkins's email of 6 May 2026
+    // (subject "Box League Pro - Custom Broughton Demo"). Earlier guesses
+    // (4/3/2/1) were wrong — Mike runs the Broughton variant of System 7
+    // which uses a 6/5/3/2 spread plus a +2 completion bonus and a "concede
+    // any walkover, lose the bonus" penalty. The completionBonus + walkover
+    // penalty rules are already wired in calculateStandings(); the per-set
+    // points table is in calculateMatchPoints() and reads from the fields
+    // below so different padel clubs can override without code changes.
+    win20: 6, loss20: 2,  // 2-set win
+    win21: 5, loss21: 3,  // 2-1 win after a 3rd-set tiebreak
     walkoverWin: 2, walkoverConcede: 0,
     notPlayedPoints: 0,
-    completionBonus: 0,
-    tableFootnote: 'Win 2-0 = 4 · Win 2-1 = 3 · Loss 2-1 = 2 · Loss 2-0 = 1 · Walkover = 2 / 0'
+    completionBonus: 2,
+    tableFootnote: 'Win 2-0 = 6 · Win 2-1 = 5 · Loss 2-1 = 3 · Loss 2-0 = 2 · Walkover = 2 / 0 · +2 if all matches played'
   },
   'competitive': {
     id: 'competitive',
@@ -5440,17 +5446,27 @@ function calculateMatchPoints(preset, result, isWinner) {
   if (result.walkover) {
     return isWinner ? (preset.walkoverWin || 0) : (preset.walkoverConcede || 0);
   }
-  // System 7: result depends on the EXACT set count split (4/3/2/1).
-  // Bypasses the additive model since System 7 has its own table.
+  // System 7: result depends on the EXACT set count split.
+  // v4.16.11: numbers now come from the preset (win20/loss20/win21/loss21)
+  // so different padel clubs can override Broughton's 6/5/3/2 if needed
+  // without touching this function. Defaults preserve the v4.16.0 behaviour.
+  // Padel = best of 3, so the 3rd set is a champ tie-break captured as one
+  // set-equivalent; we therefore treat any "winner=2, loser=1" split as the
+  // 2-1 win regardless of the underlying tie-break score (which can run as
+  // high as needed — first-to-10, margin of 2, no cap).
   if (preset.scorePattern === 'system7') {
     const winnerSets = Math.max(result.setsA || 0, result.setsB || 0);
     const loserSets = Math.min(result.setsA || 0, result.setsB || 0);
-    if (winnerSets === 2 && loserSets === 0) return isWinner ? 4 : 1;
-    if (winnerSets === 2 && loserSets === 1) return isWinner ? 3 : 2;
-    if (winnerSets === 3 && loserSets === 0) return isWinner ? 4 : 1;
-    if (winnerSets === 3 && loserSets === 1) return isWinner ? 3 : 2;
-    if (winnerSets === 3 && loserSets === 2) return isWinner ? 3 : 2;
-    return isWinner ? 3 : 1; // safe fallback
+    const w20 = preset.win20 != null ? preset.win20 : 4;
+    const l20 = preset.loss20 != null ? preset.loss20 : 1;
+    const w21 = preset.win21 != null ? preset.win21 : 3;
+    const l21 = preset.loss21 != null ? preset.loss21 : 2;
+    if (winnerSets === 2 && loserSets === 0) return isWinner ? w20 : l20;
+    if (winnerSets === 2 && loserSets === 1) return isWinner ? w21 : l21;
+    if (winnerSets === 3 && loserSets === 0) return isWinner ? w20 : l20;
+    if (winnerSets === 3 && loserSets === 1) return isWinner ? w21 : l21;
+    if (winnerSets === 3 && loserSets === 2) return isWinner ? w21 : l21;
+    return isWinner ? w21 : l21; // safe fallback
   }
   // Additive model — sum the contributions from each mechanic.
   let points = 0;
