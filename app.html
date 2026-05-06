@@ -652,7 +652,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.2</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.3</div>
   </div>
 </div>
 
@@ -1616,7 +1616,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.2 · Build 20260506</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.3 · Build 20260506</div>
   </div>
 </div>
 
@@ -4824,9 +4824,12 @@ function getDefaultAvatar() {
 
 function onAuthSuccess() {
   logAction('sign_in', currentUser.email);
-  // Show the welcome video once per user for new-feature announcements.
-  // Fires after a short delay so it doesn't clash with routing/screens.
-  try { maybeShowWelcomeVideo(); } catch (e) {}
+  // v4.16.3: auto-popup disabled — the April 2026 release is no longer "new"
+  // and the popup was firing in front of the welcome-screen video, blocking
+  // the actual content users came to see. The video is still accessible via
+  // ☰ Menu → "Watch release video" for users who want it. To re-enable for
+  // a future release, bump CURRENT_WELCOME_VIDEO_ID and uncomment the call.
+  // try { maybeShowWelcomeVideo(); } catch (e) {}
   loadUserLeagues();
   loadUserHomeClub(() => {
     // v4.8.0: load clubAdmin memberships once per session so scoped-welcome
