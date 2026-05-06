@@ -652,7 +652,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.1</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.2</div>
   </div>
 </div>
 
@@ -1616,7 +1616,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.1 · Build 20260428</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.2 · Build 20260506</div>
   </div>
 </div>
 
@@ -4890,15 +4890,20 @@ function onAuthSuccess() {
           return;
         }
         window._scopedClub = { id: result.id, info: result.info };
-        // Also set as homeClub for mix-in scope consistency (in-memory only —
-        // we don't persist this to /users/... because we don't want to
-        // silently overwrite a user's real home club with a shared-link club).
-        if (!userHomeClub) {
-          userHomeClub = {
-            id: result.id,
-            name: result.info.name,
-            bookingUrl: result.info.bookingUrl || ''
-          };
+        // v4.16.2: persist homeClub to Firebase so a user who later loses the
+        // ?club= link can return via the bare URL and still land on their
+        // club (auto-scope path at line ~4920). Last-link-wins policy: every
+        // ?club= visit registers that club as the user's home, replacing any
+        // prior value. Not silent — the user actively clicked the link.
+        userHomeClub = {
+          id: result.id,
+          name: result.info.name,
+          bookingUrl: result.info.bookingUrl || ''
+        };
+        if (FIREBASE_READY && currentUser) {
+          db.ref('/users/' + currentUser.uid + '/homeClub').set(userHomeClub).catch(function(err){
+            console.error('homeClub persist failed:', err);
+          });
         }
         showScreen('welcome');
         renderScopedWelcome();
