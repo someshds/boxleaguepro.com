@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.9</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.10</div>
   </div>
 </div>
 
@@ -1624,7 +1624,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.9 · Build 20260506</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.10 · Build 20260506</div>
   </div>
 </div>
 
@@ -4193,6 +4193,20 @@ function buildTopMenu() {
          '<span class="top-bar-menu-icon">&#127968;</span><span class="top-bar-menu-item-label">Home</span>' +
          (homeActive ? '<span class="top-bar-menu-item-check">&#10003;</span>' : '') +
          '</button>';
+    // v4.16.10: pinned "your club" link. When the user has a stored homeClub
+    // we expose it as the second item in the Navigate group so they can
+    // always get back to their scoped welcome (and the Club Organiser Tools
+    // panel) from any screen with one tap. Without this, the only way back
+    // after Home strips the scope was retyping ?club=<slug> in the URL bar
+    // — which Mike's testing surfaced as a stuck state.
+    if (userHomeClub && userHomeClub.id) {
+      const myClubActive = currentScreen === 'welcome' && window._scopedClub && window._scopedClub.id === userHomeClub.id;
+      const myClubLabel = esc(userHomeClub.name || 'My club');
+      h += '<button class="top-bar-menu-item' + (myClubActive ? ' active' : '') + '" role="menuitem" onclick="topBarNav(\'myclub\')">' +
+           '<span class="top-bar-menu-icon">&#127934;</span><span class="top-bar-menu-item-label">' + myClubLabel + '</span>' +
+           (myClubActive ? '<span class="top-bar-menu-item-check">&#10003;</span>' : '') +
+           '</button>';
+    }
     const browseActive = currentScreen === 'browse';
     h += '<button class="top-bar-menu-item' + (browseActive ? ' active' : '') + '" role="menuitem" onclick="topBarNav(\'browse\')">' +
          '<span class="top-bar-menu-icon">&#128269;</span><span class="top-bar-menu-item-label">Browse leagues</span>' +
@@ -4281,6 +4295,38 @@ function topBarNav(action) {
     }
     if (action === 'browse') {
       if (typeof goToBrowse === 'function') { goToBrowse(); } else { showScreen('browse'); }
+      return;
+    }
+    // v4.16.10: re-scope to the user's stored homeClub. Fetches fresh club
+    // info from Firebase (so module flags / scoringSystem / bookingUrl are
+    // current) and writes ?club=<id> back to the URL so a refresh keeps the
+    // user there.
+    if (action === 'myclub') {
+      if (!userHomeClub || !userHomeClub.id) { toast('No home club set yet — open a club link first'); return; }
+      var hc = userHomeClub;
+      var applyScope = function(info) {
+        window._scopedClub = { id: hc.id, info: info };
+        try {
+          // Mirror to URL so refresh keeps the scope. Use the slug if the
+          // club doc has one, else fall back to the push-key id (both are
+          // accepted by resolveScopedClub).
+          var param = (info && info.slug) ? info.slug : hc.id;
+          var url = window.location.pathname + '?club=' + encodeURIComponent(param);
+          window.history.replaceState({}, '', url);
+        } catch (e) { /* non-fatal */ }
+        showScreen('welcome');
+      };
+      if (FIREBASE_READY) {
+        db.ref('/clubs/' + hc.id).once('value').then(function(snap) {
+          if (snap.exists()) { applyScope(snap.val()); }
+          else { toast('Your home club is no longer available'); }
+        }).catch(function() {
+          // Network drop — render with cached metadata
+          applyScope({ name: hc.name, bookingUrl: hc.bookingUrl || '' });
+        });
+      } else {
+        applyScope({ name: hc.name, bookingUrl: hc.bookingUrl || '' });
+      }
       return;
     }
     if (action.indexOf('tab:') === 0) {
