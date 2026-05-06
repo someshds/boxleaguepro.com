@@ -652,7 +652,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.3</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.4</div>
   </div>
 </div>
 
@@ -1616,7 +1616,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.3 · Build 20260506</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.4 · Build 20260506</div>
   </div>
 </div>
 
@@ -4009,9 +4009,17 @@ function showScreen(id) {
       }
     } catch (e) { console.warn('[scoped-welcome] render error', e); }
   }
-  // Trigger screen explainers (slight delay so screen renders first)
+  // Trigger screen explainers (slight delay so screen renders first).
+  // v4.16.4: skip the generic "Welcome to BoxLeague Pro — choose how you
+  // want to play" explainer when the user is already inside a scoped club.
+  // They arrived via a deliberate club link and don't need the top-of-funnel
+  // tutorial; it just covers the actual scoped welcome content. Surfaced by
+  // Mike Hawkins's onboarding test on 6 May.
   if (id === 'welcome' || id === 'browse') {
-    setTimeout(() => showExplainer(id), 400);
+    const skipScopedTutorial = (id === 'welcome' && window._scopedClub);
+    if (!skipScopedTutorial) {
+      setTimeout(() => showExplainer(id), 400);
+    }
   }
   // v4.6.9: sync top bar visibility + location + menu contents with screen change
   try { updateTopBarForScreen(id); } catch (e) { console.warn('[top-bar] updateTopBarForScreen error', e); }
