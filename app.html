@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.15</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.16</div>
   </div>
 </div>
 
@@ -1624,7 +1624,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.15 · Build 20260507</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.16 · Build 20260507</div>
   </div>
 </div>
 
@@ -11899,6 +11899,16 @@ function openBookings() {
           ? 'vs ' + ((oppGroup && oppGroup.name) || '(other team)')
           : ((partA && partA.name) || '?') + ' vs ' + ((partB && partB.name) || '?');
 
+        // v4.16.16: capture every share-relevant field on the booked record
+        // so buildBookedMatchMsg can render the full picture (notes, court
+        // number, who's confirmed, etc.) — Grant flagged that the share
+        // text was missing fields the recipient needs to actually act on.
+        const partA = groupList.find(function(g) { return g && g.id === parts[0]; });
+        const partB = groupList.find(function(g) { return g && g.id === parts[1]; });
+        const allParticipants = [].concat(
+          (partA && partA.players) || [],
+          (partB && partB.players) || []
+        );
         allMatches.push({
           lid: item.lid,
           leagueName: leagueName,
@@ -11908,6 +11918,10 @@ function openBookings() {
           date: b.date,
           slot: b.slot || '',
           courtBooked: !!b.courtBooked,
+          courtNumber: b.courtNumber || '',
+          notes: b.notes || '',
+          agreed: b.agreed || {},
+          participants: allParticipants,
           matchLabel: matchLabel,
           isMine: !!myGroup
         });
@@ -11993,6 +12007,12 @@ function openBookingsThenEnter(leagueId) {
 // Matches so a freshly-booked match can be sent to the WhatsApp box-league
 // group with one tap. Includes the booking URL when the match's court isn't
 // confirmed yet so the recipient can lock the slot in.
+//
+// v4.16.16: now includes every share-relevant field — court number, free-
+// text notes (meeting point, instructions, etc.), and how many of the
+// match's participants have confirmed the date — so the recipient has
+// everything they need without having to chase the sender for missing
+// details.
 function buildBookedMatchMsg(m) {
   if (!m) return '';
   const lines = [];
@@ -12002,9 +12022,26 @@ function buildBookedMatchMsg(m) {
   lines.push('\u{1F4C5} ' + fmtFull(m.date));
   lines.push('\u{1F551} ' + slotLabel(m.slot || ''));
   if (m.courtBooked) {
-    lines.push('✅ Court booked');
+    lines.push(m.courtNumber
+      ? '✅ Court booked (Court ' + m.courtNumber + ')'
+      : '✅ Court booked');
   } else {
     lines.push('⚠️ Court not booked yet' + (m.bookingUrl ? ' — book here: ' + m.bookingUrl : ''));
+  }
+  // Confirmation count — only render when there's a meaningful participant
+  // list to count against (so we don't show "0/0 confirmed" on edge data).
+  const participants = m.participants || [];
+  const agreed = m.agreed || {};
+  if (participants.length > 0) {
+    const confirmedCount = participants.filter(function(p) { return !!agreed[p]; }).length;
+    if (confirmedCount > 0 || participants.length > 2) {
+      lines.push('\u{1F44D} ' + confirmedCount + '/' + participants.length + ' confirmed');
+    }
+  }
+  // Free-text notes (meeting point, instructions). Multi-line notes are
+  // preserved — WhatsApp renders them fine.
+  if (m.notes && m.notes.trim()) {
+    lines.push('\u{1F4DD} ' + m.notes.trim());
   }
   lines.push('');
   lines.push('— BoxLeague Pro');
