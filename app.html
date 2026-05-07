@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.14</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.15</div>
   </div>
 </div>
 
@@ -1624,7 +1624,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.14 · Build 20260507</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.15 · Build 20260507</div>
   </div>
 </div>
 
@@ -11948,6 +11948,13 @@ function openBookings() {
     allMatches.forEach(function(m) {
       const cacheKey = m.lid + '|' + m.matchKey;
       const btnBase = 'border:none;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer';
+      // v4.16.15: court-booked toggle. Every visible row in this list is one
+      // the user is a participant in OR a club admin of, so they always have
+      // permission to update court status — the gate is implicit in the row
+      // being shown at all.
+      const courtBtn = m.courtBooked
+        ? '<button onclick="toggleCourtBookedFromMymatches(' + jsAttr(cacheKey) + ')" style="' + btnBase + ';background:#fef3c7;color:#92400e;border:1px solid #fde68a" title="Mark court as not booked">&#10060; Unbook court</button>'
+        : '<button onclick="toggleCourtBookedFromMymatches(' + jsAttr(cacheKey) + ')" style="' + btnBase + ';background:#059669;color:#fff" title="Mark court as booked">&#9989; Mark court booked</button>';
       html += '<div style="border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fff">'
            +   '<div style="display:flex;justify-content:space-between;align-items:start;gap:10px;margin-bottom:6px">'
            +     '<div style="font-size:12px;color:#6b7280">' + m.ico + ' ' + esc(m.leagueName) + '</div>'
@@ -11958,9 +11965,10 @@ function openBookings() {
            +   '<div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:4px">' + esc(m.matchLabel) + '</div>'
            +   '<div style="font-size:13px;color:#475569;margin-bottom:10px">' + esc(fmtFull(m.date)) + ' &middot; ' + esc(slotLabel(m.slot)) + '</div>'
            +   '<div style="display:flex;flex-wrap:wrap;gap:6px">'
-           +     '<button onclick="openBookingsThenEnter(' + jsAttr(m.lid) + ')" style="' + btnBase + ';background:#1d4ed8;color:#fff">Open &rarr;</button>'
+           +     courtBtn
            +     '<button onclick="shareBookedMatchWhatsApp(' + jsAttr(cacheKey) + ')" style="' + btnBase + ';background:#25d366;color:#fff" title="Share via WhatsApp">&#128172; WhatsApp</button>'
            +     '<button onclick="copyBookedMatchText(' + jsAttr(cacheKey) + ')" style="' + btnBase + ';background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd" title="Copy match details">&#128203; Copy</button>'
+           +     '<button onclick="openBookingsThenEnter(' + jsAttr(m.lid) + ')" style="' + btnBase + ';background:#1d4ed8;color:#fff">Open &rarr;</button>'
            +   '</div>'
            + '</div>';
     });
@@ -12020,6 +12028,52 @@ function copyBookedMatchText(cacheKey) {
   } else if (navigator.clipboard) {
     navigator.clipboard.writeText(msg).then(function() { toast('Match details copied'); });
   }
+}
+
+// v4.16.15: cross-league court-booked toggle. The in-league toggleCourtBooked
+// reads/writes L (the active-league globals) and goes through fbSetBooked,
+// neither of which apply when we're toggling a match in a different league
+// from the My Matches modal. This helper writes directly to the target
+// league's /booked/<matchKey> with the same merge-on-same-slot transaction
+// shape as v4.16.13's fbSetBooked fix, then refreshes the modal.
+function toggleCourtBookedFromMymatches(cacheKey) {
+  const m = (window._currentBookings || {})[cacheKey];
+  if (!m) { toast('Reopen My Matches and try again'); return; }
+  if (!FIREBASE_READY) { toast('Sign in to update court status'); return; }
+  const path = '/leagues/' + m.lid + '/booked/' + m.matchKey;
+  db.ref(path).once('value').then(function(snap) {
+    const current = snap.val();
+    if (!current) { toast('Booking no longer exists'); return; }
+    const newCourtBooked = !current.courtBooked;
+    if (current.courtBooked && !confirm('Remove court-booked confirmation for this match? Other players will see the court as unbooked again.')) return;
+    db.ref(path).transaction(function(c) {
+      if (!c) return; // gone — abort
+      const sameSlot = c.date === current.date && c.slot === current.slot;
+      if (!sameSlot) return; // different slot — conflict, abort
+      // Update only the courtBooked flag, leave everything else (including
+      // any agreed updates that landed since our read) in place.
+      const next = Object.assign({}, c, { courtBooked: newCourtBooked });
+      return next;
+    }, function(err, committed) {
+      if (err) { toast('Update failed: ' + (err.message || 'try again')); return; }
+      if (!committed) { toast('Conflict — match was rebooked. Reopen My Matches.'); return; }
+      // Update local cache so a quick re-render before the live listener
+      // catches up doesn't flicker the old state back in.
+      m.courtBooked = newCourtBooked;
+      toast(newCourtBooked ? 'Court marked as booked' : 'Court booking removed');
+      // If the affected league is the currently-active L, keep its state
+      // in sync so the in-league hero / match list reflects immediately.
+      if (typeof activeLeagueId !== 'undefined' && activeLeagueId === m.lid && L && L.booked && L.booked[m.matchKey]) {
+        L.booked[m.matchKey].courtBooked = newCourtBooked;
+        if (typeof renderMatchFinder === 'function') renderMatchFinder();
+        if (typeof renderMyMatches === 'function') renderMyMatches();
+      }
+      // Re-render the modal — easier than surgical DOM update.
+      openBookings();
+    });
+  }).catch(function(err) {
+    toast('Update failed: ' + (err.message || 'try again'));
+  });
 }
 
 function maybeShowWelcomeVideo() {
