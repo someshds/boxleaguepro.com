@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.17</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.18</div>
   </div>
 </div>
 
@@ -1624,7 +1624,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.17 · Build 20260507</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.18 · Build 20260507</div>
   </div>
 </div>
 
@@ -12025,7 +12025,15 @@ function buildBookedMatchMsg(m) {
       ? '✅ Court booked (Court ' + m.courtNumber + ')'
       : '✅ Court booked');
   } else {
-    lines.push('⚠️ Court not booked yet' + (m.bookingUrl ? ' — book here: ' + m.bookingUrl : ''));
+    lines.push('⚠️ Court not booked yet');
+  }
+  // v4.16.18: always include the booking URL (when one is set on the
+  // league/club), regardless of court-booked status. Recipients still
+  // need it to look up court availability, rebook a different slot, or
+  // confirm the existing reservation. Previously it only appeared when
+  // court was unbooked.
+  if (m.bookingUrl) {
+    lines.push('\u{1F517} ' + m.bookingUrl);
   }
   // Confirmation count — only render when there's a meaningful participant
   // list to count against (so we don't show "0/0 confirmed" on edge data).
