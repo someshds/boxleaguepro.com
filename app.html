@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.18</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.19</div>
   </div>
 </div>
 
@@ -1416,7 +1416,9 @@
         </div>
 
         <div id="my-matches-card" class="mt12" style="display:none">
-          <div class="card-title" style="margin-bottom:10px">Your matches to arrange</div>
+          <!-- v4.16.19: heading is now dynamic, set in renderMyMatches based
+               on the mix of booked vs unbooked matches in the body. -->
+          <div class="card-title" id="my-matches-title" style="margin-bottom:10px">Your matches</div>
           <div id="my-matches-body"></div>
           <div id="mm-booking-link"></div>
         </div>
@@ -1624,7 +1626,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.18 · Build 20260507</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.19 · Build 20260507</div>
   </div>
 </div>
 
@@ -9750,6 +9752,25 @@ function renderMyMatches() {
   }
 
   card.style.display = 'block';
+  // v4.16.19: dynamic heading. Counts booked vs unbooked across opponents
+  // and picks a label that matches reality — Grant flagged that "Your
+  // matches to arrange" was misleading when the only match listed was
+  // already booked.
+  const titleEl = document.getElementById('my-matches-title');
+  if (titleEl) {
+    const bookedCount = opponents.reduce(function(n, opp) {
+      const matchKey = [myGroup.id, opp.id].sort().join('~~');
+      return n + (L.booked[matchKey] ? 1 : 0);
+    }, 0);
+    const total = opponents.length;
+    if (bookedCount === 0) {
+      titleEl.textContent = 'Your matches to arrange';
+    } else if (bookedCount === total) {
+      titleEl.textContent = 'Your booked matches';
+    } else {
+      titleEl.textContent = 'Your matches (' + bookedCount + ' booked, ' + (total - bookedCount) + ' to arrange)';
+    }
+  }
   // v4.14.1: score-entry button on My Matches card — was Match-Finder-only.
   // Players opening the app after a match expect to record the result here.
   const scoringOn = typeof isScoringEnabled === 'function' && isScoringEnabled();
