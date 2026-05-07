@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.20</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.21</div>
   </div>
 </div>
 
@@ -1635,7 +1635,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.20 · Build 20260507</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.21 · Build 20260507</div>
   </div>
 </div>
 
@@ -1648,6 +1648,25 @@
       <button onclick="closeChangelog()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <div style="padding:20px" id="changelog-content">
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16 &middot; 6&ndash;7 May 2026</span>
+          <span style="background:#0d9488;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">BOOKING FLOW + PADEL</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>&#127934; New &ldquo;Booked&rdquo; tab</strong> in every league &mdash; focused list of every confirmed match, sorted by date, with one-tap Confirm date / Mark court booked / Enter score / Calendar / Share / Copy. Stops bookings getting buried under Match Finder&rsquo;s suggestion slots</li>
+          <li><strong>&#127934; &ldquo;My matches&rdquo; in the &#9776; menu</strong> &mdash; cross-league view of every upcoming booked match you&rsquo;re in, accessible from anywhere. Solves &ldquo;I just booked a match, where did it go?&rdquo;</li>
+          <li><strong>&#128172; Share to WhatsApp + &#128203; Copy</strong> on every match card. Message includes opponent, date, time, court status, court number, notes, confirmation count, and the booking URL so the recipient can act on it without chasing you for details</li>
+          <li><strong>&#127960; &ldquo;Your club&rdquo; pinned link in the menu</strong> &mdash; one tap from any screen back to your scoped club welcome and the Club Organiser Tools panel</li>
+          <li><strong>Auto-saves your home club</strong> when you arrive via a club link. Lose the link? The bare URL still drops you on your club</li>
+          <li><strong>PadelLevels System 7 scoring</strong> for padel clubs: Win 2-0 = 6/2, Win 2-1 = 5/3, Walkover = 2/0, plus a +2 completion bonus when you play all your fixtures (forfeit the bonus if you concede a walkover)</li>
+          <li><strong>Bulk-add players across multiple boxes in one paste</strong> &mdash; <code>[Box Name]</code> headers route each section to the right league. Paste a roster split by box, app handles the rest</li>
+          <li><strong>Padel-only / doubles-only clubs</strong> get pre-filled and locked-down create-league forms. Sport / format / deadline default to the club&rsquo;s setup so admins type just the box name</li>
+          <li><strong>Full-name convention</strong> across all input placeholders + smart truncation (Jane D. &amp; John S.) in standings on mobile to keep team rows scannable</li>
+          <li><strong>Fix: Confirm date no longer says &ldquo;booked by someone else&rdquo;</strong> on a match that&rsquo;s already booked. Same for Mark court booked &mdash; both updates run cleanly through the same anti-double-booking guard</li>
+          <li><strong>Cleaner first-time experience</strong> &mdash; the generic 5-step tutorial no longer fires for users arriving via a club link, and the April-release video popup auto-stop has gone (still accessible from the menu if you want it)</li>
+        </ul>
+      </div>
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.15.2 &middot; 21 Apr 2026</span>
