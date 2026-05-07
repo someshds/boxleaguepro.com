@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.13</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.14</div>
   </div>
 </div>
 
@@ -1624,7 +1624,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.13 · Build 20260507</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.14 · Build 20260507</div>
   </div>
 </div>
 
@@ -11918,6 +11918,27 @@ function openBookings() {
       return (a.date + (a.slot || '')).localeCompare(b.date + (b.slot || ''));
     });
 
+    // v4.16.14: pull each league's bookingUrl so the share message can
+    // include the court-booking link for matches where the court isn't
+    // yet booked. Falls back to the (in-memory cached) club doc if the
+    // league itself doesn't have one set.
+    loaded.forEach(function(item) {
+      const l = item.league;
+      if (!l) return;
+      const leagueBookingUrl = (l.settings && l.settings.bookingUrl) || '';
+      const clubId = l.info && l.info.clubId;
+      const clubBookingUrl = (clubId && window._clubModules && window._clubModules[clubId] && window._clubModules[clubId]._bookingUrl) || '';
+      const bookingUrl = leagueBookingUrl || clubBookingUrl;
+      allMatches.forEach(function(m) {
+        if (m.lid === item.lid && !m.bookingUrl) m.bookingUrl = bookingUrl;
+      });
+    });
+
+    // Cache so the per-row Share/Copy buttons can look the match up by
+    // matchKey without us having to encode the whole record into the DOM.
+    window._currentBookings = {};
+    allMatches.forEach(function(m) { window._currentBookings[m.lid + '|' + m.matchKey] = m; });
+
     if (allMatches.length === 0) {
       body.innerHTML = '<div style="text-align:center;padding:32px 16px;color:#6b7280"><div style="font-size:36px;margin-bottom:10px">&#128197;</div>No upcoming booked matches.<div style="font-size:13px;margin-top:10px;line-height:1.5">When you or another player books a match in any of your leagues, it will show up here automatically.</div></div>';
       return;
@@ -11925,6 +11946,8 @@ function openBookings() {
 
     let html = '<div style="font-size:13px;color:#6b7280;margin-bottom:14px">' + allMatches.length + ' upcoming match' + (allMatches.length === 1 ? '' : 'es') + ' &middot; sorted by date</div>';
     allMatches.forEach(function(m) {
+      const cacheKey = m.lid + '|' + m.matchKey;
+      const btnBase = 'border:none;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer';
       html += '<div style="border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fff">'
            +   '<div style="display:flex;justify-content:space-between;align-items:start;gap:10px;margin-bottom:6px">'
            +     '<div style="font-size:12px;color:#6b7280">' + m.ico + ' ' + esc(m.leagueName) + '</div>'
@@ -11933,9 +11956,11 @@ function openBookings() {
            +     '</div>'
            +   '</div>'
            +   '<div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:4px">' + esc(m.matchLabel) + '</div>'
-           +   '<div style="font-size:13px;color:#475569">' + esc(fmtFull(m.date)) + ' &middot; ' + esc(slotLabel(m.slot)) + '</div>'
-           +   '<div style="margin-top:10px">'
-           +     '<button onclick="openBookingsThenEnter(' + jsAttr(m.lid) + ')" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer">Open in league &rarr;</button>'
+           +   '<div style="font-size:13px;color:#475569;margin-bottom:10px">' + esc(fmtFull(m.date)) + ' &middot; ' + esc(slotLabel(m.slot)) + '</div>'
+           +   '<div style="display:flex;flex-wrap:wrap;gap:6px">'
+           +     '<button onclick="openBookingsThenEnter(' + jsAttr(m.lid) + ')" style="' + btnBase + ';background:#1d4ed8;color:#fff">Open &rarr;</button>'
+           +     '<button onclick="shareBookedMatchWhatsApp(' + jsAttr(cacheKey) + ')" style="' + btnBase + ';background:#25d366;color:#fff" title="Share via WhatsApp">&#128172; WhatsApp</button>'
+           +     '<button onclick="copyBookedMatchText(' + jsAttr(cacheKey) + ')" style="' + btnBase + ';background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd" title="Copy match details">&#128203; Copy</button>'
            +   '</div>'
            + '</div>';
     });
@@ -11953,6 +11978,48 @@ function closeBookings() {
 function openBookingsThenEnter(leagueId) {
   closeBookings();
   if (typeof enterLeague === 'function') enterLeague(leagueId);
+}
+
+// v4.16.14: build a WhatsApp-friendly text summary of a single booked match.
+// Used by both the Share-to-WhatsApp and Copy-to-clipboard buttons in My
+// Matches so a freshly-booked match can be sent to the WhatsApp box-league
+// group with one tap. Includes the booking URL when the match's court isn't
+// confirmed yet so the recipient can lock the slot in.
+function buildBookedMatchMsg(m) {
+  if (!m) return '';
+  const lines = [];
+  lines.push(m.ico + ' ' + m.leagueName);
+  lines.push('');
+  lines.push(m.matchLabel);
+  lines.push('\u{1F4C5} ' + fmtFull(m.date));
+  lines.push('\u{1F551} ' + slotLabel(m.slot || ''));
+  if (m.courtBooked) {
+    lines.push('✅ Court booked');
+  } else {
+    lines.push('⚠️ Court not booked yet' + (m.bookingUrl ? ' — book here: ' + m.bookingUrl : ''));
+  }
+  lines.push('');
+  lines.push('— BoxLeague Pro');
+  return lines.join('\n');
+}
+
+function shareBookedMatchWhatsApp(cacheKey) {
+  const m = (window._currentBookings || {})[cacheKey];
+  if (!m) { toast('Match details no longer available — reopen My Matches'); return; }
+  const msg = buildBookedMatchMsg(m);
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+
+function copyBookedMatchText(cacheKey) {
+  const m = (window._currentBookings || {})[cacheKey];
+  if (!m) { toast('Match details no longer available — reopen My Matches'); return; }
+  const msg = buildBookedMatchMsg(m);
+  if (typeof copyText === 'function') {
+    copyText(msg);
+    toast('Match details copied');
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(msg).then(function() { toast('Match details copied'); });
+  }
 }
 
 function maybeShowWelcomeVideo() {
