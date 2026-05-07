@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.11</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.12</div>
   </div>
 </div>
 
@@ -1624,7 +1624,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.11 · Build 20260506</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.12 · Build 20260507</div>
   </div>
 </div>
 
@@ -1997,6 +1997,20 @@
 </div>
 
 <!-- ── Welcome Video Modal (auto-shows once per user per feature release) ── -->
+<!-- v4.16.12: My Matches modal — cross-league view of every upcoming booked
+     match the signed-in user is in. Surfaced from the top-bar menu so users
+     can find a match they just booked from any screen. Players see only
+     their own matches; admins see all bookings in clubs they admin. -->
+<div id="bookings-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeBookings()">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);position:relative">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e2e8f0;position:sticky;top:0;background:#fff;z-index:1;border-radius:16px 16px 0 0">
+      <div style="font-size:17px;font-weight:700">&#127934; My Matches</div>
+      <button onclick="closeBookings()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px" aria-label="Close">&times;</button>
+    </div>
+    <div id="bookings-body" style="padding:16px 20px"></div>
+  </div>
+</div>
+
 <div id="welcome-video-modal" style="display:none;position:fixed;inset:0;z-index:1002;background:rgba(0,0,0,0.85);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeWelcomeVideo()">
   <div style="background:linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);border-radius:20px;width:100%;max-width:720px;max-height:94vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,0.5);position:relative">
     <button onclick="closeWelcomeVideo()" style="position:absolute;top:12px;right:14px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);border-radius:50%;width:36px;height:36px;font-size:20px;cursor:pointer;color:#fff;z-index:1" aria-label="Close">&times;</button>
@@ -4193,17 +4207,23 @@ function buildTopMenu() {
          '<span class="top-bar-menu-icon">&#127968;</span><span class="top-bar-menu-item-label">Home</span>' +
          (homeActive ? '<span class="top-bar-menu-item-check">&#10003;</span>' : '') +
          '</button>';
+    // v4.16.12: My Matches link. Cross-league view of every upcoming booked
+    // match the user is in. Solves the "I just booked a match, where did it
+    // go?" pain — Coming Up Next only renders inside one league at a time.
+    h += '<button class="top-bar-menu-item" role="menuitem" onclick="topBarNav(\'mymatches\')">' +
+         '<span class="top-bar-menu-icon">&#127934;</span><span class="top-bar-menu-item-label">My matches</span>' +
+         '</button>';
     // v4.16.10: pinned "your club" link. When the user has a stored homeClub
-    // we expose it as the second item in the Navigate group so they can
-    // always get back to their scoped welcome (and the Club Organiser Tools
-    // panel) from any screen with one tap. Without this, the only way back
-    // after Home strips the scope was retyping ?club=<slug> in the URL bar
-    // — which Mike's testing surfaced as a stuck state.
+    // we expose it in the Navigate group so they can always get back to
+    // their scoped welcome (and the Club Organiser Tools panel) from any
+    // screen with one tap. Without this, the only way back after Home
+    // strips the scope was retyping ?club=<slug> in the URL bar — which
+    // Mike's testing surfaced as a stuck state.
     if (userHomeClub && userHomeClub.id) {
       const myClubActive = currentScreen === 'welcome' && window._scopedClub && window._scopedClub.id === userHomeClub.id;
       const myClubLabel = esc(userHomeClub.name || 'My club');
       h += '<button class="top-bar-menu-item' + (myClubActive ? ' active' : '') + '" role="menuitem" onclick="topBarNav(\'myclub\')">' +
-           '<span class="top-bar-menu-icon">&#127934;</span><span class="top-bar-menu-item-label">' + myClubLabel + '</span>' +
+           '<span class="top-bar-menu-icon">&#127960;</span><span class="top-bar-menu-item-label">' + myClubLabel + '</span>' +
            (myClubActive ? '<span class="top-bar-menu-item-check">&#10003;</span>' : '') +
            '</button>';
     }
@@ -4295,6 +4315,12 @@ function topBarNav(action) {
     }
     if (action === 'browse') {
       if (typeof goToBrowse === 'function') { goToBrowse(); } else { showScreen('browse'); }
+      return;
+    }
+    // v4.16.12: cross-league booked-match view. Modal so it overlays
+    // whatever screen the user is on rather than navigating away.
+    if (action === 'mymatches') {
+      if (typeof openBookings === 'function') openBookings();
       return;
     }
     // v4.16.10: re-scope to the user's stored homeClub. Fetches fresh club
@@ -11764,6 +11790,142 @@ function closeWelcomeVideo(markSeen) {
   // Mark seen whether dismissed or "got it" clicked, so we don't re-nag.
   // "Remind me later" just closes without marking — but to keep UX simple we mark either way.
   try { localStorage.setItem(CURRENT_WELCOME_VIDEO_KEY, new Date().toISOString()); } catch (e) {}
+}
+
+/* ── v4.16.12: My Matches modal ──
+   Cross-league view of every upcoming booked match the user is in. Reads
+   /userLeagues/<uid> (live-listened by loadUserLeagues) for the user's
+   leagues, then fetches each league's full doc once to walk its booked map.
+
+   Filtering rules:
+   - Players (have a playerName/group in the league): only matches where
+     their group is one of the two participants
+   - Admins (global super-admin OR clubAdmin of the league's club): every
+     upcoming booking, so they can find a match a member booked
+
+   This solves the "I just booked a match, where did it go?" pain — Coming
+   Up Next only renders inside one league at a time, so a freshly-booked
+   match is invisible from any other screen. */
+function openBookings() {
+  if (!currentUser) { toast('Sign in first'); return; }
+  const modal = document.getElementById('bookings-modal');
+  const body = document.getElementById('bookings-body');
+  if (!modal || !body) return;
+  modal.style.display = 'flex';
+  body.innerHTML = '<div style="text-align:center;padding:24px;color:#6b7280">Loading your matches&hellip;</div>';
+
+  if (!FIREBASE_READY) {
+    body.innerHTML = '<div style="text-align:center;padding:24px;color:#6b7280">Sign in to see your matches.</div>';
+    return;
+  }
+
+  const leagues = (typeof userLeagues === 'object' && userLeagues) ? userLeagues : {};
+  const leagueIds = Object.keys(leagues);
+  if (leagueIds.length === 0) {
+    body.innerHTML = '<div style="text-align:center;padding:24px;color:#6b7280">You\'re not in any leagues yet.</div>';
+    return;
+  }
+
+  const emailKey = sanitizeEmail(currentUser.email);
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  Promise.all(leagueIds.map(function(lid) {
+    return db.ref('/leagues/' + lid).once('value').then(function(snap) {
+      return { lid: lid, league: snap.val(), idx: leagues[lid] };
+    }).catch(function() { return { lid: lid, league: null, idx: leagues[lid] }; });
+  })).then(function(loaded) {
+    const sportIco = { tennis: '\u{1F3BE}', padel: '\u{1F94E}', squash: '\u{1F3F8}', racketball: '\u{1F3F8}', badminton: '\u{1F3F8}' };
+    const allMatches = [];
+
+    loaded.forEach(function(item) {
+      if (!item.league) return;
+      const l = item.league;
+      const leagueName = (l.info && l.info.name) || (item.idx && item.idx.name) || '?';
+      const sport = ((l.info && l.info.sport) || (item.idx && item.idx.sport) || 'tennis').toLowerCase();
+      const member = l.members && l.members[emailKey];
+      const playerName = member && member.playerName;
+      const groups = l.groups || {};
+      const groupList = Array.isArray(groups) ? groups : Object.values(groups);
+      let myGroup = null;
+      if (playerName) {
+        myGroup = groupList.find(function(g) { return g && g.players && g.players.indexOf(playerName) !== -1; }) || null;
+      }
+      const clubId = l.info && l.info.clubId;
+      const isAdminHere = (typeof isAdmin === 'function' && isAdmin())
+                       || (clubId && typeof isClubAdminFor === 'function' && isClubAdminFor(clubId));
+
+      const booked = l.booked || {};
+      Object.keys(booked).forEach(function(matchKey) {
+        const b = booked[matchKey];
+        if (!b || !b.date) return;
+        if (b.date < todayStr) return; // upcoming only
+        const parts = matchKey.split('~~');
+        // Players: only their own matches. Admins: everything.
+        if (myGroup && parts.indexOf(myGroup.id) === -1 && !isAdminHere) return;
+        if (!myGroup && !isAdminHere) return; // not their match, not admin — skip
+
+        const oppId = myGroup ? parts.find(function(id) { return id !== myGroup.id; }) : null;
+        const partA = groupList.find(function(g) { return g && g.id === parts[0]; });
+        const partB = groupList.find(function(g) { return g && g.id === parts[1]; });
+        const oppGroup = oppId ? groupList.find(function(g) { return g && g.id === oppId; }) : null;
+        const matchLabel = myGroup
+          ? 'vs ' + ((oppGroup && oppGroup.name) || '(other team)')
+          : ((partA && partA.name) || '?') + ' vs ' + ((partB && partB.name) || '?');
+
+        allMatches.push({
+          lid: item.lid,
+          leagueName: leagueName,
+          sport: sport,
+          ico: sportIco[sport] || '\u{1F3C5}',
+          matchKey: matchKey,
+          date: b.date,
+          slot: b.slot || '',
+          courtBooked: !!b.courtBooked,
+          matchLabel: matchLabel,
+          isMine: !!myGroup
+        });
+      });
+    });
+
+    allMatches.sort(function(a, b) {
+      return (a.date + (a.slot || '')).localeCompare(b.date + (b.slot || ''));
+    });
+
+    if (allMatches.length === 0) {
+      body.innerHTML = '<div style="text-align:center;padding:32px 16px;color:#6b7280"><div style="font-size:36px;margin-bottom:10px">&#128197;</div>No upcoming booked matches.<div style="font-size:13px;margin-top:10px;line-height:1.5">When you or another player books a match in any of your leagues, it will show up here automatically.</div></div>';
+      return;
+    }
+
+    let html = '<div style="font-size:13px;color:#6b7280;margin-bottom:14px">' + allMatches.length + ' upcoming match' + (allMatches.length === 1 ? '' : 'es') + ' &middot; sorted by date</div>';
+    allMatches.forEach(function(m) {
+      html += '<div style="border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fff">'
+           +   '<div style="display:flex;justify-content:space-between;align-items:start;gap:10px;margin-bottom:6px">'
+           +     '<div style="font-size:12px;color:#6b7280">' + m.ico + ' ' + esc(m.leagueName) + '</div>'
+           +     '<div style="font-size:11px;font-weight:700;color:' + (m.courtBooked ? '#059669' : '#b45309') + '">'
+           +       (m.courtBooked ? '&#9989; Court booked' : '&#9888;&#65039; Court not booked')
+           +     '</div>'
+           +   '</div>'
+           +   '<div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:4px">' + esc(m.matchLabel) + '</div>'
+           +   '<div style="font-size:13px;color:#475569">' + esc(fmtFull(m.date)) + ' &middot; ' + esc(slotLabel(m.slot)) + '</div>'
+           +   '<div style="margin-top:10px">'
+           +     '<button onclick="openBookingsThenEnter(' + jsAttr(m.lid) + ')" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer">Open in league &rarr;</button>'
+           +   '</div>'
+           + '</div>';
+    });
+    body.innerHTML = html;
+  }).catch(function(err) {
+    body.innerHTML = '<div style="color:#b91c1c;padding:16px">Couldn\'t load matches: ' + esc(err.message || String(err)) + '</div>';
+  });
+}
+
+function closeBookings() {
+  const m = document.getElementById('bookings-modal');
+  if (m) m.style.display = 'none';
+}
+
+function openBookingsThenEnter(leagueId) {
+  closeBookings();
+  if (typeof enterLeague === 'function') enterLeague(leagueId);
 }
 
 function maybeShowWelcomeVideo() {
