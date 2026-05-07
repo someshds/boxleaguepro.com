@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.19</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.20</div>
   </div>
 </div>
 
@@ -1535,6 +1535,15 @@
       </div>
     </div>
 
+    <!-- ═══ BOOKED TAB ═══
+         v4.16.20: focused view of just the booked matches in this league —
+         same card UI as Match Finder's booked section but without the Book
+         a Match / availability controls so users can find a confirmed
+         booking without scrolling past suggestion slots. -->
+    <div id="tab-booked" class="section">
+      <div id="booked-tab-body"></div>
+    </div>
+
     <!-- ═══ RESULTS & STANDINGS TAB ═══ -->
     <div id="tab-results" class="section">
       <div class="edu-tip" id="tip-results">
@@ -1626,7 +1635,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.19 · Build 20260507</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.20 · Build 20260507</div>
   </div>
 </div>
 
@@ -4009,7 +4018,7 @@ function closeTip(id) {
   localStorage.setItem('blp_tip_' + id, 'closed');
 }
 function initTips() {
-  ['setup','availability','everyone','matches','open'].forEach(id => {
+  ['setup','availability','everyone','matches','booked','open'].forEach(id => {
     const el = document.getElementById('tip-' + id);
     if (el && localStorage.getItem('blp_tip_' + id) === 'closed') el.style.display = 'none';
   });
@@ -4108,6 +4117,7 @@ function updateTopBarLocation(screenId) {
       availability: 'My Availability',
       everyone: 'Everyone',
       matches: 'Match Finder',
+      booked: 'Booked',
       results: 'Results',
       setup: 'Settings',
       open: 'Friendly Matches'
@@ -7799,11 +7809,14 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   if (mixInMode) {
     tabs = [['open','Friendly Matches']];
   } else if (isOrganiser) {
-    tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder']];
+    // v4.16.20: Booked tab between Match Finder and Results — focused list of
+    // confirmed bookings in this league so users can find a match without
+    // scrolling past Match Finder's suggestion slots.
+    tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['booked','Booked']];
     if (scoringOn) tabs.push(['results','Results']);
     tabs.push(['setup','Settings']);
   } else {
-    tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder']];
+    tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['booked','Booked']];
     if (scoringOn) tabs.push(['results','Results']);
   }
 
@@ -8433,7 +8446,7 @@ function showTab(t) {
     } else {
       // Fallback for tabs without data-tab attribute
       const text = el.textContent.trim();
-      const map = { 'My Availability':'availability', 'Everyone':'everyone', 'Match Finder':'matches', 'Results':'results', 'Friendly Matches':'open', 'Settings':'setup', 'Setup':'setup' };
+      const map = { 'My Availability':'availability', 'Everyone':'everyone', 'Match Finder':'matches', 'Booked':'booked', 'Results':'results', 'Friendly Matches':'open', 'Settings':'setup', 'Setup':'setup' };
       el.classList.toggle('active', map[text] === t);
     }
   });
@@ -8441,6 +8454,7 @@ function showTab(t) {
   if (t === 'availability') { checkPlayerLink(); renderAIAvailabilityCard(); }
   if (t === 'everyone') { renderAllAvail(); renderMissing(); }
   if (t === 'matches') { renderMatchFinder(); }
+  if (t === 'booked') { renderBookedTab(); }
   if (t === 'results') { renderStandings(); renderResultsList(); }
   if (t === 'open') { renderOpenMatches(); }
   if (t === 'setup') { renderGroups(); renderMembers(); try { renderScoringSystemPicker(); } catch (e) {} }
@@ -12139,6 +12153,131 @@ function toggleCourtBookedFromMymatches(cacheKey) {
   }).catch(function(err) {
     toast('Update failed: ' + (err.message || 'try again'));
   });
+}
+
+/* ── v4.16.20: Booked tab renderer ──
+   In-league focused list of confirmed bookings. Same filtering rules as
+   the My Matches modal:
+     * players with a group → only their own matches
+     * club admins / global admin → every booking in the league
+   Each card shows the same actions as the booked branch of Match Finder
+   (Confirm date / Add to calendar / Enter score / Edit / Cancel) plus the
+   same WhatsApp + Copy share pattern as the My Matches modal.
+   Reads L (the active league) — it's tab content, so we know we're scoped. */
+function renderBookedTab() {
+  const body = document.getElementById('booked-tab-body');
+  if (!body) return;
+  if (!L || !L.groups || L.groups.length === 0) {
+    body.innerHTML = '<div style="padding:24px 16px;text-align:center;color:#6b7280"><div style="font-size:32px;margin-bottom:8px">\u{1F3BE}</div>No teams in this league yet.<div style="font-size:13px;margin-top:8px">Once teams are added, your booked matches will show up here.</div></div>';
+    return;
+  }
+  const allBooked = L.booked || {};
+  const player = (typeof getMyPlayerName === 'function') ? getMyPlayerName() : '';
+  const myGroup = player ? L.groups.find(function(g) { return (g.players || []).indexOf(player) !== -1; }) : null;
+  const isOrg = (typeof canManageActiveLeague === 'function' && canManageActiveLeague());
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  const sport = ((L.settings && L.settings.sport) || 'tennis').toLowerCase();
+  const sportIco = { tennis: '\u{1F3BE}', padel: '\u{1F94E}', squash: '\u{1F3F8}', racketball: '\u{1F3F8}', badminton: '\u{1F3F8}' };
+  const ico = sportIco[sport] || '\u{1F3C5}';
+  const leagueName = (L.settings && L.settings.leagueName) || (activeLeagueId && userLeagues[activeLeagueId] && userLeagues[activeLeagueId].name) || 'League';
+  const bookingUrl = (L.settings && L.settings.bookingUrl) || '';
+
+  const upcoming = [];
+  Object.keys(allBooked).forEach(function(matchKey) {
+    const b = allBooked[matchKey];
+    if (!b || !b.date || b.date < todayStr) return;
+    const parts = matchKey.split('~~');
+    if (myGroup && parts.indexOf(myGroup.id) === -1 && !isOrg) return;
+    if (!myGroup && !isOrg) return;
+    const partA = L.groups.find(function(g) { return g.id === parts[0]; });
+    const partB = L.groups.find(function(g) { return g.id === parts[1]; });
+    upcoming.push({ matchKey: matchKey, b: b, partA: partA, partB: partB });
+  });
+  upcoming.sort(function(a, b) {
+    return (a.b.date + (a.b.slot || '')).localeCompare(b.b.date + (b.b.slot || ''));
+  });
+
+  if (upcoming.length === 0) {
+    body.innerHTML = '<div style="padding:32px 16px;text-align:center;color:#6b7280"><div style="font-size:36px;margin-bottom:10px">\u{1F4C5}</div>No matches booked yet.<div style="font-size:13px;margin-top:10px;line-height:1.5">Head to <strong>Match Finder</strong> to book a slot — your confirmed matches will appear here.</div></div>';
+    return;
+  }
+
+  // Cache for share-button look-ups (same shape My Matches uses).
+  window._currentBookings = window._currentBookings || {};
+  upcoming.forEach(function(u) {
+    const oppGroup = myGroup ? (u.partA && u.partA.id === myGroup.id ? u.partB : u.partA) : null;
+    const matchLabel = myGroup
+      ? 'vs ' + ((oppGroup && oppGroup.name) || '(other team)')
+      : ((u.partA && u.partA.name) || '?') + ' vs ' + ((u.partB && u.partB.name) || '?');
+    const allParticipants = [].concat((u.partA && u.partA.players) || [], (u.partB && u.partB.players) || []);
+    window._currentBookings[activeLeagueId + '|' + u.matchKey] = {
+      lid: activeLeagueId,
+      leagueName: leagueName,
+      sport: sport,
+      ico: ico,
+      matchKey: u.matchKey,
+      date: u.b.date,
+      slot: u.b.slot || '',
+      courtBooked: !!u.b.courtBooked,
+      courtNumber: u.b.courtNumber || '',
+      notes: u.b.notes || '',
+      agreed: u.b.agreed || {},
+      participants: allParticipants,
+      bookingUrl: bookingUrl,
+      matchLabel: matchLabel,
+      isMine: !!myGroup
+    };
+  });
+
+  const scoringOn = typeof isScoringEnabled === 'function' && isScoringEnabled();
+  const btnBase = 'border:none;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer';
+
+  let html = '<div style="font-size:13px;color:#6b7280;margin-bottom:14px">' + upcoming.length + ' booked match' + (upcoming.length === 1 ? '' : 'es') + ' &middot; sorted by date</div>';
+  upcoming.forEach(function(u) {
+    const m = u.b;
+    const cacheKey = activeLeagueId + '|' + u.matchKey;
+    const oppGroup = myGroup ? (u.partA && u.partA.id === myGroup.id ? u.partB : u.partA) : null;
+    const matchLabel = myGroup
+      ? 'vs ' + ((oppGroup && oppGroup.name) || '(other team)')
+      : ((u.partA && u.partA.name) || '?') + ' vs ' + ((u.partB && u.partB.name) || '?');
+    const allParticipants = [].concat((u.partA && u.partA.players) || [], (u.partB && u.partB.players) || []);
+    const agreed = m.agreed || {};
+    const myAgreed = player && agreed[player];
+    const agreedCount = allParticipants.filter(function(p) { return !!agreed[p]; }).length;
+    const result = scoringOn && L.results && L.results[u.matchKey];
+
+    html += '<div style="border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;margin-bottom:12px;background:#fff;border-left:4px solid #059669">'
+         +   '<div style="display:flex;justify-content:space-between;align-items:start;gap:10px;margin-bottom:6px">'
+         +     '<div style="font-size:18px;font-weight:800;color:#0f172a">' + esc(matchLabel) + '</div>'
+         +     '<div style="font-size:11px;font-weight:700;color:#059669;background:#dcfce7;padding:3px 10px;border-radius:20px;letter-spacing:0.5px">BOOKED</div>'
+         +   '</div>'
+         +   '<div style="font-size:14px;color:#0f172a;font-weight:600;margin-bottom:4px">\u{1F4C5} ' + esc(fmtFull(m.date)) + ' &middot; ' + esc(slotLabel(m.slot || '')) + '</div>'
+         +   (m.courtNumber ? '<div style="font-size:13px;color:#475569">Court: ' + esc(m.courtNumber) + '</div>' : '')
+         +   '<div style="font-size:13px;color:' + (m.courtBooked ? '#059669' : '#b45309') + ';font-weight:600;margin-top:4px">' + (m.courtBooked ? '✅ Court booked' : '⚠️ Court not yet booked') + '</div>'
+         +   (m.notes ? '<div style="font-size:13px;color:#475569;margin-top:6px;padding:8px 10px;background:#f8fafc;border-radius:8px">\u{1F4DD} ' + esc(m.notes) + '</div>' : '')
+         +   '<div style="font-size:12px;color:#6b7280;margin-top:8px">' + agreedCount + '/' + allParticipants.length + ' confirmed' + (myAgreed ? ' (you ✓)' : '') + '</div>'
+         +   '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px">';
+    // Confirm date toggle — only if user is a participant
+    if (myGroup) {
+      html += myAgreed
+        ? '<button onclick="toggleAgreed(' + jsAttr(u.matchKey) + ')" style="' + btnBase + ';background:#dcfce7;color:#059669;border:1px solid #bbf7d0">✓ Confirmed (tap to undo)</button>'
+        : '<button onclick="toggleAgreed(' + jsAttr(u.matchKey) + ')" style="' + btnBase + ';background:#1d4ed8;color:#fff">✅ Confirm date</button>';
+    }
+    // Court-booked toggle
+    html += m.courtBooked
+      ? '<button onclick="toggleCourtBooked(' + jsAttr(u.matchKey) + ')" style="' + btnBase + ';background:#fef3c7;color:#92400e;border:1px solid #fde68a">❌ Unbook court</button>'
+      : '<button onclick="toggleCourtBooked(' + jsAttr(u.matchKey) + ')" style="' + btnBase + ';background:#059669;color:#fff">✅ Mark court booked</button>';
+    if (scoringOn) {
+      html += '<button onclick="openScoreEntry(' + jsAttr(u.matchKey) + ')" style="' + btnBase + ';background:#fbbf24;color:#0f172a">\u{1F3C6} ' + (result ? 'Edit score' : 'Enter score') + '</button>';
+    }
+    html += '<button onclick="addMatchToCalendar(' + jsAttr(u.matchKey) + ')" style="' + btnBase + ';background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd">\u{1F4C5} Calendar</button>';
+    html += '<button onclick="shareBookedMatchWhatsApp(' + jsAttr(cacheKey) + ')" style="' + btnBase + ';background:#25d366;color:#fff">\u{1F4AC} WhatsApp</button>';
+    html += '<button onclick="copyBookedMatchText(' + jsAttr(cacheKey) + ')" style="' + btnBase + ';background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd">\u{1F4CB} Copy</button>';
+    html += '</div></div>';
+  });
+
+  body.innerHTML = html;
 }
 
 function maybeShowWelcomeVideo() {
