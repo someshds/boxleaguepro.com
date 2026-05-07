@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.12</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.13</div>
   </div>
 </div>
 
@@ -1624,7 +1624,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.12 · Build 20260507</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.13 · Build 20260507</div>
   </div>
 </div>
 
@@ -8370,13 +8370,40 @@ function fbSetBooked(matchKey, slotData) {
   const ref = leagueRef('booked');
   if (ref) {
     if (slotData) {
-      // Use transaction to prevent double-booking
+      // v4.16.13: transaction now distinguishes "initial booking" from
+      // "updating an existing booking". The original logic aborted on any
+      // existing booking, which broke toggleAgreed (Confirm date) and
+      // saveBookingEdit — they're updates, not new bookings, so the
+      // existing record is *expected*. Now we only abort if the existing
+      // booking is for a different date/slot (genuine race / conflict).
+      // Same-slot updates merge the agreed map server-side so we don't
+      // lose another player's confirmation if two players confirm at once.
       ref.child(matchKey).transaction(current => {
-        if (current) return; // Already booked — abort
-        return slotData;
+        if (!current) return slotData; // Initial booking — accept
+        const sameSlot = current.date === slotData.date && current.slot === slotData.slot;
+        if (!sameSlot) return; // Different slot — genuine conflict, abort
+        // Same slot — merge so we don't blow away another player's
+        // confirmation that landed between our read and write.
+        const merged = Object.assign({}, current, slotData);
+        merged.agreed = Object.assign({}, current.agreed || {}, slotData.agreed || {});
+        // Honour explicit removals: if the local slotData has an agreed
+        // map and a key was deliberately deleted, the merge above would
+        // resurrect it. Walk the local slotData's agreed keys and trust
+        // the local view for keys that BOTH sides know about — this lets
+        // the player toggle their own agreement off without losing other
+        // players' agreement.
+        const myAgreed = slotData.agreed || {};
+        Object.keys(merged.agreed).forEach(k => {
+          if (k in (current.agreed || {}) && k in myAgreed) {
+            merged.agreed[k] = myAgreed[k];
+          }
+        });
+        // Clean falsy entries (treat false/undefined as removed)
+        Object.keys(merged.agreed).forEach(k => { if (!merged.agreed[k]) delete merged.agreed[k]; });
+        return merged;
       }, (err, committed) => {
         if (err) { toast('Booking error: ' + (err.message || 'try again')); return; }
-        if (!committed) { toast('This match was already booked by someone else'); delete L.booked[matchKey]; renderMatchFinder(); renderMyMatches(); }
+        if (!committed) { toast('This slot was just booked by someone else — pick another'); delete L.booked[matchKey]; renderMatchFinder(); renderMyMatches(); }
       });
     } else {
       ref.child(matchKey).set(null); // Unbooking
