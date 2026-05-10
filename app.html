@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.23</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.24</div>
   </div>
 </div>
 
@@ -1635,7 +1635,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.23 · Build 20260507</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.24 · Build 20260507</div>
   </div>
 </div>
 
@@ -3833,6 +3833,16 @@ function abbreviateTeamName(name) {
   if (!s) return '';
   // Team-name format: "Jane Doe & John Smith" or just one name for singles
   return s.split('&').map(function(side) { return abbreviateName(side.trim()); }).join(' & ');
+}
+
+// v4.16.24: dual-render helper for team names. Returns two spans (full +
+// compact); CSS at .team-name-full / .team-name-compact swaps which is
+// visible by viewport (compact <600px, full >=600px). Use everywhere a
+// team name is rendered in a list / card / hero so mobile doesn't overflow
+// and desktop still shows full names.
+function teamNameHtml(name) {
+  return '<span class="team-name-full">' + esc(name) + '</span>'
+       + '<span class="team-name-compact">' + esc(abbreviateTeamName(name)) + '</span>';
 }
 function toast(msg, duration) {
   const el = document.getElementById('toast');
@@ -9116,7 +9126,7 @@ function renderResultsList() {
         : '&#127942; ' + esc(winnerName) + ' wins';
       return '<div class="match-card" style="border-left:4px solid ' + cardBorder + ';margin-bottom:8px">' +
         '<div style="display:flex;justify-content:space-between;align-items:center">' +
-        '<div style="font-size:15px"><span style="font-weight:' + (isWinnerA ? '800' : '400') + '">' + esc(m.gA.name) + '</span> <span style="color:#9ca3af">vs</span> <span style="font-weight:' + (isWinnerB ? '800' : '400') + '">' + esc(m.gB.name) + '</span></div>' +
+        '<div style="font-size:15px"><span style="font-weight:' + (isWinnerA ? '800' : '400') + '">' + teamNameHtml(m.gA.name) + '</span> <span style="color:#9ca3af">vs</span> <span style="font-weight:' + (isWinnerB ? '800' : '400') + '">' + teamNameHtml(m.gB.name) + '</span></div>' +
         '<button class="btn btn-sm" onclick="openScoreEntry(\'' + esc(m.matchKey) + '\')" style="font-size:11px;padding:3px 8px">Edit</button>' +
         '</div>' +
         '<div style="font-size:18px;font-weight:800;color:' + scoreColor + ';margin-top:4px">' + scoreStr + '</div>' +
@@ -9132,7 +9142,7 @@ function renderResultsList() {
       const isBooked = !!m.booked;
       return '<div class="match-card" style="border-left:4px solid #e2e8f0;margin-bottom:8px">' +
         '<div style="display:flex;justify-content:space-between;align-items:center">' +
-        '<div><span style="font-size:15px;font-weight:600">' + esc(m.gA.name) + '</span> <span style="color:#9ca3af;font-size:15px">vs</span> <span style="font-size:15px;font-weight:600">' + esc(m.gB.name) + '</span></div>' +
+        '<div><span style="font-size:15px;font-weight:600">' + teamNameHtml(m.gA.name) + '</span> <span style="color:#9ca3af;font-size:15px">vs</span> <span style="font-size:15px;font-weight:600">' + teamNameHtml(m.gB.name) + '</span></div>' +
         '<button class="btn btn-primary btn-sm" onclick="openScoreEntry(\'' + esc(m.matchKey) + '\')" style="font-size:12px;padding:4px 12px">Enter Score</button>' +
         '</div>' +
         (isBooked ? '<div style="font-size:12px;color:#059669;margin-top:4px">&#9989; Booked: ' + fmtFull(m.booked.date) + ' · ' + slotLabel(m.booked.slot) + '</div>' : '<div style="font-size:12px;color:#9ca3af;margin-top:4px">Not yet booked</div>') +
@@ -9905,7 +9915,7 @@ function renderNextMatchHero() {
   hero.innerHTML =
     '<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;opacity:0.85;margin-bottom:4px">&#127934; COMING UP NEXT</div>' +
     gameTypeBadge +
-    '<div style="font-size:20px;font-weight:800;line-height:1.2">vs ' + esc(oppName) + '</div>' +
+    '<div style="font-size:20px;font-weight:800;line-height:1.2">vs ' + teamNameHtml(oppName) + '</div>' +
     '<div style="font-size:14px;font-weight:600;margin-top:4px;opacity:0.95">' + fmtFull(next.booked.date) + ' &middot; ' + slotLabel(next.booked.slot) + '</div>' +
     (next.booked.courtBooked
       ? '<div style="font-size:12px;opacity:0.9;margin-top:2px">&#9989; Court booked</div>'
@@ -9992,7 +10002,7 @@ function renderMyMatches() {
         ? result.scores.map(s => s[0] + '-' + s[1]).join(', ')
         : '';
       return `<div class="my-match ready">
-        <div style="font-size:15px;font-weight:700">vs ${esc(opp.name)}</div>
+        <div style="font-size:15px;font-weight:700">vs ${teamNameHtml(opp.name)}</div>
         <div style="font-size:14px;color:#059669;font-weight:600;margin-top:4px">&#9989; Booked: ${fmtFull(booked.date)} &middot; ${slotLabel(booked.slot)}</div>
         ${booked.courtBooked ? '<div style="font-size:12px;color:#059669;margin-top:2px">✅ Court booked</div>' : '<div style="font-size:12px;color:var(--amber);margin-top:2px">⚠️ Court not yet booked</div>'}
         ${booked.notes ? `<div style="font-size:12px;color:var(--muted);margin-top:2px">📝 ${esc(booked.notes)}</div>` : ''}
@@ -10009,7 +10019,7 @@ function renderMyMatches() {
     const cls = slots.length > 0 ? 'ready' : 'blocked';
     return `<div class="my-match ${cls}">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:15px;font-weight:700">vs ${esc(opp.name)}</span>
+        <span style="font-size:15px;font-weight:700">vs ${teamNameHtml(opp.name)}</span>
         ${slots.length > 0
           ? `<span style="font-size:12px;font-weight:700;color:#059669">&#128994; ${slots.length} time${slots.length!==1?'s':''}</span>`
           : `<span style="font-size:12px;color:var(--amber);font-weight:600">&#128993; No overlap yet</span>`}
@@ -10430,7 +10440,7 @@ function renderMatchFinder() {
       const editSlotOpts = SLOTS.map(s => `<option value="${s}"${s === m.booked.slot ? ' selected' : ''}>${slotLabel(s)}</option>`).join('');
       return `<div class="match-card is-booked">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <div class="match-players">${esc(m.gA.name)} <span style="color:#9ca3af;font-weight:400">vs</span> ${esc(m.gB.name)}</div>
+        <div class="match-players">${teamNameHtml(m.gA.name)} <span style="color:#9ca3af;font-weight:400">vs</span> ${teamNameHtml(m.gB.name)}</div>
         ${L.results[m.matchKey] ? '<span class="badge" style="background:#dcfce7;color:#059669">Result In</span>' : '<span class="badge badge-booked">Booked</span>'}
       </div>
       ${L.results[m.matchKey] ? `<div style="font-size:20px;font-weight:800;color:#1e293b;margin:4px 0">${L.results[m.matchKey].scores.map(s => s[0]+'-'+s[1]).join(', ')}</div>` : ''}
@@ -10490,7 +10500,7 @@ function renderMatchFinder() {
       const topSlots = m.slots.slice(0, 5);
       return `<div class="match-card has-slots">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <div class="match-players">${esc(m.gA.name)} <span style="color:#9ca3af;font-weight:400">vs</span> ${esc(m.gB.name)}</div>
+          <div class="match-players">${teamNameHtml(m.gA.name)} <span style="color:#9ca3af;font-weight:400">vs</span> ${teamNameHtml(m.gB.name)}</div>
           <span class="match-slot-count">${m.slots.length} slot${m.slots.length!==1?'s':''}</span>
         </div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:8px">${allP.map(p => esc(p)).join(', ')}</div>
@@ -10509,7 +10519,7 @@ function renderMatchFinder() {
     html += without.map(m => {
       const allP = [...m.gA.players, ...m.gB.players];
       return `<div class="match-card no-slots">
-        <div class="match-players">${esc(m.gA.name)} <span style="color:#9ca3af;font-weight:400">vs</span> ${esc(m.gB.name)}</div>
+        <div class="match-players">${teamNameHtml(m.gA.name)} <span style="color:#9ca3af;font-weight:400">vs</span> ${teamNameHtml(m.gB.name)}</div>
         <div style="font-size:13px;color:var(--muted)">${allP.map(p => esc(p)).join(', ')}</div>
       </div>`;
     }).join('');
