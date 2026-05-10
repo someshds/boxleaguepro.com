@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.22</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.23</div>
   </div>
 </div>
 
@@ -1635,7 +1635,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.22 · Build 20260507</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.23 · Build 20260507</div>
   </div>
 </div>
 
@@ -4216,19 +4216,13 @@ function buildTopMenu() {
   const inMixIn = !!mixInMode && currentScreen === 'app';
   const signedIn = !!currentUser;
   const isOrg = inLeague && userLeagues[activeLeagueId] && userLeagues[activeLeagueId].role === 'organiser';
-  const tabs = [];
+  // v4.16.23: tab list pulled from getLeagueTabs() helper for consistency
+  // with the in-league nav. Single source of truth — see ~line 5960.
+  let tabs = [];
   if (inLeague) {
-    tabs.push(['availability', 'My Availability', '&#128197;']);
-    tabs.push(['everyone', 'Everyone', '&#128101;']);
-    tabs.push(['matches', 'Match Finder', '&#127934;']);
-    // v4.16.22: Booked tab also exposed in the top-bar menu's Tabs group
-    // so users can jump to it from the menu, not just from the in-league
-    // nav. Keep ordered between Match Finder and Results to match the nav.
-    tabs.push(['booked', 'Booked', '&#128197;']);
-    if (isScoringEnabled()) tabs.push(['results', 'Results', '&#127942;']);
-    if (isOrg) tabs.push(['setup', 'Settings', '&#9881;&#65039;']);
+    tabs = getLeagueTabs({ isOrganiser: isOrg, withIcons: true });
   } else if (inMixIn) {
-    tabs.push(['open', 'Friendly Matches', '&#129309;']);
+    tabs = getLeagueTabs({ mixInMode: true, withIcons: true });
   }
 
   let h = '';
@@ -5055,6 +5049,18 @@ function onAuthSuccess() {
             console.error('homeClub persist failed:', err);
           });
         }
+        // v4.16.23: email-based pre-allocation. Scan this club's leagues for
+        // any team where the signed-in user's email is the player1 or
+        // player2 email, and auto-claim those teams. Re-renders the scoped
+        // welcome on completion so the user sees their leagues immediately.
+        try {
+          runEmailPreallocation(result.id, function(claimed) {
+            if (claimed > 0) {
+              loadUserLeagues();
+              if (typeof renderScopedWelcome === 'function') renderScopedWelcome();
+            }
+          });
+        } catch (e) { console.warn('preallocation failed:', e); }
         showScreen('welcome');
         renderScopedWelcome();
       });
@@ -5103,6 +5109,17 @@ function onAuthSuccess() {
               }
               const info = clubSnap.val();
               window._scopedClub = { id: userHomeClub.id, info: info };
+              // v4.16.23: pre-allocation — also runs on the homeClub auto-
+              // scope path. A returning user who got bulk-added to new
+              // leagues since their last sign-in will pick them up here.
+              try {
+                runEmailPreallocation(userHomeClub.id, function(claimed) {
+                  if (claimed > 0) {
+                    loadUserLeagues();
+                    if (typeof renderScopedWelcome === 'function') renderScopedWelcome();
+                  }
+                });
+              } catch (e) { console.warn('preallocation failed:', e); }
               showScreen('welcome');
               if (!consentModalActive) setTimeout(checkAndStartTour, 600);
             }).catch(function() {
@@ -5236,6 +5253,120 @@ function loadClubAdminMemberships(cb) {
     }
     if (cb) cb();
   }).catch(function() { window._clubAdminFor = []; if (cb) cb(); });
+}
+
+// v4.16.23: Email-based pre-allocation. When a user lands on a club they
+// haven't actively joined yet, scan every league in that club for a group
+// where their email matches `email` (player 1) or `partnerEmail` (player 2).
+// On match, write member + userLeagues entries so the user is automatically
+// added to their pre-allocated team — no "join" step required.
+//
+// Why: Mike Hawkins's actual workflow is "admin pastes a roster of doubles
+// teams + emails before the season starts; players sign in once and they're
+// already in their box". Without pre-allocation each player would have to
+// manually browse leagues and join, which destroys the whole self-onboard
+// promise for a 180-member club.
+//
+// Idempotent: skips leagues where the user is already a member, so re-firing
+// (every sign-in, every scope switch) is safe and cheap.
+//
+// In-session cache: window._preallocAttempted prevents redundant scans of the
+// same club within one browser session.
+function runEmailPreallocation(clubId, cb) {
+  if (!FIREBASE_READY || !currentUser || !currentUser.email || !clubId) { if (cb) cb(0); return; }
+  window._preallocAttempted = window._preallocAttempted || {};
+  if (window._preallocAttempted[clubId]) { if (cb) cb(0); return; }
+  window._preallocAttempted[clubId] = true;
+
+  var userEmail = String(currentUser.email).toLowerCase();
+  var emailKey = sanitizeEmail(currentUser.email);
+  var userUid = currentUser.uid;
+  var userDisplayName = currentUser.displayName || '';
+
+  db.ref('/clubLeagues/' + clubId).once('value').then(function(snap) {
+    var clubLeagues = snap.val() || {};
+    var leagueIds = Object.keys(clubLeagues);
+    if (leagueIds.length === 0) { if (cb) cb(0); return; }
+
+    Promise.all(leagueIds.map(function(lid) {
+      return db.ref('/leagues/' + lid).once('value').then(function(s) { return { id: lid, league: s.val() }; });
+    })).then(function(loaded) {
+      var updates = {};
+      var claimed = []; // names of leagues claimed, for the welcome toast
+      loaded.forEach(function(item) {
+        var l = item.league;
+        if (!l || !l.groups) return;
+        // Skip if user is already a member of this league — idempotency.
+        if (l.members && l.members[emailKey]) return;
+        var groups = Array.isArray(l.groups) ? l.groups : Object.values(l.groups);
+        // Find the matching group + which side of the team this user is on.
+        var matchedPlayerName = '';
+        var matchedPartnerName = '';
+        for (var i = 0; i < groups.length; i++) {
+          var g = groups[i];
+          if (!g) continue;
+          var gEmail = (g.email || '').toLowerCase();
+          var gPartnerEmail = (g.partnerEmail || '').toLowerCase();
+          if (gEmail && gEmail === userEmail) {
+            matchedPlayerName = (g.players && g.players[0]) || g.name || '';
+            matchedPartnerName = (g.players && g.players[1]) || '';
+            break;
+          }
+          if (gPartnerEmail && gPartnerEmail === userEmail) {
+            matchedPlayerName = (g.players && g.players[1]) || '';
+            matchedPartnerName = (g.players && g.players[0]) || '';
+            break;
+          }
+        }
+        if (!matchedPlayerName) return;
+        // Write the member entry — playerName comes from the matched team
+        // so the user is correctly identified as their pre-allocated player.
+        updates['/leagues/' + item.id + '/members/' + emailKey] = {
+          email: currentUser.email,
+          name: userDisplayName || matchedPlayerName,
+          playerName: matchedPlayerName,
+          partnerName: matchedPartnerName,
+          role: 'player',
+          joinedAt: Date.now(),
+          uid: userUid,
+          autoClaimed: true
+        };
+        // userLeagues index so the league shows in My Leagues + Browse.
+        updates['/userLeagues/' + userUid + '/' + item.id] = {
+          clubId: clubId,
+          clubName: (l.info && l.info.clubName) || (l.settings && l.settings.clubName) || '',
+          name: (l.info && l.info.name) || (l.settings && l.settings.leagueName) || '',
+          sport: (l.info && l.info.sport) || (l.settings && l.settings.sport) || '',
+          format: (l.info && l.info.format) || (l.settings && l.settings.format) || '',
+          role: 'player',
+          joinedAt: Date.now(),
+          autoClaimed: true
+        };
+        claimed.push((l.info && l.info.name) || 'a league');
+      });
+
+      if (claimed.length === 0) { if (cb) cb(0); return; }
+
+      db.ref('/').update(updates).then(function() {
+        // Friendly heads-up so the user understands what just happened.
+        var label = claimed.length === 1
+          ? 'You’ve been added to ' + claimed[0]
+          : 'You’ve been added to ' + claimed.length + ' leagues';
+        try { if (typeof toast === 'function') toast(label); } catch (e) {}
+        try { if (typeof logAction === 'function') logAction('email_preallocation_claimed', claimed.join(', ')); } catch (e) {}
+        if (cb) cb(claimed.length);
+      }).catch(function(err) {
+        console.error('Pre-allocation write failed:', err);
+        if (cb) cb(0);
+      });
+    }).catch(function(err) {
+      console.error('Pre-allocation league read failed:', err);
+      if (cb) cb(0);
+    });
+  }).catch(function(err) {
+    console.error('Pre-allocation club read failed:', err);
+    if (cb) cb(0);
+  });
 }
 
 // v4.8.0: Is the current user a clubAdmin for the scoped club (or passed id)?
@@ -5814,29 +5945,52 @@ function aiFillAvailability() {
   document.getElementById('ai-avail-prompt').value = '';
 }
 
+// v4.16.23: single source of truth for the league nav tabs. Previously
+// the same array was duplicated in three places (enterLeagueMain,
+// renderAppTabs, buildTopMenu) and a v4.16.20 update missed two of them,
+// flashing the new "Booked" tab in then dropping it after async loads.
+// Now every caller goes through this helper so the next tab addition
+// is one-line and the bug class is closed.
+//
+// Returns 2-tuples [id, label] by default; pass { withIcons: true } to get
+// 3-tuples [id, label, iconHtml] for the top-bar menu's Tabs group.
+function getLeagueTabs(opts) {
+  opts = opts || {};
+  var isOrganiser = !!opts.isOrganiser;
+  var withIcons = !!opts.withIcons;
+  var scoringOn = ('scoringOn' in opts) ? !!opts.scoringOn : (typeof isScoringEnabled === 'function' && isScoringEnabled());
+  if (opts.mixInMode || mixInMode) {
+    return withIcons ? [['open', 'Friendly Matches', '&#129309;']] : [['open', 'Friendly Matches']];
+  }
+  var tabs;
+  if (withIcons) {
+    tabs = [
+      ['availability', 'My Availability', '&#128197;'],
+      ['everyone',     'Everyone',         '&#128101;'],
+      ['matches',      'Match Finder',     '&#127934;'],
+      ['booked',       'Booked',           '&#128197;']
+    ];
+    if (scoringOn) tabs.push(['results', 'Results', '&#127942;']);
+    if (isOrganiser) tabs.push(['setup', 'Settings', '&#9881;&#65039;']);
+  } else {
+    tabs = [
+      ['availability', 'My Availability'],
+      ['everyone',     'Everyone'],
+      ['matches',      'Match Finder'],
+      ['booked',       'Booked']
+    ];
+    if (scoringOn) tabs.push(['results', 'Results']);
+    if (isOrganiser) tabs.push(['setup', 'Settings']);
+  }
+  return tabs;
+}
+
 // Rebuild the nav tabs — called after async club modules load so the tab list refreshes
 function renderAppTabs() {
   if (currentScreen !== 'app' || !activeLeagueId) return;
   try {
-    // Re-enter the nav builder by triggering the same logic as enterLeague did
     var isOrganiser = userLeagues[activeLeagueId] && userLeagues[activeLeagueId].role === 'organiser';
-    var scoringOn = isScoringEnabled();
-    var tabs;
-    // v4.16.22: keep this in sync with the matching tabs array in
-    // enterLeagueMain (~line 7798). renderAppTabs() rebuilds the nav after
-    // async club modules finish loading; if Booked is only in one of the
-    // two arrays the tab flashes in then disappears, which Grant hit on
-    // 7 May. Single source would be cleaner but for now: any change to
-    // either array MUST land in both.
-    if (mixInMode) { tabs = [['open','Friendly Matches']]; }
-    else if (isOrganiser) {
-      tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['booked','Booked']];
-      if (scoringOn) tabs.push(['results','Results']);
-      tabs.push(['setup','Settings']);
-    } else {
-      tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['booked','Booked']];
-      if (scoringOn) tabs.push(['results','Results']);
-    }
+    var tabs = getLeagueTabs({ isOrganiser: isOrganiser });
     var navEl = document.getElementById('app-nav');
     if (!navEl) return;
     navEl.innerHTML = tabs.map(function(t, i) {
@@ -6004,11 +6158,30 @@ function renderScopedLeagueList(clubId) {
       yourIds.forEach(function(lid) { html += cardHtml(lid, true); });
     }
 
+    // v4.16.23: pre-allocated players should NOT browse / join other leagues
+    // in their club — the admin already chose their box. Detect pre-allocated
+    // status from the autoClaimed flag on any of the user's existing
+    // memberships in this club. Club admins always see every league so they
+    // can still manage. Players who joined manually retain the legacy "Other
+    // leagues / Join a league" section.
+    var hasAutoClaimedHere = yourIds.some(function(lid) {
+      return memberMap[lid] && memberMap[lid].autoClaimed === true;
+    });
+    var hideOtherLeagues = hasAutoClaimedHere && !isAdminHere;
+
     // "Join a league" / "Other leagues" section
-    if (otherIds.length > 0) {
+    if (otherIds.length > 0 && !hideOtherLeagues) {
       var heading = yourIds.length > 0 ? 'OTHER LEAGUES IN THIS CLUB' : 'JOIN A LEAGUE';
       html += '<div style="font-size:11px;font-weight:800;color:#6b7280;letter-spacing:0.8px;margin:' + (yourIds.length > 0 ? '16px' : '4px') + ' 2px 8px">' + heading + '</div>';
       otherIds.forEach(function(lid) { html += cardHtml(lid, false); });
+    } else if (hideOtherLeagues && otherIds.length > 0) {
+      // Soft footer for pre-allocated players so they understand why other
+      // boxes aren't visible — preempts a "where are the other boxes?"
+      // support question.
+      html += '<div style="font-size:12px;color:#6b7280;margin-top:14px;padding:10px 14px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;line-height:1.5">' +
+        'Your organiser has placed you in the box(es) above. Other boxes in this club are managed by your organiser. ' +
+        'If you think you should be in a different box, contact them directly.' +
+      '</div>';
     }
 
     box.innerHTML = html;
@@ -7832,22 +8005,10 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   document.getElementById('app-user-photo').src = photoUrl;
   document.getElementById('app-user-first').textContent = (currentUser.displayName || 'You').split(' ')[0];
 
-  // Build nav tabs — conditional on club modules
-  const scoringOn = isScoringEnabled();
-  let tabs;
-  if (mixInMode) {
-    tabs = [['open','Friendly Matches']];
-  } else if (isOrganiser) {
-    // v4.16.20: Booked tab between Match Finder and Results — focused list of
-    // confirmed bookings in this league so users can find a match without
-    // scrolling past Match Finder's suggestion slots.
-    tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['booked','Booked']];
-    if (scoringOn) tabs.push(['results','Results']);
-    tabs.push(['setup','Settings']);
-  } else {
-    tabs = [['availability','My Availability'],['everyone','Everyone'],['matches','Match Finder'],['booked','Booked']];
-    if (scoringOn) tabs.push(['results','Results']);
-  }
+  // v4.16.23: tab list now comes from getLeagueTabs() helper (single source
+  // of truth, see ~line 5960). Avoids the v4.16.20-era bug where the same
+  // array lived in three places and Booked got out of sync.
+  const tabs = getLeagueTabs({ isOrganiser: isOrganiser });
 
   const navEl = document.getElementById('app-nav');
   navEl.style.display = '';
