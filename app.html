@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.24</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.25</div>
   </div>
 </div>
 
@@ -1635,7 +1635,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.24 · Build 20260507</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.25 · Build 20260507</div>
   </div>
 </div>
 
@@ -2062,6 +2062,31 @@
         <a href="https://youtu.be/hCp4qSjSlbU" target="_blank" rel="noopener" style="color:#fff;font-weight:700;text-decoration:underline">&#127942; Scoring deep-dive</a>
       </div>
       <div style="font-size:11px;opacity:0.7;margin-top:10px">You'll see this once per new feature.</div>
+    </div>
+  </div>
+</div>
+
+<!-- v4.16.25: First-login welcome video. Separate from the release-
+     announcement modal above so the two flows don't tangle. Fires once
+     per user (tracked in /users/<uid>/firstLoginVideoSeen). Stays
+     dormant until CURRENT_FIRST_LOGIN_VIDEO_ID is set to a non-empty
+     YouTube id — Grant produces the video, sets the constant, ships. -->
+<div id="first-login-video-modal" style="display:none;position:fixed;inset:0;z-index:1002;background:rgba(0,0,0,0.85);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeFirstLoginVideo()">
+  <div style="background:linear-gradient(135deg,#1e3a8a 0%,#1e40af 50%,#3730a3 100%);border-radius:20px;width:100%;max-width:680px;max-height:94vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,0.5);position:relative">
+    <button onclick="closeFirstLoginVideo()" style="position:absolute;top:12px;right:14px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);border-radius:50%;width:36px;height:36px;font-size:20px;cursor:pointer;color:#fff;z-index:1" aria-label="Close">&times;</button>
+    <div style="padding:28px 28px 24px;color:#fff;text-align:center">
+      <div style="display:inline-flex;align-items:center;gap:6px;background:#10b981;color:#fff;border-radius:20px;padding:5px 14px;font-size:11px;font-weight:900;letter-spacing:2px;margin-bottom:14px;text-transform:uppercase;box-shadow:0 4px 12px rgba(16,185,129,0.4)">
+        &#128075; Welcome
+      </div>
+      <div id="first-login-video-title" style="font-size:24px;font-weight:900;letter-spacing:-0.5px;line-height:1.2;margin-bottom:8px">Welcome to BoxLeague Pro</div>
+      <div id="first-login-video-subtitle" style="font-size:14px;opacity:0.9;margin-bottom:18px;line-height:1.5">A 90-second tour to get you started.</div>
+      <div style="border-radius:14px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,0.4);margin-bottom:18px;background:#000">
+        <iframe id="first-login-video-iframe" width="100%" height="auto" src="" title="BoxLeague Pro &mdash; Welcome" frameborder="0" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen style="display:block;width:100%;aspect-ratio:16/9;height:auto;border:0"></iframe>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button onclick="closeFirstLoginVideo(true)" style="background:#fff;color:#0f172a;border:none;border-radius:10px;padding:12px 22px;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,0.25)">Got it &mdash; take me to the app</button>
+      </div>
+      <div style="font-size:11px;opacity:0.7;margin-top:14px">You can re-watch from &#9776; Menu &rarr; Help &amp; guides.</div>
     </div>
   </div>
 </div>
@@ -4981,6 +5006,11 @@ function onAuthSuccess() {
   // ☰ Menu → "Watch release video" for users who want it. To re-enable for
   // a future release, bump CURRENT_WELCOME_VIDEO_ID and uncomment the call.
   // try { maybeShowWelcomeVideo(); } catch (e) {}
+  // v4.16.25: first-login welcome video. Self-gates against the seen flag
+  // so it's safe to call on every sign-in. Fires only when
+  // CURRENT_FIRST_LOGIN_VIDEO_ID is set to a non-empty YouTube id —
+  // dormant until Grant produces the video.
+  try { maybeShowFirstLoginVideo(); } catch (e) {}
   loadUserLeagues();
   loadUserHomeClub(() => {
     // v4.8.0: load clubAdmin memberships once per session so scoped-welcome
@@ -12489,6 +12519,77 @@ function maybeShowWelcomeVideo() {
   } catch (e) { return; }
   // Don't show on top of auth/loading — wait a moment after sign-in settles
   setTimeout(function() { openWelcomeVideo(); }, 1200);
+}
+
+/* ── v4.16.25: First-login welcome video ──
+   Separate flow from the release-announcement modal above so a new
+   user gets a "welcome to BoxLeague Pro" tour on their very first
+   sign-in, regardless of which release videos they've seen.
+
+   To activate: set CURRENT_FIRST_LOGIN_VIDEO_ID to a YouTube id
+   (e.g. 'BEGkp-D4JTk') and update the title/subtitle if needed.
+   While the id is empty the entire flow is dormant — nothing fires.
+
+   "Seen" state lives at /users/<uid>/firstLoginVideoSeen so it works
+   across devices for the same account (the release video uses
+   localStorage which is per-device by design — we want the opposite
+   here: see it once across phone + laptop). */
+const CURRENT_FIRST_LOGIN_VIDEO_ID = ''; // ← set when video is recorded
+const CURRENT_FIRST_LOGIN_VIDEO_TITLE = 'Welcome to BoxLeague Pro';
+const CURRENT_FIRST_LOGIN_VIDEO_SUBTITLE = 'A 90-second tour to get you started.';
+
+function openFirstLoginVideo() {
+  if (!CURRENT_FIRST_LOGIN_VIDEO_ID) return;
+  const iframe = document.getElementById('first-login-video-iframe');
+  const titleEl = document.getElementById('first-login-video-title');
+  const subEl = document.getElementById('first-login-video-subtitle');
+  if (iframe) iframe.src = 'https://www.youtube-nocookie.com/embed/' + CURRENT_FIRST_LOGIN_VIDEO_ID + '?autoplay=1&rel=0';
+  if (titleEl) titleEl.textContent = CURRENT_FIRST_LOGIN_VIDEO_TITLE;
+  if (subEl) subEl.textContent = CURRENT_FIRST_LOGIN_VIDEO_SUBTITLE;
+  const modal = document.getElementById('first-login-video-modal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeFirstLoginVideo(markSeen) {
+  const modal = document.getElementById('first-login-video-modal');
+  const iframe = document.getElementById('first-login-video-iframe');
+  if (iframe) iframe.src = ''; // stop playback
+  if (modal) modal.style.display = 'none';
+  // Mark as seen on dismiss too — we don't want to re-nag every sign-in.
+  // Server-side write so the seen state follows the user across devices.
+  if (FIREBASE_READY && currentUser) {
+    db.ref('/users/' + currentUser.uid + '/firstLoginVideoSeen').set(true).catch(function() {});
+  }
+  // localStorage fallback for offline / Firebase-blocked sessions.
+  try { localStorage.setItem('blp_first_login_video_seen', '1'); } catch (e) {}
+}
+
+function maybeShowFirstLoginVideo() {
+  if (!CURRENT_FIRST_LOGIN_VIDEO_ID) return; // dormant until a video is set
+  if (!currentUser) return;
+  // localStorage fast-path so we don't open + flash close while waiting on
+  // the Firebase round-trip on slow networks.
+  try {
+    if (localStorage.getItem('blp_first_login_video_seen')) return;
+  } catch (e) { /* private mode etc — fall through */ }
+  if (!FIREBASE_READY) {
+    setTimeout(function() { openFirstLoginVideo(); }, 1500);
+    return;
+  }
+  db.ref('/users/' + currentUser.uid + '/firstLoginVideoSeen').once('value').then(function(snap) {
+    if (snap.val() === true) {
+      // Persist locally so subsequent loads skip the Firebase read.
+      try { localStorage.setItem('blp_first_login_video_seen', '1'); } catch (e) {}
+      return;
+    }
+    // Don't open on top of the consent modal or the guided setup wizard —
+    // queue behind those.
+    if (typeof consentModalActive !== 'undefined' && consentModalActive) {
+      setTimeout(maybeShowFirstLoginVideo, 2000);
+      return;
+    }
+    setTimeout(function() { openFirstLoginVideo(); }, 1500);
+  }).catch(function() { /* network drop — silent skip, will try next sign-in */ });
 }
 
 /* ── Changelog ── */
