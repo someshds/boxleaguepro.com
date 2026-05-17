@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.27</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.28</div>
   </div>
 </div>
 
@@ -1635,7 +1635,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.27 · Build 20260517</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.28 · Build 20260517</div>
   </div>
 </div>
 
@@ -5023,6 +5023,14 @@ function onAuthSuccess() {
     const _rawSharedLeagueId = params.get('league');
     const sharedMixin = params.get('mixin');
     const _rawSharedClub = params.get('club');
+    // v4.16.28: optional ?tab= param so deep-links can land users on a
+    // specific tab (e.g. ?league=<id>&tab=booked drops you on the Booked
+    // tab inside the league). Validated against a whitelist to keep it
+    // out of any future code that consumes the value unsafely.
+    const _rawSharedTab = params.get('tab');
+    const VALID_TABS = ['availability','everyone','matches','booked','results','setup','open'];
+    const sharedTab = VALID_TABS.indexOf(_rawSharedTab) !== -1 ? _rawSharedTab : null;
+    if (sharedTab) window._pendingTab = sharedTab;
     // v4.15.11 (S-6): URL param validators. Without these, raw param values
     // flow into Firebase paths (`/clubs/<rawParam>`, `/leagues/<rawParam>/info`).
     // Firebase rejects `.`, `#`, `$`, `[`, `]` but ALLOWS `/` — so a phishing
@@ -8057,6 +8065,20 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   ).join('');
 
   currentTab = mixInMode ? 'open' : 'availability';
+  // v4.16.28: honour ?tab= deep-link param. Set on auth-init; consumed
+  // here so the first render after entering the league lands on the
+  // requested tab instead of the default availability tab. Falls back
+  // to the default if the requested tab isn't in this league's nav
+  // (e.g. someone shares a ?tab=results link for a non-scoring league).
+  if (window._pendingTab && tabs.some(function(t) { return t[0] === window._pendingTab; })) {
+    const requested = window._pendingTab;
+    delete window._pendingTab;
+    setTimeout(function() { showTab(requested); }, 200);
+  } else if (window._pendingTab) {
+    // Requested tab isn't valid here — drop it so it doesn't apply on
+    // a subsequent league entry where it might be even less correct.
+    delete window._pendingTab;
+  }
 
   // Hide league-specific header elements in mix-in mode
   // v4.15.0: league-code display is always hidden now (codes deprecated). Keep the
@@ -12352,6 +12374,18 @@ function buildBookedMatchMsg(m) {
   // Free-text notes (meeting point, instructions).
   if (m.notes && m.notes.trim()) {
     lines.push('Notes: ' + m.notes.trim());
+  }
+  // v4.16.28: deep-link straight to the Booked tab of this league.
+  // Recipient taps → signs in if needed → auto-scopes via homeClub +
+  // v4.15.2 pre-allocation → lands on the Booked tab where this match
+  // is visible with all the in-app actions (Confirm date, Mark court
+  // booked, Enter score, etc). Built off the existing ?league= deep-
+  // link plus the new ?tab= param.
+  if (m.lid) {
+    const origin = (typeof window !== 'undefined' && window.location)
+      ? window.location.origin + window.location.pathname
+      : 'https://boxleaguepro.com/app.html';
+    lines.push('Open in app: ' + origin + '?league=' + m.lid + '&tab=booked');
   }
   lines.push('');
   lines.push('-- BoxLeague Pro');
