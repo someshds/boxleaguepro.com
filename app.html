@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.29</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.30</div>
   </div>
 </div>
 
@@ -1635,7 +1635,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.29 · Build 20260517</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.30 · Build 20260517</div>
   </div>
 </div>
 
@@ -12336,74 +12336,88 @@ function openBookingsThenEnter(leagueId) {
 }
 
 // v4.16.14: build a WhatsApp-friendly text summary of a single booked match.
-// Used by both the Share-to-WhatsApp and Copy-to-clipboard buttons in My
-// Matches so a freshly-booked match can be sent to the WhatsApp box-league
-// group with one tap.
 //
-// v4.16.27: all emojis stripped from the body in favour of plain "Label:"
-// prefixes. Grant reported "?" characters appearing in the copied output
-// — almost certainly the em-dash or one of the more obscure emoji
-// codepoints (clock face, warning sign with VS-16) failing on a recipient
-// platform or in the clipboard → wa.me URL handoff. Plain ASCII labels
-// can't break. The league header still shows the sport icon since that's
-// short and visually anchors the message.
-function buildBookedMatchMsg(m) {
+// v4.16.30: two flavours.
+//   • Plain (default, used for WhatsApp share) — pure ASCII "Label:" prefixes.
+//     This is what survives the clipboard → wa.me URL → recipient handoff
+//     reliably. Grant flagged "?" characters in the WhatsApp output in
+//     v4.16.27 because em-dashes and certain emoji codepoints break under
+//     URL encoding on some platforms.
+//   • Rich (opts.rich = true, used for the Copy button) — emoji prefixes,
+//     friendlier read in iMessage / email / chats that don't go through
+//     wa.me's URL-encoded text param. navigator.clipboard.writeText
+//     handles unicode reliably end-to-end, so emojis are safe here.
+//
+// Same fields rendered, same order. Only the prefix style differs so the
+// two outputs stay structurally consistent.
+function buildBookedMatchMsg(m, opts) {
   if (!m) return '';
+  opts = opts || {};
+  const rich = !!opts.rich;
   const lines = [];
-  lines.push(m.leagueName);
+
+  // Header — sport icon prefixes the league name in rich mode.
+  lines.push((rich && m.ico ? m.ico + ' ' : '') + m.leagueName);
   lines.push('');
-  // v4.16.29: prefer the full "TeamA vs TeamB" label over the participant-
-  // relative "vs OpponentTeam" form. Recipients may be on either team or
-  // outside the league entirely; the full lineup is the unambiguous read.
+
+  // v4.16.29: prefer full "TeamA vs TeamB" — recipients may be on either team.
   lines.push(m.fullMatchLabel || m.matchLabel);
-  lines.push('Date: ' + fmtFull(m.date));
-  lines.push('Time: ' + slotLabel(m.slot || ''));
+
+  // Date / time
+  lines.push((rich ? '\u{1F4C5} ' : 'Date: ') + fmtFull(m.date));
+  lines.push((rich ? '\u{1F551} ' : 'Time: ') + slotLabel(m.slot || ''));
+
+  // Court status
   if (m.courtBooked) {
-    lines.push(m.courtNumber
-      ? 'Court: booked (Court ' + m.courtNumber + ')'
-      : 'Court: booked');
+    if (rich) {
+      lines.push('✅ ' + (m.courtNumber ? 'Court ' + m.courtNumber + ' booked' : 'Court booked'));
+    } else {
+      lines.push(m.courtNumber
+        ? 'Court: booked (Court ' + m.courtNumber + ')'
+        : 'Court: booked');
+    }
   } else {
-    lines.push('Court: not booked yet');
+    lines.push((rich ? '⚠️ ' : 'Court: ') + (rich ? 'Court not booked yet' : 'not booked yet'));
   }
-  // v4.16.18: always include the booking URL when set so recipients can
-  // look up court availability, rebook, or verify the existing booking.
+
+  // v4.16.18: always include the booking URL when set.
   if (m.bookingUrl) {
-    lines.push('Booking link: ' + m.bookingUrl);
+    lines.push((rich ? '\u{1F517} Book: ' : 'Booking link: ') + m.bookingUrl);
   }
-  // Confirmation count — only render when there's a meaningful participant
-  // list to count against.
+
+  // Confirmation count — only when meaningful.
   const participants = m.participants || [];
   const agreed = m.agreed || {};
   if (participants.length > 0) {
     const confirmedCount = participants.filter(function(p) { return !!agreed[p]; }).length;
     if (confirmedCount > 0 || participants.length > 2) {
-      lines.push('Confirmed: ' + confirmedCount + '/' + participants.length);
+      lines.push((rich ? '\u{1F44D} ' : 'Confirmed: ') + confirmedCount + '/' + participants.length + (rich ? ' confirmed' : ''));
     }
   }
-  // Free-text notes (meeting point, instructions).
+
+  // Free-text notes.
   if (m.notes && m.notes.trim()) {
-    lines.push('Notes: ' + m.notes.trim());
+    lines.push((rich ? '\u{1F4DD} ' : 'Notes: ') + m.notes.trim());
   }
-  // v4.16.28: deep-link straight to the Booked tab of this league.
-  // Recipient taps → signs in if needed → auto-scopes via homeClub +
-  // v4.15.2 pre-allocation → lands on the Booked tab where this match
-  // is visible with all the in-app actions (Confirm date, Mark court
-  // booked, Enter score, etc). Built off the existing ?league= deep-
-  // link plus the new ?tab= param.
+
+  // v4.16.28: deep-link straight to the Booked tab.
   if (m.lid) {
     const origin = (typeof window !== 'undefined' && window.location)
       ? window.location.origin + window.location.pathname
       : 'https://boxleaguepro.com/app.html';
-    lines.push('Open in app: ' + origin + '?league=' + m.lid + '&tab=booked');
+    const url = origin + '?league=' + m.lid + '&tab=booked';
+    lines.push((rich ? '\u{1F4F1} Open in app: ' : 'Open in app: ') + url);
   }
+
   lines.push('');
-  lines.push('-- BoxLeague Pro');
+  lines.push((rich ? '\u{1F3BE} BoxLeague Pro' : '-- BoxLeague Pro'));
   return lines.join('\n');
 }
 
 function shareBookedMatchWhatsApp(cacheKey) {
   const m = (window._currentBookings || {})[cacheKey];
   if (!m) { toast('Match details no longer available — reopen My Matches'); return; }
+  // Plain ASCII flavour — survives wa.me URL encoding reliably.
   const msg = buildBookedMatchMsg(m);
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
@@ -12411,7 +12425,10 @@ function shareBookedMatchWhatsApp(cacheKey) {
 function copyBookedMatchText(cacheKey) {
   const m = (window._currentBookings || {})[cacheKey];
   if (!m) { toast('Match details no longer available — reopen My Matches'); return; }
-  const msg = buildBookedMatchMsg(m);
+  // v4.16.30: rich flavour with emojis — Copy uses clipboard API which
+  // preserves unicode, so the prettier read works here even though the
+  // same content via wa.me URL would break.
+  const msg = buildBookedMatchMsg(m, { rich: true });
   if (typeof copyText === 'function') {
     copyText(msg);
     toast('Match details copied');
