@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.25</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.26</div>
   </div>
 </div>
 
@@ -1635,7 +1635,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.25 · Build 20260507</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.26 · Build 20260517</div>
   </div>
 </div>
 
@@ -10569,7 +10569,18 @@ function bookMatch(matchKey, date, slot) {
   const d = new Date(date + 'T00:00:00');
   const dateLabel = DAY_NAMES[d.getDay()] + ' ' + d.getDate() + ' ' + MONTH_NAMES[d.getMonth()];
   if (!confirm('Book this match?\n\n' + dateLabel + ' at ' + slotLbl + '\n\nPlayers will be notified.')) return;
-  fbSetBooked(matchKey, { date, slot, notes: '', courtBooked: false, agreed: {} });
+  // v4.16.26: auto-confirm the booker + their doubles partner. If you've
+  // booked a slot, you've obviously agreed to it; and your doubles
+  // partner has presumably been consulted offline. The opposing team
+  // still needs to confirm separately.
+  const myBookName = getMyPlayerName();
+  const initialAgreed = {};
+  if (myBookName) {
+    initialAgreed[myBookName] = true;
+    const myPartner = findDoublesPartner(myBookName);
+    if (myPartner) initialAgreed[myPartner] = true;
+  }
+  fbSetBooked(matchKey, { date, slot, notes: '', courtBooked: false, agreed: initialAgreed });
   logAction('book_match', dateLabel + ' at ' + slotLbl);
   notifyBooking(matchKey, date, slot);
   renderMatchFinder(); renderMyMatches();
@@ -10826,9 +10837,15 @@ function saveAddMatchModal(fixedTeamAId) {
   const d = new Date(date + 'T00:00:00');
   const dateLabel = DAY_NAMES[d.getDay()] + ' ' + d.getDate() + ' ' + MONTH_NAMES[d.getMonth()];
 
-  // Auto-confirm the person who added the match (they obviously agreed)
+  // Auto-confirm the person who added the match (they obviously agreed).
+  // v4.16.26: also auto-confirm their doubles partner — same logic as
+  // Match Finder bookings. Singles leagues no-op since partner is null.
   const agreed = {};
-  if (myName) agreed[myName] = true;
+  if (myName) {
+    agreed[myName] = true;
+    const addPartner = findDoublesPartner(myName);
+    if (addPartner) agreed[addPartner] = true;
+  }
 
   const slotData = {
     date: date,
@@ -10934,6 +10951,21 @@ function saveBookingEdit(matchKey) {
   toast('Booking updated');
 }
 
+// v4.16.26: In doubles leagues, partners coordinate offline before
+// booking — requiring both to log in and tap Confirm separately is
+// busywork. When one partner confirms, the other auto-confirms.
+// Unconfirming is symmetric — pulls the partner with you so a player
+// can't accidentally leave a "ghost confirmation" they never gave.
+// Singles leagues unaffected (partner lookup returns null).
+function findDoublesPartner(playerName) {
+  if (!playerName || !L || !L.groups) return null;
+  const team = L.groups.find(function(g) {
+    return g && Array.isArray(g.players) && g.players.indexOf(playerName) !== -1;
+  });
+  if (!team || !team.players || team.players.length < 2) return null;
+  return team.players.find(function(p) { return p && p !== playerName; }) || null;
+}
+
 function toggleAgreed(matchKey) {
   const player = getMyPlayerName();
   if (!player) { toast('Sign in to confirm'); return; }
@@ -10943,7 +10975,16 @@ function toggleAgreed(matchKey) {
   const booked = L.booked[matchKey];
   if (!booked) return;
   if (!booked.agreed) booked.agreed = {};
-  if (booked.agreed[player]) { delete booked.agreed[player]; logAction('unconfirm_match', matchKey); } else { booked.agreed[player] = true; logAction('confirm_match', matchKey); }
+  const partner = findDoublesPartner(player);
+  if (booked.agreed[player]) {
+    delete booked.agreed[player];
+    if (partner) delete booked.agreed[partner];
+    logAction('unconfirm_match', matchKey + (partner ? ' (+partner ' + partner + ')' : ''));
+  } else {
+    booked.agreed[player] = true;
+    if (partner) booked.agreed[partner] = true;
+    logAction('confirm_match', matchKey + (partner ? ' (+partner ' + partner + ')' : ''));
+  }
   fbSetBooked(matchKey, booked);
   renderMatchFinder(); renderMyMatches();
 }
