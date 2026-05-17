@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.30</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.31</div>
   </div>
 </div>
 
@@ -1635,7 +1635,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.30 · Build 20260517</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.31 · Build 20260517</div>
   </div>
 </div>
 
@@ -12309,7 +12309,7 @@ function openBookings() {
            +       (m.courtBooked ? '&#9989; Court booked' : '&#9888;&#65039; Court not booked')
            +     '</div>'
            +   '</div>'
-           +   '<div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:4px">' + esc(m.matchLabel) + '</div>'
+           +   '<div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:4px">' + esc(m.fullMatchLabel || m.matchLabel) + '</div>'
            +   '<div style="font-size:13px;color:#475569;margin-bottom:10px">' + esc(fmtFull(m.date)) + ' &middot; ' + esc(slotLabel(m.slot)) + '</div>'
            +   '<div style="display:flex;flex-wrap:wrap;gap:6px">'
            +     courtBtn
@@ -12574,6 +12574,8 @@ function renderBookedTab() {
     const matchLabel = myGroup
       ? 'vs ' + ((oppGroup && oppGroup.name) || '(other team)')
       : ((u.partA && u.partA.name) || '?') + ' vs ' + ((u.partB && u.partB.name) || '?');
+    // v4.16.31: full lineup form for the card heading (matches the share text).
+    const fullMatchLabel = ((u.partA && u.partA.name) || '?') + ' vs ' + ((u.partB && u.partB.name) || '?');
     const allParticipants = [].concat((u.partA && u.partA.players) || [], (u.partB && u.partB.players) || []);
     const agreed = m.agreed || {};
     const myAgreed = player && agreed[player];
@@ -12582,7 +12584,7 @@ function renderBookedTab() {
 
     html += '<div style="border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;margin-bottom:12px;background:#fff;border-left:4px solid #059669">'
          +   '<div style="display:flex;justify-content:space-between;align-items:start;gap:10px;margin-bottom:6px">'
-         +     '<div style="font-size:18px;font-weight:800;color:#0f172a">' + esc(matchLabel) + '</div>'
+         +     '<div style="font-size:18px;font-weight:800;color:#0f172a">' + esc(fullMatchLabel || matchLabel) + '</div>'
          +     '<div style="font-size:11px;font-weight:700;color:#059669;background:#dcfce7;padding:3px 10px;border-radius:20px;letter-spacing:0.5px">BOOKED</div>'
          +   '</div>'
          +   '<div style="font-size:14px;color:#0f172a;font-weight:600;margin-bottom:4px">\u{1F4C5} ' + esc(fmtFull(m.date)) + ' &middot; ' + esc(slotLabel(m.slot || '')) + '</div>'
