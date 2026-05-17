@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.26</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.27</div>
   </div>
 </div>
 
@@ -1635,7 +1635,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.26 · Build 20260517</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.27 · Build 20260517</div>
   </div>
 </div>
 
@@ -12310,54 +12310,51 @@ function openBookingsThenEnter(leagueId) {
 // v4.16.14: build a WhatsApp-friendly text summary of a single booked match.
 // Used by both the Share-to-WhatsApp and Copy-to-clipboard buttons in My
 // Matches so a freshly-booked match can be sent to the WhatsApp box-league
-// group with one tap. Includes the booking URL when the match's court isn't
-// confirmed yet so the recipient can lock the slot in.
+// group with one tap.
 //
-// v4.16.16: now includes every share-relevant field — court number, free-
-// text notes (meeting point, instructions, etc.), and how many of the
-// match's participants have confirmed the date — so the recipient has
-// everything they need without having to chase the sender for missing
-// details.
+// v4.16.27: all emojis stripped from the body in favour of plain "Label:"
+// prefixes. Grant reported "?" characters appearing in the copied output
+// — almost certainly the em-dash or one of the more obscure emoji
+// codepoints (clock face, warning sign with VS-16) failing on a recipient
+// platform or in the clipboard → wa.me URL handoff. Plain ASCII labels
+// can't break. The league header still shows the sport icon since that's
+// short and visually anchors the message.
 function buildBookedMatchMsg(m) {
   if (!m) return '';
   const lines = [];
-  lines.push(m.ico + ' ' + m.leagueName);
+  lines.push(m.leagueName);
   lines.push('');
   lines.push(m.matchLabel);
-  lines.push('\u{1F4C5} ' + fmtFull(m.date));
-  lines.push('\u{1F551} ' + slotLabel(m.slot || ''));
+  lines.push('Date: ' + fmtFull(m.date));
+  lines.push('Time: ' + slotLabel(m.slot || ''));
   if (m.courtBooked) {
     lines.push(m.courtNumber
-      ? '✅ Court booked (Court ' + m.courtNumber + ')'
-      : '✅ Court booked');
+      ? 'Court: booked (Court ' + m.courtNumber + ')'
+      : 'Court: booked');
   } else {
-    lines.push('⚠️ Court not booked yet');
+    lines.push('Court: not booked yet');
   }
-  // v4.16.18: always include the booking URL (when one is set on the
-  // league/club), regardless of court-booked status. Recipients still
-  // need it to look up court availability, rebook a different slot, or
-  // confirm the existing reservation. Previously it only appeared when
-  // court was unbooked.
+  // v4.16.18: always include the booking URL when set so recipients can
+  // look up court availability, rebook, or verify the existing booking.
   if (m.bookingUrl) {
-    lines.push('\u{1F517} ' + m.bookingUrl);
+    lines.push('Booking link: ' + m.bookingUrl);
   }
   // Confirmation count — only render when there's a meaningful participant
-  // list to count against (so we don't show "0/0 confirmed" on edge data).
+  // list to count against.
   const participants = m.participants || [];
   const agreed = m.agreed || {};
   if (participants.length > 0) {
     const confirmedCount = participants.filter(function(p) { return !!agreed[p]; }).length;
     if (confirmedCount > 0 || participants.length > 2) {
-      lines.push('\u{1F44D} ' + confirmedCount + '/' + participants.length + ' confirmed');
+      lines.push('Confirmed: ' + confirmedCount + '/' + participants.length);
     }
   }
-  // Free-text notes (meeting point, instructions). Multi-line notes are
-  // preserved — WhatsApp renders them fine.
+  // Free-text notes (meeting point, instructions).
   if (m.notes && m.notes.trim()) {
-    lines.push('\u{1F4DD} ' + m.notes.trim());
+    lines.push('Notes: ' + m.notes.trim());
   }
   lines.push('');
-  lines.push('— BoxLeague Pro');
+  lines.push('-- BoxLeague Pro');
   return lines.join('\n');
 }
 
