@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.28</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.29</div>
   </div>
 </div>
 
@@ -1635,7 +1635,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.28 · Build 20260517</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.29 · Build 20260517</div>
   </div>
 </div>
 
@@ -12223,9 +12223,14 @@ function openBookings() {
         const partA = groupList.find(function(g) { return g && g.id === parts[0]; });
         const partB = groupList.find(function(g) { return g && g.id === parts[1]; });
         const oppGroup = oppId ? groupList.find(function(g) { return g && g.id === oppId; }) : null;
+        // v4.16.29: keep both forms — short "vs X" for the in-app UI when
+        // the user is a participant, and full "TeamA vs TeamB" for share
+        // messages where the recipient may be on either team or none at
+        // all and needs to see who's playing without inferring it.
         const matchLabel = myGroup
           ? 'vs ' + ((oppGroup && oppGroup.name) || '(other team)')
           : ((partA && partA.name) || '?') + ' vs ' + ((partB && partB.name) || '?');
+        const fullMatchLabel = ((partA && partA.name) || '?') + ' vs ' + ((partB && partB.name) || '?');
 
         // v4.16.16: capture every share-relevant field on the booked record
         // so buildBookedMatchMsg can render the full picture (notes, court
@@ -12250,6 +12255,7 @@ function openBookings() {
           agreed: b.agreed || {},
           participants: allParticipants,
           matchLabel: matchLabel,
+          fullMatchLabel: fullMatchLabel,
           isMine: !!myGroup
         });
       });
@@ -12346,7 +12352,10 @@ function buildBookedMatchMsg(m) {
   const lines = [];
   lines.push(m.leagueName);
   lines.push('');
-  lines.push(m.matchLabel);
+  // v4.16.29: prefer the full "TeamA vs TeamB" label over the participant-
+  // relative "vs OpponentTeam" form. Recipients may be on either team or
+  // outside the league entirely; the full lineup is the unambiguous read.
+  lines.push(m.fullMatchLabel || m.matchLabel);
   lines.push('Date: ' + fmtFull(m.date));
   lines.push('Time: ' + slotLabel(m.slot || ''));
   if (m.courtBooked) {
@@ -12506,12 +12515,16 @@ function renderBookedTab() {
   }
 
   // Cache for share-button look-ups (same shape My Matches uses).
+  // v4.16.29: also stash fullMatchLabel so the share text shows both
+  // teams ("Grant vs James") rather than the short participant-relative
+  // form ("vs James") which omits the recipient's own team.
   window._currentBookings = window._currentBookings || {};
   upcoming.forEach(function(u) {
     const oppGroup = myGroup ? (u.partA && u.partA.id === myGroup.id ? u.partB : u.partA) : null;
     const matchLabel = myGroup
       ? 'vs ' + ((oppGroup && oppGroup.name) || '(other team)')
       : ((u.partA && u.partA.name) || '?') + ' vs ' + ((u.partB && u.partB.name) || '?');
+    const fullMatchLabel = ((u.partA && u.partA.name) || '?') + ' vs ' + ((u.partB && u.partB.name) || '?');
     const allParticipants = [].concat((u.partA && u.partA.players) || [], (u.partB && u.partB.players) || []);
     window._currentBookings[activeLeagueId + '|' + u.matchKey] = {
       lid: activeLeagueId,
@@ -12528,6 +12541,7 @@ function renderBookedTab() {
       participants: allParticipants,
       bookingUrl: bookingUrl,
       matchLabel: matchLabel,
+      fullMatchLabel: fullMatchLabel,
       isMine: !!myGroup
     };
   });
