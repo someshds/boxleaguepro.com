@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.42</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.43</div>
   </div>
 </div>
 
@@ -1636,7 +1636,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.42 · Build 20260604k</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.43 · Build 20260604l</div>
   </div>
 </div>
 
@@ -1651,7 +1651,7 @@
     <div style="padding:20px" id="changelog-content">
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.42 &middot; 4 Jun 2026</span>
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.43 &middot; 4 Jun 2026</span>
           <span style="background:#16a34a;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">GRID CLARITY</span>
         </div>
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
@@ -2418,6 +2418,20 @@
   </div>
 </div>
 
+<!-- v4.16.43: In-app delete confirmation for leagues. Avoids brittle native confirm dialogs. -->
+<div id="delete-league-confirm-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;padding:24px;width:calc(100% - 40px);max-width:460px;max-height:90vh;overflow-y:auto;z-index:9999;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+  <div style="font-size:18px;font-weight:900;color:#991b1b;margin-bottom:8px">Delete this league?</div>
+  <div id="delete-league-confirm-name" style="font-size:14px;font-weight:800;color:#0f172a;margin-bottom:12px;word-break:break-word"></div>
+  <div style="font-size:13px;color:#475569;line-height:1.6;margin-bottom:16px">
+    This permanently removes the league, teams, availability, booked matches, and results. It does <strong>not</strong> delete player accounts.
+  </div>
+  <div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;margin-bottom:16px">Only delete temporary test leagues or boxes you are certain you no longer need.</div>
+  <div style="display:flex;gap:10px">
+    <button onclick="cancelDeleteLeagueConfirm()" style="flex:1;padding:12px;border:1.5px solid #e2e8f0;background:#fff;color:#334155;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">Cancel</button>
+    <button id="delete-league-confirm-btn" onclick="confirmDeleteLeagueModal()" style="flex:1.5;padding:12px;border:none;background:#dc2626;color:#fff;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer">Yes, delete league</button>
+  </div>
+</div>
+
 <!-- v4.9.0: Manage Organisers modal — club admins can add/remove other club organisers by email. -->
 <div id="scoped-manage-admins-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;padding:24px;width:calc(100% - 40px);max-width:480px;max-height:90vh;overflow-y:auto;z-index:9999;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -2535,16 +2549,58 @@ function logAction(action, details) {
   } catch(e) { /* silent fail — logging should never break the app */ }
 }
 
-function deleteLeague(leagueId, event) {
+let pendingDeleteLeagueId = null;
+let pendingDeleteLeagueName = '';
+
+function showDeleteLeagueConfirm(leagueId, name) {
+  pendingDeleteLeagueId = leagueId;
+  pendingDeleteLeagueName = name || leagueId;
+  var backdrop = document.getElementById('scoped-modal-backdrop');
+  var modal = document.getElementById('delete-league-confirm-modal');
+  var nameEl = document.getElementById('delete-league-confirm-name');
+  if (nameEl) nameEl.textContent = '"' + pendingDeleteLeagueName + '"';
+  if (backdrop) backdrop.style.display = 'block';
+  if (modal) modal.style.display = 'block';
+  if (FIREBASE_READY && (!name || name === leagueId)) {
+    db.ref('/leagues/' + leagueId + '/info/name').once('value').then(function(snap) {
+      var liveName = snap.val();
+      if (!liveName || pendingDeleteLeagueId !== leagueId) return;
+      pendingDeleteLeagueName = liveName;
+      if (nameEl) nameEl.textContent = '"' + liveName + '"';
+    }).catch(function() {});
+  }
+}
+
+function cancelDeleteLeagueConfirm() {
+  pendingDeleteLeagueId = null;
+  pendingDeleteLeagueName = '';
+  closeScopedModal();
+}
+
+function confirmDeleteLeagueModal() {
+  var leagueId = pendingDeleteLeagueId;
+  if (!leagueId) return;
+  var btn = document.getElementById('delete-league-confirm-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Deleting...'; }
+  closeScopedModal();
+  pendingDeleteLeagueId = null;
+  deleteLeague(leagueId, { stopPropagation: function(){} }, true, pendingDeleteLeagueName);
+  pendingDeleteLeagueName = '';
+  if (btn) { setTimeout(function(){ btn.disabled = false; btn.textContent = 'Yes, delete league'; }, 500); }
+}
+
+function deleteLeague(leagueId, event, confirmed, confirmedName) {
   if (event && event.stopPropagation) event.stopPropagation();
   // v4.9.0: permission check — super admin OR club admin of the league's club
   if (!canDeleteLeague(leagueId)) { toast('You don\'t have permission to delete this league'); return; }
   const lg = userLeagues[leagueId];
   // Try to get the name from userLeagues, else fall back to a Firebase lookup
   // (club admins may be deleting leagues they aren't members of).
-  let name = (lg && lg.name) || leagueId;
-  if (!confirm('DELETE league "' + name + '"?\n\nThis will permanently remove:\n- All teams and players\n- All availability data\n- All booked matches\n\nThis cannot be undone.')) return;
-  if (!confirm('Are you absolutely sure? This cannot be undone.')) return;
+  let name = confirmedName || (lg && lg.name) || leagueId;
+  if (!confirmed) {
+    showDeleteLeagueConfirm(leagueId, name);
+    return;
+  }
   if (!FIREBASE_READY) { toast('Cannot delete in demo mode'); return; }
 
   // Read league info + members BEFORE deleting so global admin can clean up
@@ -4549,6 +4605,7 @@ document.addEventListener('keydown', function(e) {
    AUTH
    ══════════════════════════════════════ */
 let authMode = 'signin'; // 'signin' or 'signup'
+let pendingSignOut = null;
 
 function toggleAuthMode() {
   authMode = authMode === 'signin' ? 'signup' : 'signin';
@@ -4605,12 +4662,13 @@ function googleSignIn() {
   });
 }
 
-function emailSignIn() {
+async function emailSignIn() {
   const email = val('auth-email');
   const password = val('auth-password');
   const name = val('auth-name');
   const errEl = document.getElementById('auth-error');
   errEl.style.display = 'none';
+  const btn = document.getElementById('btn-email-signin');
 
   if (!email) { showAuthError('Please enter your email address.'); return; }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showAuthError('Please enter a valid email address'); return; }
@@ -4623,10 +4681,35 @@ function emailSignIn() {
     return;
   }
 
+  if (pendingSignOut) {
+    try {
+      if (btn) btn.disabled = true;
+      showAuthError('Signing out previous user...');
+      await pendingSignOut;
+      showAuthError('');
+    } catch (e) {}
+  }
+
+  if (FIREBASE_READY && auth.currentUser && auth.currentUser.email && auth.currentUser.email.toLowerCase() !== email.toLowerCase()) {
+    try {
+      if (btn) btn.disabled = true;
+      showAuthError('Switching accounts...');
+      await auth.signOut();
+      currentUser = null;
+      showAuthError('');
+    } catch (e) {
+      console.error('Account switch sign-out failed:', e);
+      showAuthError('Could not switch accounts. Please try again.');
+      if (btn) btn.disabled = false;
+      return;
+    }
+  }
+
   if (authMode === 'signup') {
     if (!name) { showAuthError('Please enter your name.'); return; }
     const consent = document.getElementById('auth-consent').checked;
     if (!consent) { showAuthError('Please agree to the terms to create an account.'); return; }
+    if (btn) btn.disabled = true;
     auth.createUserWithEmailAndPassword(email, password)
       .then(cred => {
         return cred.user.updateProfile({ displayName: name }).then(() => {
@@ -4645,8 +4728,11 @@ function emailSignIn() {
           'auth/weak-password': 'Password must be at least 6 characters.'
         };
         showAuthError(messages[err.code] || 'Sign-up failed. Please try again.');
+      }).finally(() => {
+        if (btn) btn.disabled = false;
       });
   } else {
+    if (btn) btn.disabled = true;
     auth.signInWithEmailAndPassword(email, password)
       .catch(err => {
         console.error('Signin error:', err);
@@ -4658,6 +4744,8 @@ function emailSignIn() {
           'auth/too-many-requests': 'Too many attempts. Please wait a moment and try again.'
         };
         showAuthError(messages[err.code] || 'Sign-in failed. Please try again.');
+      }).finally(() => {
+        if (btn) btn.disabled = false;
       });
   }
 }
@@ -4711,7 +4799,14 @@ function signOut() {
   _addPlayerMatchId = null;
   L = { groups: [], availability: {}, settings: {}, booked: {}, members: {}, openMatches: {}, comments: {}, results: {} };
   if (FIREBASE_READY) {
-    auth.signOut();
+    if (pendingSignOut) return pendingSignOut;
+    pendingSignOut = auth.signOut().then(function() {
+      currentUser = null;
+      showScreen('auth');
+    }).finally(function() {
+      pendingSignOut = null;
+    });
+    return pendingSignOut;
   } else {
     currentUser = null;
     showScreen('auth');
@@ -6509,6 +6604,8 @@ function closeScopedModal(ev) {
   document.getElementById('scoped-bulk-add-modal').style.display = 'none';
   var mp = document.getElementById('scoped-manage-players-modal');
   if (mp) mp.style.display = 'none';
+  var dl = document.getElementById('delete-league-confirm-modal');
+  if (dl) dl.style.display = 'none';
   var ma = document.getElementById('scoped-manage-admins-modal');
   if (ma) ma.style.display = 'none';
 }
@@ -6907,10 +7004,17 @@ function scopedLoadPlayers() {
       var rows = {};
       function ensure(key, email, name) {
         key = key || sanitizeEmail(email || name || 'unknown');
-        if (!rows[key]) rows[key] = { email: email || '', name: name || '', linked: false, assignments: [] };
+        if (!rows[key]) rows[key] = { email: email || '', name: name || '', linked: false, assignments: [], _assignmentKeys: {} };
         if (email && !rows[key].email) rows[key].email = email;
         if (name && !rows[key].name) rows[key].name = name;
         return rows[key];
+      }
+      function addAssignment(row, a) {
+        if (!row || !a) return;
+        var key = [a.leagueName || '', a.playerName || '', a.partnerName || ''].join('|').toLowerCase();
+        if (row._assignmentKeys[key]) return;
+        row._assignmentKeys[key] = true;
+        row.assignments.push(a);
       }
 
       Object.keys(clubPlayers).forEach(function(key) {
@@ -6922,7 +7026,7 @@ function scopedLoadPlayers() {
         var assignments = p.assignments || {};
         Object.keys(assignments).forEach(function(lid) {
           var a = assignments[lid] || {};
-          row.assignments.push({
+          addAssignment(row, {
             leagueName: a.leagueName || lid,
             playerName: a.playerName || p.name || '',
             partnerName: a.partnerName || ''
@@ -6941,14 +7045,14 @@ function scopedLoadPlayers() {
           var p1 = players[0] || g.playerName || g.name || '';
           var p2 = players[1] || g.partnerName || '';
           if (g.email) {
-            ensure(sanitizeEmail(g.email), g.email, p1).assignments.push({ leagueName: leagueName, playerName: p1, partnerName: p2 });
+            addAssignment(ensure(sanitizeEmail(g.email), g.email, p1), { leagueName: leagueName, playerName: p1, partnerName: p2 });
           } else if (p1) {
-            ensure('name:' + item.id + ':' + p1, '', p1).assignments.push({ leagueName: leagueName, playerName: p1, partnerName: p2 });
+            addAssignment(ensure('name:' + item.id + ':' + p1, '', p1), { leagueName: leagueName, playerName: p1, partnerName: p2 });
           }
           if (g.partnerEmail) {
-            ensure(sanitizeEmail(g.partnerEmail), g.partnerEmail, p2).assignments.push({ leagueName: leagueName, playerName: p2, partnerName: p1 });
+            addAssignment(ensure(sanitizeEmail(g.partnerEmail), g.partnerEmail, p2), { leagueName: leagueName, playerName: p2, partnerName: p1 });
           } else if (p2 && p2 !== '(partner TBD)') {
-            ensure('name:' + item.id + ':' + p2, '', p2).assignments.push({ leagueName: leagueName, playerName: p2, partnerName: p1 });
+            addAssignment(ensure('name:' + item.id + ':' + p2, '', p2), { leagueName: leagueName, playerName: p2, partnerName: p1 });
           }
         });
         var members = league.members || {};
@@ -6957,7 +7061,7 @@ function scopedLoadPlayers() {
           var row = ensure(key, m.email || key.replace(/,/g, '.'), m.playerName || m.name || '');
           row.linked = !!m.uid || row.linked;
           row.uid = m.uid || row.uid || '';
-          row.assignments.push({ leagueName: leagueName, playerName: m.playerName || m.name || '', partnerName: m.partnerName || '' });
+          addAssignment(row, { leagueName: leagueName, playerName: m.playerName || m.name || '', partnerName: m.partnerName || '' });
         });
       });
 
