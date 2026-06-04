@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.36</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.37</div>
   </div>
 </div>
 
@@ -1635,7 +1635,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.36 · Build 20260604e</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.37 · Build 20260604f</div>
   </div>
 </div>
 
@@ -1650,11 +1650,11 @@
     <div style="padding:20px" id="changelog-content">
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.36 &middot; 4 Jun 2026</span>
-          <span style="background:#16a34a;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">STRUCTURED DOUBLES ADD</span>
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.37 &middot; 4 Jun 2026</span>
+          <span style="background:#16a34a;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">CLEAR TEAM ENTRY</span>
         </div>
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
-          <li><strong>Structured doubles entry</strong> &mdash; club organisers can add doubles pairs using separate fields for Player 1 name/email and Player 2 name/email, reducing paste-format mistakes.</li>
+          <li><strong>Clear team entry</strong> &mdash; club organisers can add doubles pairs using separate Team rows with Player 1 and Player 2 fields, reducing paste-format mistakes.</li>
         </ul>
       </div>
       <div style="margin-bottom:20px">
@@ -2381,10 +2381,6 @@
   <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:12px">
     <div style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:4px">Doubles pairs</div>
     <div style="font-size:11px;color:#64748b;margin-bottom:10px">One row = one doubles team. Emails are optional for testing.</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;font-size:11px;font-weight:700;color:#475569">
-      <div>Player 1</div>
-      <div>Player 2</div>
-    </div>
     <div id="scoped-ba-pair-rows" style="display:grid;gap:8px"></div>
     <button onclick="scopedSubmitStructuredPairs()" style="width:100%;margin-top:10px;padding:10px;border:none;background:#2563eb;color:#fff;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer">Add these doubles pairs</button>
   </div>
@@ -6392,14 +6388,19 @@ function renderStructuredPairRows() {
   if (!wrap) return;
   var html = '';
   for (var i = 0; i < 8; i++) {
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
-      '<div style="display:grid;gap:4px">' +
-        '<input class="fi structured-p1-name" placeholder="Player 1 name" style="font-size:13px;padding:8px">' +
-        '<input class="fi structured-p1-email" placeholder="Player 1 email" style="font-size:13px;padding:8px">' +
+    html += '<div style="background:#fff;border:1px solid #dbeafe;border-radius:12px;padding:10px">' +
+      '<div style="font-size:12px;font-weight:900;color:#1d4ed8;margin-bottom:8px">Team ' + (i + 1) + '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+      '<div style="display:grid;gap:4px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px">' +
+        '<div style="font-size:11px;font-weight:800;color:#475569">Player 1</div>' +
+        '<input class="fi structured-p1-name" placeholder="Name" style="font-size:13px;padding:8px">' +
+        '<input class="fi structured-p1-email" placeholder="Email" style="font-size:13px;padding:8px">' +
       '</div>' +
-      '<div style="display:grid;gap:4px">' +
-        '<input class="fi structured-p2-name" placeholder="Player 2 name" style="font-size:13px;padding:8px">' +
-        '<input class="fi structured-p2-email" placeholder="Player 2 email" style="font-size:13px;padding:8px">' +
+      '<div style="display:grid;gap:4px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px">' +
+        '<div style="font-size:11px;font-weight:800;color:#475569">Player 2</div>' +
+        '<input class="fi structured-p2-name" placeholder="Name" style="font-size:13px;padding:8px">' +
+        '<input class="fi structured-p2-email" placeholder="Email" style="font-size:13px;padding:8px">' +
+      '</div>' +
       '</div>' +
     '</div>';
   }
