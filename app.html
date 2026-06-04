@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.32</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.33</div>
   </div>
 </div>
 
@@ -1635,7 +1635,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.32 · Build 20260604</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.33 · Build 20260604b</div>
   </div>
 </div>
 
@@ -1650,8 +1650,8 @@
     <div style="padding:20px" id="changelog-content">
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.32 &middot; 4 Jun 2026</span>
-          <span style="background:#16a34a;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">ORGANISER DELETE FIX</span>
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.33 &middot; 4 Jun 2026</span>
+          <span style="background:#16a34a;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">ORGANISER DELETE HOTFIX</span>
         </div>
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
           <li><strong>Club organisers can delete test leagues</strong> &mdash; local club admins no longer hit a Firebase permissions failure when deleting leagues that contain other members. Global admin cleanup still removes the extra indexes; club organiser deletes now remove the league and club listing cleanly.</li>
@@ -2530,11 +2530,11 @@ function deleteLeague(leagueId, event) {
     const clubId = (lg && lg.clubId) || info.clubId || (window._scopedClub && window._scopedClub.id) || null;
     const code = (lg && lg.code) || info.code || null;
     const globalAdmin = isAdmin();
-    const updates = {};
-    updates['/leagues/' + leagueId] = null;
-    updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = null;
-    if (clubId) updates['/clubLeagues/' + clubId + '/' + leagueId] = null;
     if (globalAdmin) {
+      const updates = {};
+      updates['/leagues/' + leagueId] = null;
+      updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = null;
+      if (clubId) updates['/clubLeagues/' + clubId + '/' + leagueId] = null;
       updates['/leagueIndex/' + leagueId] = null;
       if (code) updates['/codes/' + code] = null;
       // Only global admin can remove stale league pointers from every member.
@@ -2543,18 +2543,21 @@ function deleteLeague(leagueId, event) {
           updates['/userLeagues/' + m.uid + '/' + leagueId] = null;
         }
       });
+      return db.ref().update(updates);
     }
-    db.ref().update(updates).then(() => {
+
+    if (!clubId) throw new Error('Missing club link for this league');
+    return db.ref('/clubLeagues/' + clubId + '/' + leagueId).remove()
+      .then(function() {
+        return db.ref('/leagues/' + leagueId).remove();
+      });
+  }).then(() => {
       logAction('delete_league', name);
       toast('League deleted');
       // Refresh scoped view if we're in one
       if (window._scopedClub) { renderScopedLeagueList(window._scopedClub.id); }
-    }).catch(err => {
-      console.error('Delete failed:', err);
-      toast('Delete failed: ' + err.message);
-    });
   }).catch(err => {
-    console.error('Delete lookup failed:', err);
+    console.error('Delete failed:', err);
     toast('Delete failed: ' + err.message);
   });
 }
