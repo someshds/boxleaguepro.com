@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.34</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.35</div>
   </div>
 </div>
 
@@ -1635,7 +1635,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.34 · Build 20260604c</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.35 · Build 20260604d</div>
   </div>
 </div>
 
@@ -1650,11 +1650,11 @@
     <div style="padding:20px" id="changelog-content">
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.34 &middot; 4 Jun 2026</span>
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.35 &middot; 4 Jun 2026</span>
           <span style="background:#16a34a;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">ORGANISER CREATE HOTFIX</span>
         </div>
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
-          <li><strong>Club organisers can create and delete test leagues</strong> &mdash; local club admins no longer hit a Firebase permissions failure when deleting leagues that contain other members. Global admin cleanup still removes the extra indexes; club organiser deletes now remove the league and club listing cleanly.</li>
+          <li><strong>Club organisers can create and delete test leagues</strong> &mdash; local club admins no longer hit a Firebase permissions failure when deleting leagues that contain other members. Delete buttons now use a clear text label instead of an icon-only control.</li>
         </ul>
       </div>
       <div style="margin-bottom:20px">
@@ -6183,7 +6183,7 @@ function renderScopedLeagueList(clubId) {
       }
       var deleteBtn = '';
       if (isAdminHere) {
-        deleteBtn = '<button onclick="event.stopPropagation();deleteLeague(\'' + lid + '\', event)" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-right:6px" title="Delete league">&#128465;</button>';
+        deleteBtn = '<button onclick="event.stopPropagation();deleteLeague(\'' + lid + '\', event)" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-right:6px" title="Delete league" aria-label="Delete league">Delete</button>';
       }
       // v4.9.1: Club admins clicking a non-member league must NOT be auto-joined.
       // adminEnterLeague opens the league as organiser without writing /members.
@@ -7201,7 +7201,7 @@ function renderMyLeagues() {
   if (filtered.length === 0) { wrap.style.display = 'none'; return; }
   wrap.style.display = 'block';
   el.innerHTML = filtered.map(([id, lg]) => {
-    const deleteBtn = admin ? `<button onclick="deleteLeague(${jsAttr(id)}, event)" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap" title="Delete league">&#128465; Delete</button>` : '';
+    const deleteBtn = admin ? `<button onclick="deleteLeague(${jsAttr(id)}, event)" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap" title="Delete league" aria-label="Delete league">Delete League</button>` : '';
     return `<div class="league-card" onclick="enterLeague(${jsAttr(id)})" style="display:flex;justify-content:space-between;align-items:center">
       <div>
         <div class="league-card-name">${leagueFormatBadge(lg)}${esc(lg.name || 'Unnamed League')}</div>
