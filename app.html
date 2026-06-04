@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.41</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.42</div>
   </div>
 </div>
 
@@ -1636,7 +1636,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.41 · Build 20260604j</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.42 · Build 20260604k</div>
   </div>
 </div>
 
@@ -1651,7 +1651,7 @@
     <div style="padding:20px" id="changelog-content">
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.41 &middot; 4 Jun 2026</span>
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.42 &middot; 4 Jun 2026</span>
           <span style="background:#16a34a;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">GRID CLARITY</span>
         </div>
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
@@ -5069,6 +5069,7 @@ function onAuthSuccess() {
   // CURRENT_FIRST_LOGIN_VIDEO_ID is set to a non-empty YouTube id —
   // dormant until Grant produces the video.
   try { maybeShowFirstLoginVideo(); } catch (e) {}
+  loadTabGuideDismissals();
   loadUserLeagues();
   loadUserHomeClub(() => {
     // v4.8.0: load clubAdmin memberships once per session so scoped-welcome
@@ -8269,7 +8270,7 @@ function renderWizAvailGrid() {
       const key = avk(playerName, d, slot);
       const on = wizAvailability[key] ? 'on' : '';
       if (isPast) {
-        h += `<td><div class="cell past"></div></td>`;
+        h += `<td><div class="cell past" title="Past date - not editable" aria-label="Past date - not editable"></div></td>`;
       } else {
         h += `<td><div class="cell ${on}" data-date="${ds(d)}" data-slot="${slot}" onclick="wizToggleCell(this)"></div></td>`;
       }
@@ -8277,6 +8278,9 @@ function renderWizAvailGrid() {
     h += '</tr>';
   });
   h += '</tbody></table>';
+  if (dates.some(d => d < now)) {
+    h = '<div style="font-size:12px;color:#64748b;margin:0 0 8px 2px">Past days are greyed out and cannot be edited.</div>' + h;
+  }
   document.getElementById('wiz-avail-grid').innerHTML = h;
 }
 
@@ -10125,7 +10129,7 @@ function renderAvailGrid() {
       const isPast = d < now;
       const on = L.availability[avk(player, d, slot)] ? 'on' : '';
       if (isPast) {
-        h += `<td><div class="cell past"></div></td>`;
+        h += `<td><div class="cell past" title="Past date - not editable" aria-label="Past date - not editable"></div></td>`;
       } else {
         h += `<td><div class="cell ${on}" data-date="${ds(d)}" data-slot="${slot}" onclick="toggleCell(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCell(this)}" role="button" tabindex="0" aria-label="${DAY_NAMES[d.getDay()]} ${d.getDate()} ${slotBlockLabel(slot)} match window${on ? ' — available' : ''}"></div></td>`;
       }
@@ -10133,6 +10137,9 @@ function renderAvailGrid() {
     h += '</tr>';
   });
   h += '</tbody></table>';
+  if (dates.some(d => d < now)) {
+    h = '<div style="font-size:12px;color:#64748b;margin:0 0 8px 2px">Past days are greyed out and cannot be edited.</div>' + h;
+  }
   document.getElementById('avail-grid').innerHTML = h;
 }
 
@@ -13774,11 +13781,24 @@ const TAB_GUIDES = {
 };
 
 let tabGuideStep = {};
+let tabGuideDismissed = {};
+
+function loadTabGuideDismissals() {
+  tabGuideDismissed = {};
+  if (!FIREBASE_READY || !currentUser) return;
+  db.ref('/users/' + currentUser.uid + '/dismissedTabGuides').once('value').then(function(snap) {
+    tabGuideDismissed = snap.val() || {};
+  }).catch(function(e) {
+    console.warn('[tab-guide] dismissed guide load failed', e);
+  });
+}
 
 function showTabGuide(tabId) {
   if (!TAB_GUIDES[tabId]) return;
   const key = 'blp_tabguide_' + tabId;
   if (localStorage.getItem(key) === 'dismissed') return;
+  if (sessionStorage.getItem(key) === 'closed') return;
+  if (tabGuideDismissed && tabGuideDismissed[tabId]) return;
   if (tourActive || consentModalActive) return;
   tabGuideStep[tabId] = 0;
   renderTabGuide(tabId);
@@ -13886,17 +13906,31 @@ function tabGuideBack(tabId) {
 }
 
 function closeTabGuide(tabId) {
+  try { sessionStorage.setItem('blp_tabguide_' + tabId, 'closed'); } catch (e) {}
   const container = document.getElementById('tab-guide-' + tabId);
   if (container) container.style.display = 'none';
 }
 
 function dismissTabGuide(tabId) {
   localStorage.setItem('blp_tabguide_' + tabId, 'dismissed');
+  tabGuideDismissed[tabId] = true;
+  if (FIREBASE_READY && currentUser) {
+    db.ref('/users/' + currentUser.uid + '/dismissedTabGuides/' + tabId).set(true).catch(function(e) {
+      console.warn('[tab-guide] dismissed guide save failed', e);
+    });
+  }
   closeTabGuide(tabId);
 }
 
 function resetTabGuides() {
   Object.keys(TAB_GUIDES).forEach(id => localStorage.removeItem('blp_tabguide_' + id));
+  Object.keys(TAB_GUIDES).forEach(id => sessionStorage.removeItem('blp_tabguide_' + id));
+  tabGuideDismissed = {};
+  if (FIREBASE_READY && currentUser) {
+    db.ref('/users/' + currentUser.uid + '/dismissedTabGuides').remove().catch(function(e) {
+      console.warn('[tab-guide] reset failed', e);
+    });
+  }
 }
 
 function openBookingUrl() {
