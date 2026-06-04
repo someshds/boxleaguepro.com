@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.40</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.41</div>
   </div>
 </div>
 
@@ -715,6 +715,7 @@
           <!-- v4.13.2: Create Mix-In Game — previously no way to make one from the club welcome once an admin had already created one -->
           <button onclick="enterMixInAsScopedClub()" style="background:#0d9488;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">&#129309; New Mix-In Game</button>
           <button onclick="scopedBulkAddPlayers()" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">&#128101; Bulk Add Players</button>
+          <button onclick="scopedManagePlayers()" style="background:#0f766e;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">&#128203; Players / Accounts</button>
           <button onclick="scopedManageAdmins()" style="background:#f59e0b;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">&#128100; Manage Organisers</button>
           <button onclick="scopedShareInvite()" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer">&#128279; Share Club Link</button>
         </div>
@@ -1635,7 +1636,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.40 · Build 20260604i</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.41 · Build 20260604j</div>
   </div>
 </div>
 
@@ -1650,7 +1651,7 @@
     <div style="padding:20px" id="changelog-content">
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.40 &middot; 4 Jun 2026</span>
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.41 &middot; 4 Jun 2026</span>
           <span style="background:#16a34a;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">GRID CLARITY</span>
         </div>
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
@@ -2398,6 +2399,23 @@
     <button onclick="scopedSubmitBulkAdd()" style="flex:2;padding:12px;border:none;background:#1d4ed8;color:#fff;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">Add pasted list</button>
   </div>
   <div id="scoped-ba-msg" style="font-size:13px;margin-top:10px"></div>
+</div>
+
+<!-- v4.16.41: Club player/account register — organiser-visible roster + linked-account overview. -->
+<div id="scoped-manage-players-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;padding:24px;width:calc(100% - 40px);max-width:620px;max-height:90vh;overflow-y:auto;z-index:9999;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div style="font-size:18px;font-weight:800">Players / Accounts</div>
+    <button onclick="closeScopedModal()" style="background:#f3f4f6;border:none;border-radius:8px;width:32px;height:32px;font-size:18px;cursor:pointer">&times;</button>
+  </div>
+  <div id="scoped-mp-club-hint" style="font-size:12px;color:#6b7280;margin-bottom:14px;padding:8px 12px;background:#ecfeff;border-radius:8px"></div>
+  <div style="font-size:12px;color:#475569;margin-bottom:12px">This shows the club roster and whether an email is already linked to a signed-in account. Deleting a league does not delete these accounts.</div>
+  <div id="scoped-mp-list" style="border:1px solid #e5e7eb;border-radius:12px;max-height:420px;overflow-y:auto">
+    <div style="padding:14px;color:#6b7280;font-size:13px;text-align:center">Loading&hellip;</div>
+  </div>
+  <div style="display:flex;gap:10px;margin-top:14px">
+    <button onclick="scopedLoadPlayers()" style="flex:1;padding:12px;border:1.5px solid #cbd5e1;background:#fff;color:#334155;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">Refresh</button>
+    <button onclick="closeScopedModal()" style="flex:1;padding:12px;border:none;background:#0f766e;color:#fff;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">Done</button>
+  </div>
 </div>
 
 <!-- v4.9.0: Manage Organisers modal — club admins can add/remove other club organisers by email. -->
@@ -4030,36 +4048,42 @@ function getAllPlayers() {
   return _allPlayersCache;
 }
 
-/* ── Time slots (30-minute intervals, 7am–9pm) ── */
-const SLOTS = (function() {
+/* ── Time slots (30-minute intervals, configurable per club) ── */
+function buildSlots(startHour, endHour) {
+  const start = Math.max(0, Math.min(23, parseInt(startHour, 10) || 7));
+  const end = Math.max(start, Math.min(23, parseInt(endHour, 10) || 21));
   const s = [];
-  for (let h = 7; h <= 21; h++) {
+  for (let h = start; h <= end; h++) {
     s.push(String(h).padStart(2,'0') + '00');
-    if (h < 21) s.push(String(h).padStart(2,'0') + '30');
+    if (h < end) s.push(String(h).padStart(2,'0') + '30');
   }
   return s;
-})();
-const SLOT_LABELS = (function() {
+}
+function buildSlotLabels(slots, compact) {
   const o = {};
-  SLOTS.forEach(s => {
+  slots.forEach(s => {
     const h = parseInt(s.slice(0,2)), m = s.slice(2);
     const suffix = h < 12 ? 'am' : 'pm';
     const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-    o[s] = h12 + ':' + m + suffix;
+    o[s] = (compact && m === '00') ? h12 + suffix : h12 + ':' + m + suffix;
   });
   return o;
-})();
-const SLOT_SHORT = (function() {
-  const o = {};
-  SLOTS.forEach(s => {
-    const h = parseInt(s.slice(0,2)), m = s.slice(2);
-    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-    const suffix = h < 12 ? 'am' : 'pm';
-    // Compact: "7am" for whole hours, "7:30am" for half hours
-    o[s] = (m === '00' ? h12 : h12 + ':' + m) + suffix;
-  });
-  return o;
-})();
+}
+let SLOTS = buildSlots(7, 21);
+let SLOT_LABELS = buildSlotLabels(SLOTS, false);
+let SLOT_SHORT = buildSlotLabels(SLOTS, true);
+let activeSlotConfigKey = '7-21';
+function applyAvailabilityHours(hours) {
+  hours = hours || {};
+  const start = parseInt(hours.startHour, 10);
+  const end = parseInt(hours.endHour, 10);
+  const key = (isNaN(start) ? 7 : start) + '-' + (isNaN(end) ? 21 : end);
+  if (key === activeSlotConfigKey) return;
+  activeSlotConfigKey = key;
+  SLOTS = buildSlots(start, end);
+  SLOT_LABELS = buildSlotLabels(SLOTS, false);
+  SLOT_SHORT = buildSlotLabels(SLOTS, true);
+}
 /* Legacy slot keys from old 1.5-hour format — kept for backward compatibility */
 const LEGACY_SLOT_LABELS = { '9-1030':'9–10:30am', '1030-12':'10:30–12pm', '12-130':'12–1:30pm', '130-3':'1:30–3pm', '3-430':'3–4:30pm', '430-6':'4:30–6pm', '6-730':'6–7:30pm', '730-9':'7:30–9pm' };
 const LEGACY_SLOT_SHORT = { '9-1030':'9-10:30', '1030-12':'10:30-12', '12-130':'12-1:30', '130-3':'1:30-3', '3-430':'3-4:30', '430-6':'4:30-6', '6-730':'6-7:30', '730-9':'7:30-9' };
@@ -6148,7 +6172,7 @@ function renderScopedLeagueList(clubId) {
 
     // Build a fast-lookup of which leagues the current user is already in.
     // userLeagues is keyed by leagueId and loaded at sign-in.
-    var memberMap = (window.userLeagues || {});
+    var memberMap = (userLeagues || {});
 
     // Empty-state: no leagues in the club at all
     if (ids.length === 0) {
@@ -6216,7 +6240,7 @@ function renderScopedLeagueList(clubId) {
       } else if (isAdminHere) {
         actionCall = 'adminEnterLeague(\'' + lid + '\',\'' + clubId + '\')';
       } else {
-        actionCall = 'joinAndEnterLeague(\'' + lid + '\')';
+        actionCall = 'requestAssignedBoxAccess(\'' + lid + '\')';
       }
       return '<div onclick="' + actionCall + '" style="cursor:pointer;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:flex;align-items:center;justify-content:space-between;gap:10px" onmouseover="this.style.borderColor=\'#1d4ed8\';this.style.boxShadow=\'0 4px 12px rgba(29,78,216,0.12)\'" onmouseout="this.style.borderColor=\'#e5e7eb\';this.style.boxShadow=\'0 1px 2px rgba(0,0,0,0.04)\'">' +
         '<div style="flex:1;min-width:0">' +
@@ -6236,7 +6260,7 @@ function renderScopedLeagueList(clubId) {
     if (yourIds.length === 0 && !isAdminHere) {
       html += '<div style="background:linear-gradient(135deg,#ecfdf5,#dbeafe);border:1px solid #a7f3d0;border-radius:12px;padding:14px 16px;margin-bottom:12px">' +
         '<div style="font-weight:700;color:#065f46;font-size:14px;margin-bottom:4px">&#128075; Welcome to the club!</div>' +
-        '<div style="color:#374151;font-size:13px">Tap a league below to join. If your organiser has already added you, you\'ll see it here tagged <strong style="color:#047857">&#10003; JOINED</strong>.</div>' +
+        '<div style="color:#374151;font-size:13px">Box leagues are assigned by the organiser. Once your email has been added to a box, it will appear here tagged <strong style="color:#047857">&#10003; JOINED</strong>.</div>' +
       '</div>';
     }
 
@@ -6482,6 +6506,8 @@ function closeScopedModal(ev) {
   document.getElementById('scoped-modal-backdrop').style.display = 'none';
   document.getElementById('scoped-create-league-modal').style.display = 'none';
   document.getElementById('scoped-bulk-add-modal').style.display = 'none';
+  var mp = document.getElementById('scoped-manage-players-modal');
+  if (mp) mp.style.display = 'none';
   var ma = document.getElementById('scoped-manage-admins-modal');
   if (ma) ma.style.display = 'none';
 }
@@ -6739,6 +6765,23 @@ async function scopedSubmitBulkAdd() {
         idCounter++;
         return 'G' + Date.now().toString(36) + '-' + idCounter;
       }
+      function rememberClubPlayer(row, person, lid, league) {
+        if (!person.email) return;
+        var key = sanitizeEmail(person.email);
+        var leagueName = (league && league.info && league.info.name) || '';
+        updates['/clubPlayers/' + scope.id + '/' + key + '/email'] = String(person.email || '').trim().toLowerCase();
+        updates['/clubPlayers/' + scope.id + '/' + key + '/name'] = person.name || '';
+        updates['/clubPlayers/' + scope.id + '/' + key + '/status'] = 'rostered';
+        updates['/clubPlayers/' + scope.id + '/' + key + '/source'] = 'bulk_add';
+        updates['/clubPlayers/' + scope.id + '/' + key + '/updatedAt'] = Date.now();
+        updates['/clubPlayers/' + scope.id + '/' + key + '/assignments/' + lid] = {
+          leagueName: leagueName,
+          playerName: person.name || '',
+          partnerName: person.partnerName || '',
+          role: person.role || 'player',
+          updatedAt: Date.now()
+        };
+      }
       leagueIds.forEach(function(lid) {
         var bucket = buckets[lid];
         var league = bucket.league;
@@ -6757,6 +6800,7 @@ async function scopedSubmitBulkAdd() {
               addedBy: currentUser.email,
               addedAt: Date.now()
             });
+            rememberClubPlayer(row, { name: row.name, email: row.email, partnerName: '', role: 'player' }, lid, league);
           } else {
             var partnerName = row.partnerName || '(partner TBD)';
             newGroups.push({
@@ -6768,6 +6812,8 @@ async function scopedSubmitBulkAdd() {
               addedBy: currentUser.email,
               addedAt: Date.now()
             });
+            rememberClubPlayer(row, { name: row.name, email: row.email, partnerName: partnerName, role: 'player' }, lid, league);
+            rememberClubPlayer(row, { name: partnerName, email: row.partnerEmail, partnerName: row.name, role: 'partner' }, lid, league);
           }
         });
         updates['/leagues/' + lid + '/groups'] = newGroups;
@@ -6820,6 +6866,132 @@ function scopedShareInvite() {
   } else {
     prompt('Copy this club link:', url);
   }
+}
+
+function requestAssignedBoxAccess(leagueId) {
+  toast('Box leagues are assigned by your organiser. Ask them to add your email to this box.');
+}
+
+/* ══════════════════════════════════════
+   v4.16.41: Club player/account register
+   Shows organiser roster + account-link state without deleting accounts.
+   ══════════════════════════════════════ */
+function scopedManagePlayers() {
+  var scope = window._scopedClub;
+  if (!scope) { toast('No club scope'); return; }
+  if (!isClubAdminFor(scope.id)) { toast('Club organisers only'); return; }
+  openScopedModal('scoped-manage-players-modal');
+  var hint = document.getElementById('scoped-mp-club-hint');
+  if (hint) hint.innerHTML = '&#128203; Managing players for <strong>' + esc(scope.info.name || '') + '</strong>';
+  scopedLoadPlayers();
+}
+
+function scopedLoadPlayers() {
+  var scope = window._scopedClub;
+  if (!scope || !FIREBASE_READY) return;
+  if (!isClubAdminFor(scope.id)) { toast('Club organisers only'); return; }
+  var list = document.getElementById('scoped-mp-list');
+  if (!list) return;
+  list.innerHTML = '<div style="padding:14px;color:#6b7280;font-size:13px;text-align:center">Loading&hellip;</div>';
+
+  Promise.all([
+    db.ref('/clubPlayers/' + scope.id).once('value'),
+    db.ref('/clubLeagues/' + scope.id).once('value')
+  ]).then(function(first) {
+    var clubPlayers = first[0].val() || {};
+    var clubLeagueIds = Object.keys(first[1].val() || {});
+    return Promise.all(clubLeagueIds.map(function(lid) {
+      return db.ref('/leagues/' + lid).once('value').then(function(s) { return { id: lid, league: s.val() }; });
+    })).then(function(loaded) {
+      var rows = {};
+      function ensure(key, email, name) {
+        key = key || sanitizeEmail(email || name || 'unknown');
+        if (!rows[key]) rows[key] = { email: email || '', name: name || '', linked: false, assignments: [] };
+        if (email && !rows[key].email) rows[key].email = email;
+        if (name && !rows[key].name) rows[key].name = name;
+        return rows[key];
+      }
+
+      Object.keys(clubPlayers).forEach(function(key) {
+        var p = clubPlayers[key] || {};
+        var row = ensure(key, p.email || key.replace(/,/g, '.'), p.name || '');
+        row.status = p.status || row.status || 'rostered';
+        row.linked = !!p.uid || row.linked;
+        row.uid = p.uid || row.uid || '';
+        var assignments = p.assignments || {};
+        Object.keys(assignments).forEach(function(lid) {
+          var a = assignments[lid] || {};
+          row.assignments.push({
+            leagueName: a.leagueName || lid,
+            playerName: a.playerName || p.name || '',
+            partnerName: a.partnerName || ''
+          });
+        });
+      });
+
+      loaded.forEach(function(item) {
+        var league = item.league || {};
+        var leagueName = (league.info && league.info.name) || item.id;
+        var groups = league.groups || {};
+        var groupList = Array.isArray(groups) ? groups : Object.keys(groups).map(function(k) { return groups[k]; });
+        groupList.forEach(function(g) {
+          if (!g) return;
+          var players = g.players || [];
+          var p1 = players[0] || g.playerName || g.name || '';
+          var p2 = players[1] || g.partnerName || '';
+          if (g.email) {
+            ensure(sanitizeEmail(g.email), g.email, p1).assignments.push({ leagueName: leagueName, playerName: p1, partnerName: p2 });
+          } else if (p1) {
+            ensure('name:' + item.id + ':' + p1, '', p1).assignments.push({ leagueName: leagueName, playerName: p1, partnerName: p2 });
+          }
+          if (g.partnerEmail) {
+            ensure(sanitizeEmail(g.partnerEmail), g.partnerEmail, p2).assignments.push({ leagueName: leagueName, playerName: p2, partnerName: p1 });
+          } else if (p2 && p2 !== '(partner TBD)') {
+            ensure('name:' + item.id + ':' + p2, '', p2).assignments.push({ leagueName: leagueName, playerName: p2, partnerName: p1 });
+          }
+        });
+        var members = league.members || {};
+        Object.keys(members).forEach(function(key) {
+          var m = members[key] || {};
+          var row = ensure(key, m.email || key.replace(/,/g, '.'), m.playerName || m.name || '');
+          row.linked = !!m.uid || row.linked;
+          row.uid = m.uid || row.uid || '';
+          row.assignments.push({ leagueName: leagueName, playerName: m.playerName || m.name || '', partnerName: m.partnerName || '' });
+        });
+      });
+
+      var keys = Object.keys(rows).sort(function(a, b) {
+        return String(rows[a].name || rows[a].email).localeCompare(String(rows[b].name || rows[b].email));
+      });
+      if (!keys.length) {
+        list.innerHTML = '<div style="padding:18px;color:#6b7280;font-size:13px;text-align:center">No players found yet. Bulk add players with emails to populate the account register.</div>';
+        return;
+      }
+      list.innerHTML = keys.map(function(key) {
+        var p = rows[key];
+        var linkedBadge = p.linked
+          ? '<span style="background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:800">Account linked</span>'
+          : '<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:800">Roster only</span>';
+        var assignments = (p.assignments || []).slice(0, 4).map(function(a) {
+          var partner = a.partnerName ? ' with ' + a.partnerName : '';
+          return '<div style="font-size:12px;color:#475569;margin-top:3px">' + esc(a.leagueName) + (a.playerName ? ': ' + esc(a.playerName) : '') + esc(partner) + '</div>';
+        }).join('');
+        return '<div style="padding:12px 14px;border-bottom:1px solid #f1f5f9">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">' +
+            '<div style="min-width:0;flex:1">' +
+              '<div style="font-size:14px;font-weight:800;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(p.name || '(name missing)') + '</div>' +
+              '<div style="font-size:12px;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(p.email || 'No email yet') + '</div>' +
+            '</div>' +
+            linkedBadge +
+          '</div>' +
+          assignments +
+        '</div>';
+      }).join('');
+    });
+  }).catch(function(e) {
+    console.warn('[manage-players] load error', e);
+    list.innerHTML = '<div style="padding:14px;color:#b91c1c;font-size:13px;text-align:center">Could not load players: ' + esc(e.message || String(e)) + '</div>';
+  });
 }
 
 /* ══════════════════════════════════════
@@ -7755,6 +7927,14 @@ function joinAndEnterLeague(leagueId) {
     return;
   }
 
+  // v4.16.41: Scoped club box leagues are organiser-assigned. This stops
+  // random self-joins from the club page while preserving existing members'
+  // normal entry path above and non-scoped code-based joining elsewhere.
+  if (window._scopedClub) {
+    toast('This box is organiser-assigned. Ask your organiser to add your email.');
+    return;
+  }
+
   // Join the league and start wizard
   if (!FIREBASE_READY) { return; }
 
@@ -8154,11 +8334,26 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   // Load club booking URL
   clubBookingUrl = '';
   const cid = leagueInfo.clubId;
+  applyAvailabilityHours((allClubs[cid] && (allClubs[cid].availabilityHours || allClubs[cid].bookingHours)) || (leagueInfo.availabilityHours || null));
   if (cid && allClubs[cid] && allClubs[cid].bookingUrl) {
     clubBookingUrl = allClubs[cid].bookingUrl;
   } else if (cid && FIREBASE_READY) {
     db.ref('/clubs/' + cid + '/bookingUrl').once('value', snap => {
       clubBookingUrl = snap.val() || '';
+    });
+  }
+  if (cid && FIREBASE_READY) {
+    db.ref('/clubs/' + cid + '/availabilityHours').once('value', snap => {
+      var hours = snap.val();
+      if (!hours) return;
+      if (!allClubs[cid]) allClubs[cid] = {};
+      allClubs[cid].availabilityHours = hours;
+      applyAvailabilityHours(hours);
+      try {
+        if (currentTab === 'availability') { renderAvailGrid(); renderMySummary(); renderMyMatches(); }
+        if (currentTab === 'everyone') { renderAllAvail(); renderMissing(); }
+        if (currentTab === 'matches') renderMatchFinder();
+      } catch(e) {}
     });
   }
   // Auto-set home club from league if not yet set
