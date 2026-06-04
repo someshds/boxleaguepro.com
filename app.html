@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.37</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.38</div>
   </div>
 </div>
 
@@ -1635,7 +1635,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.37 · Build 20260604f</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.38 · Build 20260604g</div>
   </div>
 </div>
 
@@ -1650,7 +1650,7 @@
     <div style="padding:20px" id="changelog-content">
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.37 &middot; 4 Jun 2026</span>
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.38 &middot; 4 Jun 2026</span>
           <span style="background:#16a34a;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">CLEAR TEAM ENTRY</span>
         </div>
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
@@ -5372,8 +5372,10 @@ function runEmailPreallocation(clubId, cb) {
       loaded.forEach(function(item) {
         var l = item.league;
         if (!l || !l.groups) return;
-        // Skip if user is already a member of this league — idempotency.
-        if (l.members && l.members[emailKey]) return;
+        // Skip only when the user's index already exists. If a member row
+        // exists but /userLeagues is missing, repair that partial state.
+        if (userLeagues && userLeagues[item.id]) return;
+        var existingMember = l.members && l.members[emailKey] ? l.members[emailKey] : null;
         var groups = Array.isArray(l.groups) ? l.groups : Object.values(l.groups);
         // Find the matching group + which side of the team this user is on.
         var matchedPlayerName = '';
@@ -5394,10 +5396,14 @@ function runEmailPreallocation(clubId, cb) {
             break;
           }
         }
+        if (!matchedPlayerName && existingMember) {
+          matchedPlayerName = existingMember.playerName || existingMember.name || userDisplayName || currentUser.email;
+          matchedPartnerName = existingMember.partnerName || '';
+        }
         if (!matchedPlayerName) return;
         // Write the member entry — playerName comes from the matched team
         // so the user is correctly identified as their pre-allocated player.
-        updates['/leagues/' + item.id + '/members/' + emailKey] = {
+        updates['/leagues/' + item.id + '/members/' + emailKey] = Object.assign({}, existingMember || {}, {
           email: currentUser.email,
           name: userDisplayName || matchedPlayerName,
           playerName: matchedPlayerName,
@@ -5406,7 +5412,7 @@ function runEmailPreallocation(clubId, cb) {
           joinedAt: Date.now(),
           uid: userUid,
           autoClaimed: true
-        };
+        });
         // userLeagues index so the league shows in My Leagues + Browse.
         updates['/userLeagues/' + userUid + '/' + item.id] = {
           clubId: clubId,
