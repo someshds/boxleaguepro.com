@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.31</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.32</div>
   </div>
 </div>
 
@@ -1635,7 +1635,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.31 · Build 20260517</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.32 · Build 20260604</div>
   </div>
 </div>
 
@@ -1648,6 +1648,15 @@
       <button onclick="closeChangelog()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <div style="padding:20px" id="changelog-content">
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.32 &middot; 4 Jun 2026</span>
+          <span style="background:#16a34a;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">ORGANISER DELETE FIX</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Club organisers can delete test leagues</strong> &mdash; local club admins no longer hit a Firebase permissions failure when deleting leagues that contain other members. Global admin cleanup still removes the extra indexes; club organiser deletes now remove the league and club listing cleanly.</li>
+        </ul>
+      </div>
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16 &middot; 6&ndash;7 May 2026</span>
@@ -2509,7 +2518,9 @@ function deleteLeague(leagueId, event) {
   if (!confirm('Are you absolutely sure? This cannot be undone.')) return;
   if (!FIREBASE_READY) { toast('Cannot delete in demo mode'); return; }
 
-  // Read league info + members BEFORE deleting so we can clean up their userLeagues
+  // Read league info + members BEFORE deleting so global admin can clean up
+  // cross-user indexes. Local club admins cannot write every user's
+  // /userLeagues, /leagueIndex, or /codes entries under current Firebase rules.
   Promise.all([
     db.ref('/leagues/' + leagueId + '/info').once('value'),
     db.ref('/leagues/' + leagueId + '/members').once('value')
@@ -2518,18 +2529,21 @@ function deleteLeague(leagueId, event) {
     const members = snaps[1].val() || {};
     const clubId = (lg && lg.clubId) || info.clubId || (window._scopedClub && window._scopedClub.id) || null;
     const code = (lg && lg.code) || info.code || null;
+    const globalAdmin = isAdmin();
     const updates = {};
     updates['/leagues/' + leagueId] = null;
     updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = null;
-    updates['/leagueIndex/' + leagueId] = null;
     if (clubId) updates['/clubLeagues/' + clubId + '/' + leagueId] = null;
-    if (code)   updates['/codes/' + code] = null;
-    // Remove from all members' userLeagues
-    Object.values(members).forEach(m => {
-      if (m.uid && m.uid !== currentUser.uid) {
-        updates['/userLeagues/' + m.uid + '/' + leagueId] = null;
-      }
-    });
+    if (globalAdmin) {
+      updates['/leagueIndex/' + leagueId] = null;
+      if (code) updates['/codes/' + code] = null;
+      // Only global admin can remove stale league pointers from every member.
+      Object.values(members).forEach(m => {
+        if (m.uid && m.uid !== currentUser.uid) {
+          updates['/userLeagues/' + m.uid + '/' + leagueId] = null;
+        }
+      });
+    }
     db.ref().update(updates).then(() => {
       logAction('delete_league', name);
       toast('League deleted');
