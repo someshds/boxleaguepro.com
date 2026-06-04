@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.35</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.36</div>
   </div>
 </div>
 
@@ -1635,7 +1635,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.35 · Build 20260604d</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.36 · Build 20260604e</div>
   </div>
 </div>
 
@@ -1650,11 +1650,11 @@
     <div style="padding:20px" id="changelog-content">
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.35 &middot; 4 Jun 2026</span>
-          <span style="background:#16a34a;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">ORGANISER CREATE HOTFIX</span>
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.36 &middot; 4 Jun 2026</span>
+          <span style="background:#16a34a;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">STRUCTURED DOUBLES ADD</span>
         </div>
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
-          <li><strong>Club organisers can create and delete test leagues</strong> &mdash; local club admins no longer hit a Firebase permissions failure when deleting leagues that contain other members. Delete buttons now use a clear text label instead of an icon-only control.</li>
+          <li><strong>Structured doubles entry</strong> &mdash; club organisers can add doubles pairs using separate fields for Player 1 name/email and Player 2 name/email, reducing paste-format mistakes.</li>
         </ul>
       </div>
       <div style="margin-bottom:20px">
@@ -2378,13 +2378,28 @@
   <select id="scoped-ba-league" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;margin-bottom:12px"></select>
   <div style="font-size:11px;color:#6b7280;margin-bottom:12px">Used for any line that isn't under a <code>[Box Name]</code> header. To split a roster across multiple boxes, see below.</div>
 
+  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:12px">
+    <div style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:4px">Doubles pairs</div>
+    <div style="font-size:11px;color:#64748b;margin-bottom:10px">One row = one doubles team. Emails are optional for testing.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;font-size:11px;font-weight:700;color:#475569">
+      <div>Player 1</div>
+      <div>Player 2</div>
+    </div>
+    <div id="scoped-ba-pair-rows" style="display:grid;gap:8px"></div>
+    <button onclick="scopedSubmitStructuredPairs()" style="width:100%;margin-top:10px;padding:10px;border:none;background:#2563eb;color:#fff;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer">Add these doubles pairs</button>
+  </div>
+
+  <details style="margin-bottom:12px">
+    <summary style="cursor:pointer;font-size:12px;font-weight:800;color:#334155">Advanced: paste list instead</summary>
+    <div style="font-size:11px;color:#64748b;margin:8px 0">Use this for large rosters or to split players across boxes with <code>[Box Name]</code> headers.</div>
   <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px">Players <span style="color:#b91c1c">*</span></label>
   <textarea id="scoped-ba-text" placeholder="[Box 1]&#10;Jane Doe &amp; John Smith&#10;Sarah Lee, sarah@x.com &amp; Tom Brown, tom@y.com&#10;&#10;[Box 2]&#10;Alex Chen &amp; Maria Patel&#10;Mike Hawkins &amp; Olly Reid" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:monospace;min-height:200px;margin-bottom:10px"></textarea>
   <div style="font-size:11px;color:#6b7280;margin-bottom:14px"><strong>Tip:</strong> add <code>[Box Name]</code> headers in your paste to split players across multiple boxes in one go. Box names must match leagues that already exist at this club.</div>
+  </details>
 
   <div style="display:flex;gap:10px">
     <button onclick="closeScopedModal()" style="flex:1;padding:12px;border:1.5px solid #e2e8f0;background:#fff;color:#334155;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">Cancel</button>
-    <button onclick="scopedSubmitBulkAdd()" style="flex:2;padding:12px;border:none;background:#1d4ed8;color:#fff;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">Add Players</button>
+    <button onclick="scopedSubmitBulkAdd()" style="flex:2;padding:12px;border:none;background:#1d4ed8;color:#fff;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">Add pasted list</button>
   </div>
   <div id="scoped-ba-msg" style="font-size:13px;margin-top:10px"></div>
 </div>
@@ -6353,6 +6368,7 @@ function scopedBulkAddPlayers() {
   openScopedModal('scoped-bulk-add-modal');
   document.getElementById('scoped-ba-text').value = '';
   document.getElementById('scoped-ba-msg').innerHTML = '';
+  renderStructuredPairRows();
   // Populate league dropdown
   var sel = document.getElementById('scoped-ba-league');
   sel.innerHTML = '<option value="">Loading leagues&hellip;</option>';
@@ -6369,6 +6385,62 @@ function scopedBulkAddPlayers() {
       return '<option value="' + esc(lid) + '">' + esc(lg.name || '(unnamed)') + '</option>';
     }).join('');
   });
+}
+
+function renderStructuredPairRows() {
+  var wrap = document.getElementById('scoped-ba-pair-rows');
+  if (!wrap) return;
+  var html = '';
+  for (var i = 0; i < 8; i++) {
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+      '<div style="display:grid;gap:4px">' +
+        '<input class="fi structured-p1-name" placeholder="Player 1 name" style="font-size:13px;padding:8px">' +
+        '<input class="fi structured-p1-email" placeholder="Player 1 email" style="font-size:13px;padding:8px">' +
+      '</div>' +
+      '<div style="display:grid;gap:4px">' +
+        '<input class="fi structured-p2-name" placeholder="Player 2 name" style="font-size:13px;padding:8px">' +
+        '<input class="fi structured-p2-email" placeholder="Player 2 email" style="font-size:13px;padding:8px">' +
+      '</div>' +
+    '</div>';
+  }
+  wrap.innerHTML = html;
+}
+
+function scopedSubmitStructuredPairs() {
+  var msgEl = document.getElementById('scoped-ba-msg');
+  msgEl.innerHTML = '';
+  var rows = [];
+  var errors = [];
+  var wrap = document.getElementById('scoped-ba-pair-rows');
+  var rowEls = wrap ? Array.prototype.slice.call(wrap.children) : [];
+  rowEls.forEach(function(rowEl, idx) {
+    var p1Name = (rowEl.querySelector('.structured-p1-name').value || '').trim();
+    var p1Email = (rowEl.querySelector('.structured-p1-email').value || '').trim();
+    var p2Name = (rowEl.querySelector('.structured-p2-name').value || '').trim();
+    var p2Email = (rowEl.querySelector('.structured-p2-email').value || '').trim();
+    var hasAny = p1Name || p1Email || p2Name || p2Email;
+    if (!hasAny) return;
+    if (!p1Name || !p2Name) {
+      errors.push('Row ' + (idx + 1) + ': enter both player names');
+      return;
+    }
+    [p1Email, p2Email].forEach(function(email) {
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errors.push('Row ' + (idx + 1) + ': invalid email "' + email + '"');
+      }
+    });
+    rows.push(p1Name + (p1Email ? ', ' + p1Email : '') + ' & ' + p2Name + (p2Email ? ', ' + p2Email : ''));
+  });
+  if (errors.length) {
+    msgEl.innerHTML = '<div style="color:#b91c1c">' + errors.map(esc).join('<br>') + '</div>';
+    return;
+  }
+  if (!rows.length) {
+    msgEl.innerHTML = '<div style="color:#b91c1c">Add at least one complete doubles pair.</div>';
+    return;
+  }
+  document.getElementById('scoped-ba-text').value = rows.join('\n');
+  scopedSubmitBulkAdd();
 }
 
 // v4.8.0: Modal helpers.
