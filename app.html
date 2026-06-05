@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.43</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.44</div>
   </div>
 </div>
 
@@ -1373,8 +1373,10 @@
       <div id="avail-body" style="display:none">
         <div id="fill-in-for" style="display:none;margin-bottom:12px">
           <div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:12px 14px">
-            <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:6px">&#128100; Fill in availability for another player</div>
-            <select id="fill-in-select" class="fi" onchange="switchFillInPlayer()" style="font-size:16px;padding:8px 12px">
+            <div id="fill-in-heading" style="font-size:14px;font-weight:800;color:#92400e;margin-bottom:4px">&#128100; Editing availability for</div>
+            <div id="fill-in-helper" style="font-size:12px;color:#92400e;margin-bottom:8px;line-height:1.4">Use this dropdown to choose whose availability you are editing.</div>
+            <label for="fill-in-select" style="display:block;font-size:11px;font-weight:800;color:#92400e;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px">Player to edit</label>
+            <select id="fill-in-select" class="fi" onchange="switchFillInPlayer()" style="font-size:16px;padding:10px 12px;width:100%;font-weight:700">
               <option value="">Myself</option>
             </select>
             <div id="fill-in-label" style="display:none;font-size:12px;color:#b45309;margin-top:4px;font-weight:600"></div>
@@ -1636,7 +1638,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.43 · Build 20260604l</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.44 · Build 20260605a</div>
   </div>
 </div>
 
@@ -1651,7 +1653,7 @@
     <div style="padding:20px" id="changelog-content">
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.43 &middot; 4 Jun 2026</span>
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.44 &middot; 5 Jun 2026</span>
           <span style="background:#16a34a;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">GRID CLARITY</span>
         </div>
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
@@ -2432,6 +2434,20 @@
   </div>
 </div>
 
+<!-- v4.16.44: In-app clear-week confirmation. Keeps QA/browser automation out of native confirm dialogs. -->
+<div id="clear-week-confirm-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;padding:24px;width:calc(100% - 40px);max-width:460px;max-height:90vh;overflow-y:auto;z-index:9999;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+  <div style="font-size:18px;font-weight:900;color:#92400e;margin-bottom:8px">Clear this week?</div>
+  <div id="clear-week-confirm-name" style="font-size:14px;font-weight:800;color:#0f172a;margin-bottom:12px;word-break:break-word"></div>
+  <div style="font-size:13px;color:#475569;line-height:1.6;margin-bottom:16px">
+    This removes the selected availability for the week currently on screen. It does <strong>not</strong> remove bookings, teams, players, results, or account data.
+  </div>
+  <div style="background:#fffbeb;border:1px solid #fbbf24;color:#92400e;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;margin-bottom:16px">Use this only when the chosen player wants to start this week again.</div>
+  <div style="display:flex;gap:10px">
+    <button onclick="cancelClearWeekConfirm()" style="flex:1;padding:12px;border:1.5px solid #e2e8f0;background:#fff;color:#334155;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">Cancel</button>
+    <button id="clear-week-confirm-btn" onclick="confirmClearWeekModal()" style="flex:1.5;padding:12px;border:none;background:#d97706;color:#fff;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer">Yes, clear week</button>
+  </div>
+</div>
+
 <!-- v4.9.0: Manage Organisers modal — club admins can add/remove other club organisers by email. -->
 <div id="scoped-manage-admins-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;padding:24px;width:calc(100% - 40px);max-width:480px;max-height:90vh;overflow-y:auto;z-index:9999;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -2551,6 +2567,7 @@ function logAction(action, details) {
 
 let pendingDeleteLeagueId = null;
 let pendingDeleteLeagueName = '';
+let pendingClearWeekPlayer = '';
 
 function showDeleteLeagueConfirm(leagueId, name) {
   pendingDeleteLeagueId = leagueId;
@@ -2587,6 +2604,34 @@ function confirmDeleteLeagueModal() {
   deleteLeague(leagueId, { stopPropagation: function(){} }, true, pendingDeleteLeagueName);
   pendingDeleteLeagueName = '';
   if (btn) { setTimeout(function(){ btn.disabled = false; btn.textContent = 'Yes, delete league'; }, 500); }
+}
+
+function showClearWeekConfirm(player) {
+  pendingClearWeekPlayer = player || getActivePlayer();
+  if (!pendingClearWeekPlayer) return;
+  var backdrop = document.getElementById('scoped-modal-backdrop');
+  var modal = document.getElementById('clear-week-confirm-modal');
+  var nameEl = document.getElementById('clear-week-confirm-name');
+  var label = (pendingClearWeekPlayer === getMyPlayerName()) ? 'your availability' : pendingClearWeekPlayer + "'s availability";
+  if (nameEl) nameEl.textContent = 'You are about to clear ' + label + '.';
+  if (backdrop) backdrop.style.display = 'block';
+  if (modal) modal.style.display = 'block';
+}
+
+function cancelClearWeekConfirm() {
+  pendingClearWeekPlayer = '';
+  closeScopedModal();
+}
+
+function confirmClearWeekModal() {
+  var player = pendingClearWeekPlayer;
+  if (!player) return;
+  var btn = document.getElementById('clear-week-confirm-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Clearing...'; }
+  closeScopedModal();
+  pendingClearWeekPlayer = '';
+  clearMyWeek(true, player);
+  if (btn) { setTimeout(function(){ btn.disabled = false; btn.textContent = 'Yes, clear week'; }, 500); }
 }
 
 function deleteLeague(leagueId, event, confirmed, confirmedName) {
@@ -4775,6 +4820,7 @@ function resetPassword() {
 
 function signOut() {
   logAction('sign_out');
+  clearAIAvailabilityResult();
   detachListeners();
   detachGlobalListeners();
   if (_deadlineInterval) { clearInterval(_deadlineInterval); _deadlineInterval = null; }
@@ -6076,6 +6122,11 @@ function formatHourLabel(h) {
   return (h - 12) + 'pm';
 }
 
+function clearAIAvailabilityResult() {
+  var resultEl = document.getElementById('ai-avail-result');
+  if (resultEl) resultEl.innerHTML = '';
+}
+
 // Apply a parsed plan to the current week — fill in availability slots
 function aiFillAvailability() {
   var resultEl = document.getElementById('ai-avail-result');
@@ -6606,6 +6657,8 @@ function closeScopedModal(ev) {
   if (mp) mp.style.display = 'none';
   var dl = document.getElementById('delete-league-confirm-modal');
   if (dl) dl.style.display = 'none';
+  var cw = document.getElementById('clear-week-confirm-modal');
+  if (cw) cw.style.display = 'none';
   var ma = document.getElementById('scoped-manage-admins-modal');
   if (ma) ma.style.display = 'none';
 }
@@ -8438,6 +8491,7 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   activeLeagueId = leagueId;
   logAction('enter_league', leagueInfo.name || leagueId);
   fillInForPlayer = ''; // Reset fill-in when entering a league
+  clearAIAvailabilityResult();
 
   // Load club booking URL
   clubBookingUrl = '';
@@ -8560,6 +8614,7 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
     L.groups = snap.val() ? Object.values(snap.val()) : [];
     migrateLegacyBooked(); // rekey any '_' bookings once groups are known
     renderGroups(); renderProgress();
+    if (currentTab === 'availability') populateFillInDropdown();
   });
   listeners.push({ ref: ref.child('groups'), event: 'value', fn: l1 });
 
@@ -8600,6 +8655,7 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   const l5 = ref.child('members').on('value', snap => {
     L.members = snap.val() || {};
     renderMembers();
+    if (currentTab === 'availability') populateFillInDropdown();
     if (membersInitial) { showTab(mixInMode ? 'open' : 'availability'); membersInitial = false; }
   });
   listeners.push({ ref: ref.child('members'), event: 'value', fn: l5 });
@@ -9717,8 +9773,14 @@ function populateFillInDropdown() {
   }
 
   container.style.display = 'block';
-  const label = isOrg ? 'Fill in availability for another player' : 'Fill in availability for your partner';
-  container.querySelector('div > div:first-child').innerHTML = '&#128100; ' + label;
+  const label = isOrg ? 'Editing availability for' : 'Editing availability for your team';
+  const helper = isOrg
+    ? 'Choose any player in this league, then mark or clear their availability.'
+    : 'Choose yourself or your doubles partner, then mark availability for that player.';
+  const heading = document.getElementById('fill-in-heading');
+  const helpEl = document.getElementById('fill-in-helper');
+  if (heading) heading.innerHTML = '&#128100; ' + label;
+  if (helpEl) helpEl.textContent = helper;
   sel.innerHTML = '<option value="">Myself (' + esc(myName) + ')</option>';
   allowedPlayers.forEach(p => {
     const opt = document.createElement('option');
@@ -9734,8 +9796,9 @@ function switchFillInPlayer() {
   const label = document.getElementById('fill-in-label');
   const title = document.getElementById('my-summary-title');
   fillInForPlayer = sel.value;
+  clearAIAvailabilityResult();
   if (fillInForPlayer) {
-    label.textContent = '⚠️ You are now editing availability for ' + fillInForPlayer;
+    label.textContent = 'You are now editing availability for ' + fillInForPlayer + '.';
     label.style.display = 'block';
     if (title) title.textContent = fillInForPlayer + "'s upcoming availability";
   } else {
@@ -10316,11 +10379,10 @@ function copyLastWeek() {
   toast(`Copied ${copied} slot${copied!==1?'s':''} from last week`);
 }
 
-function clearMyWeek() {
-  const player = getActivePlayer();
+function clearMyWeek(confirmed, confirmedPlayer) {
+  const player = confirmedPlayer || getActivePlayer();
   if (!player) return;
-  const who = fillInForPlayer ? fillInForPlayer + "'s" : 'your';
-  if (!confirm('Clear all ' + who + ' availability for this week?')) return;
+  if (!confirmed) { showClearWeekConfirm(player); return; }
   const dates = weekDates();
   const updates = {};
   dates.forEach(d => {
