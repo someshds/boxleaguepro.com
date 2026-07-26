@@ -2235,7 +2235,7 @@
           ["What is BoxLeague Pro?", "A free web app for organising box league matches and friendly mix-in games for any racquet sport \u2014 tennis, padel, squash, racketball, and badminton."],
           ["Is it really free?", "Yes, 100% free forever. No premium tiers, no player limits, no hidden fees. Every feature is available to everyone."],
           ["Do I need to download an app?", "No. BoxLeague Pro runs in your browser on any device \u2014 phone, tablet, or desktop. Just visit boxleaguepro.com and sign in."],
-          ["What sports does it support?", "Tennis, padel, squash, racketball, badminton, and any other racquet sport. Works for singles, doubles, and mixed doubles."],
+          ["What sports does it support?", "Tennis, padel, squash, racketball, badminton, and any other racquet sport. Padel is doubles only; other sports can use singles, doubles, or mixed doubles where appropriate."],
           ["What is a \u201cclub sandbox\u201d or \u201cclub link\u201d?", "Every club on BoxLeague Pro gets its own short link like boxleaguepro.com/app.html?club=east-grinstead-tennis. When players click it they land straight on their club's own welcome screen with their leagues and mix-in games \u2014 nothing from other clubs in the way. Your club organiser can share this one link in a WhatsApp group and everyone lands in the right place."],
           ["How do I get my club added to BoxLeague Pro?", "Fill in the 30-second form at boxleaguepro.com/apply.html. We review the application, create a club sandbox for you, and email you back a dedicated club link. Once you're set up as the club organiser you can create leagues, bulk add players, and invite other organisers yourself \u2014 no technical help needed."],
           ["How do I create a box league at my club?", "If you're a club organiser, open your club link (see above), tap the \u201cClub Organiser Tools\u201d panel at the top of your welcome screen, then \u201cNew League\u201d. Pick a format (Singles, Doubles, or Mixed Doubles), name it, and you're done. Bulk add your players in one paste, or share the invite link so they join themselves."],
@@ -2346,20 +2346,21 @@
   <input type="text" id="scoped-cl-name" placeholder="e.g. Men's Doubles Box 3" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;margin-bottom:10px" oninput="scopedAutoDetectFormat()">
 
   <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px">Format <span style="color:#b91c1c">*</span></label>
-  <select id="scoped-cl-format" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;margin-bottom:10px" onchange="this.dataset.userTouched='1'">
+  <select id="scoped-cl-format" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;margin-bottom:10px" onchange="this.dataset.userTouched='1';syncScopedSportFormat()">
     <option value="singles">Singles (1 vs 1)</option>
     <option value="doubles" selected>Doubles (2 vs 2)</option>
     <option value="mixed">Mixed Doubles (1 male + 1 female per team)</option>
   </select>
 
   <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px">Sport</label>
-  <select id="scoped-cl-sport" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;margin-bottom:10px">
+  <select id="scoped-cl-sport" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;margin-bottom:10px" onchange="syncScopedSportFormat()">
     <option value="tennis">Tennis</option>
     <option value="padel">Padel</option>
     <option value="squash">Squash</option>
     <option value="racketball">Racketball</option>
     <option value="badminton">Badminton</option>
   </select>
+  <div id="scoped-cl-format-note" style="display:none;font-size:11px;color:#92400e;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:7px 9px;margin-top:-2px;margin-bottom:10px">Padel is always doubles, so singles is not available for padel leagues.</div>
 
   <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px">Availability deadline (optional)</label>
   <input type="date" id="scoped-cl-deadline" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;margin-bottom:16px">
@@ -6557,9 +6558,9 @@ function renderScopedLeagueList(clubId) {
       var fmt = String(lg.format || '').toLowerCase();
       var sport = String(lg.sport || '').toLowerCase();
       var name = String(lg.name || lg.leagueName || '').toLowerCase();
-      var isMixed = fmt === 'mixed' || /(\bmixed\b|\bmix\s*doubles?\b|\bmxd\b|\bxd\b)/.test(name);
+      var isMixed = sport !== 'padel' && (fmt === 'mixed' || /(\bmixed\b|\bmix\s*doubles?\b|\bmxd\b|\bxd\b)/.test(name));
       if (isMixed) return '<span style="background:#fce7f3;color:#be185d;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px">MIXED DOUBLES</span>';
-      var isSingles = fmt === 'singles' || (!fmt && (sport === 'singles' || sport === 'squash' || sport === 'racketball')) || (!fmt && /\bsingles?\b/.test(name));
+      var isSingles = sport !== 'padel' && (fmt === 'singles' || (!fmt && (sport === 'singles' || sport === 'squash' || sport === 'racketball')) || (!fmt && /\bsingles?\b/.test(name)));
       if (isSingles) return '<span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px">SINGLES</span>';
       return '<span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px">DOUBLES</span>';
     }
@@ -6723,9 +6724,11 @@ function scopedCreateLeague() {
   Array.from(formatSel.options).forEach(function(opt) {
     if (allowedFormats) {
       var ok = !!allowedFormats[opt.value];
+      opt.dataset.clubAllowed = ok ? '1' : '0';
       opt.hidden = !ok;
       opt.disabled = !ok;
     } else {
+      opt.dataset.clubAllowed = '1';
       opt.hidden = false;
       opt.disabled = false;
     }
@@ -6733,6 +6736,7 @@ function scopedCreateLeague() {
   formatSel.value = defaultFormat;
   formatSel.dataset.userTouched = '';
   document.getElementById('scoped-cl-sport').value = defaultSport;
+  syncScopedSportFormat();
   document.getElementById('scoped-cl-deadline').value = defaultDeadline;
   document.getElementById('scoped-cl-msg').innerHTML = '';
   setTimeout(function() { document.getElementById('scoped-cl-name').focus(); }, 100);
@@ -6863,8 +6867,39 @@ function closeScopedModal(ev) {
 }
 
 // v4.8.0: Auto-detect format from league name in scoped create modal.
+function syncScopedSportFormat() {
+  var sportSel = document.getElementById('scoped-cl-sport');
+  var formatSel = document.getElementById('scoped-cl-format');
+  var note = document.getElementById('scoped-cl-format-note');
+  if (!sportSel || !formatSel) return;
+  var isPadel = sportSel.value === 'padel';
+  Array.prototype.forEach.call(formatSel.options, function(opt) {
+    var clubAllowed = opt.dataset.clubAllowed !== '0';
+    if (isPadel) {
+      var ok = opt.value === 'doubles' && clubAllowed;
+      opt.disabled = !ok;
+      opt.hidden = !ok;
+    } else {
+      opt.disabled = !clubAllowed;
+      opt.hidden = !clubAllowed;
+    }
+  });
+  if (isPadel) {
+    formatSel.value = 'doubles';
+    formatSel.dataset.userTouched = '1';
+    if (note) note.style.display = '';
+  } else if (note) {
+    note.style.display = 'none';
+  }
+}
+
 function scopedAutoDetectFormat() {
   var sel = document.getElementById('scoped-cl-format');
+  var sportSel = document.getElementById('scoped-cl-sport');
+  if (sportSel && sportSel.value === 'padel') {
+    syncScopedSportFormat();
+    return;
+  }
   if (!sel || sel.dataset.userTouched === '1') return;
   var name = (document.getElementById('scoped-cl-name').value || '').toLowerCase();
   if (/(\bmixed\b|\bmix\s*doubles?\b|\bmxd\b|\bxd\b)/.test(name)) sel.value = 'mixed';
@@ -6882,6 +6917,7 @@ async function scopedSubmitCreateLeague() {
   var name     = val('scoped-cl-name');
   var format   = val('scoped-cl-format') || 'doubles';
   var sport    = val('scoped-cl-sport') || 'tennis';
+  if (sport === 'padel') format = 'doubles';
   var deadline = val('scoped-cl-deadline') || '';
   var msgEl    = document.getElementById('scoped-cl-msg');
   msgEl.innerHTML = '';
@@ -7136,7 +7172,8 @@ async function scopedSubmitBulkAdd() {
         var bucket = buckets[lid];
         var league = bucket.league;
         var fmt = (league && league.info && league.info.format) || 'doubles';
-        var isSingles = fmt === 'singles';
+        var sport = String((league && league.info && league.info.sport) || '').toLowerCase();
+        var isSingles = fmt === 'singles' && sport !== 'padel';
         var existing = (league && league.groups) || {};
         var existingList = Array.isArray(existing) ? existing.slice() : Object.keys(existing).map(function(k) { return existing[k]; });
         var newGroups = existingList.slice();
@@ -8081,6 +8118,7 @@ function isSinglesLeague(sportOrLeague) {
   // League object
   if (typeof sportOrLeague === 'object') {
     const lg = sportOrLeague;
+    if (String(lg.sport || '').toLowerCase() === 'padel') return false;
     if (lg.format === 'singles') return true;
     if (lg.format === 'doubles' || lg.format === 'mixed') return false;
     // No explicit format — fall back to sport then name
@@ -8096,6 +8134,7 @@ function isSinglesLeague(sportOrLeague) {
   }
   // Legacy: raw sport string
   const s = String(sportOrLeague).toLowerCase();
+  if (s === 'padel') return false;
   return s === 'singles' || s === 'squash' || s === 'racketball';
 }
 
@@ -13769,7 +13808,7 @@ const Q_STEPS = [
     { value: 'racketball', label: 'Racketball', desc: '' },
     { value: 'other', label: 'Other', desc: '' },
   ]},
-  { id: 'format', question: 'Singles or doubles?', hint: 'In singles you play alone. In doubles you play with a partner.', type: 'options', show: () => qData.goal === 'create', options: [
+  { id: 'format', question: 'Singles or doubles?', hint: 'In singles you play alone. In doubles you play with a partner.', type: 'options', show: () => qData.goal === 'create' && qData.sport !== 'padel', options: [
     { value: 'singles', label: 'Singles', desc: 'I play on my own' },
     { value: 'doubles', label: 'Doubles', desc: 'I play with a partner' },
   ]},
@@ -13847,6 +13886,7 @@ function renderQStep() {
 
 function qSelectOption(field, value) {
   qData[field] = value;
+  if (field === 'sport' && value === 'padel') qData.format = 'doubles';
   qStep++;
   renderQStep();
 }
@@ -13942,7 +13982,9 @@ async function finishGuided() {
 
   if (qData.goal === 'create') {
     // Create the league automatically
-    const sport = qData.format === 'singles' ? 'singles' : qData.sport;
+    const leagueSport = qData.sport || 'tennis';
+    const leagueFormat = leagueSport === 'padel' ? 'doubles' : (qData.format || 'doubles');
+    const sport = leagueFormat === 'singles' ? 'singles' : leagueSport;
     const name = qData.leagueName || 'My League';
     const code = await genUniqueCode();
     const clubId = qData.clubId;
@@ -13967,18 +14009,18 @@ async function finishGuided() {
       const leagueId = db.ref('/leagues').push().key;
       const updates = {};
       updates['/leagues/' + leagueId] = {
-        info: { name: name || '', sport: sport || '', code: code || '', clubId: clubId || '', clubName: clubName || '', organiserUid: currentUser.uid, createdAt: Date.now() },
+        info: { name: name || '', sport: leagueSport || '', format: leagueFormat || '', code: code || '', clubId: clubId || '', clubName: clubName || '', organiserUid: currentUser.uid, createdAt: Date.now() },
         groups: {}, availability: {}, settings: { leagueName: name || '' }, booked: {},
         members: { [sanitizeEmail(currentUser.email)]: { uid: currentUser.uid, name: currentUser.displayName || currentUser.email || '', email: currentUser.email || '', role: 'organiser', playerName: '', partnerName: '', joinedAt: Date.now() } },
         openMatches: {}, comments: {}
       };
-      updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = { name: name || '', sport: sport || '', code: code || '', role: 'organiser', clubId: clubId || '', clubName: clubName || '' };
-      updates['/clubLeagues/' + clubId + '/' + leagueId] = { name: name || '', sport: sport || '' };
+      updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = { name: name || '', sport: leagueSport || '', format: leagueFormat || '', code: code || '', role: 'organiser', clubId: clubId || '', clubName: clubName || '' };
+      updates['/clubLeagues/' + clubId + '/' + leagueId] = { name: name || '', sport: leagueSport || '', format: leagueFormat || '' };
       updates['/codes/' + code] = leagueId;
       db.ref().update(updates).then(() => {
         // Now enter the wizard with pre-filled name/partner
-        selectedGameType = qData.format === 'singles' ? 'singles' : 'doubles';
-        startWizardFromGuided(leagueId, name, qData.playerName, qData.partner, sport);
+        selectedGameType = leagueFormat === 'singles' ? 'singles' : 'doubles';
+        startWizardFromGuided(leagueId, name, qData.playerName, qData.partner, leagueSport, leagueFormat);
       }).catch(err => {
         toast('Error creating league: ' + err.message);
         showScreen('welcome');
@@ -13993,9 +14035,9 @@ async function finishGuided() {
   showScreen('welcome');
 }
 
-function startWizardFromGuided(leagueId, leagueName, playerName, partner, sport) {
+function startWizardFromGuided(leagueId, leagueName, playerName, partner, sport, format) {
   activeLeagueId = leagueId;
-  wizIsSingles = sport === 'singles' || sport === 'squash';
+  wizIsSingles = format === 'singles' || sport === 'singles' || sport === 'squash';
   wizWeekOff = 0;
   wizAvailability = {};
 
