@@ -721,6 +721,8 @@
         </div>
       </div>
 
+      <div id="scoped-organiser-setup-guide" style="display:none;margin-bottom:16px"></div>
+
       <div class="welcome-heading" style="margin-bottom:10px">&#127942; Box Leagues</div>
       <div id="scoped-leagues-list" style="margin-bottom:20px"></div>
 
@@ -6298,8 +6300,205 @@ function renderScopedWelcome() {
 
   // Fetch and render leagues + mix-ins
   if (!FIREBASE_READY) return;
+  renderScopedOrganiserSetupGuide(scope.id);
   renderScopedLeagueList(scope.id);
   renderScopedMixInList(scope.id);
+}
+
+window._scopedSetupGuide = window._scopedSetupGuide || { activeStep: 0, lastClubId: null };
+
+function setScopedSetupStep(step) {
+  var state = window._scopedSetupGuide || {};
+  state.activeStep = Math.max(0, Math.min(3, Number(step) || 0));
+  window._scopedSetupGuide = state;
+  var scope = window._scopedClub;
+  if (scope && scope.id) renderScopedOrganiserSetupGuide(scope.id);
+}
+
+function scopedSetupNext() {
+  var state = window._scopedSetupGuide || { activeStep: 0 };
+  setScopedSetupStep((state.activeStep || 0) + 1);
+}
+
+function scopedSetupPrev() {
+  var state = window._scopedSetupGuide || { activeStep: 0 };
+  setScopedSetupStep((state.activeStep || 0) - 1);
+}
+
+function scopedSetupAction(action) {
+  if (action === 'league') scopedCreateLeague();
+  if (action === 'players') scopedBulkAddPlayers();
+  if (action === 'accounts') scopedManagePlayers();
+  if (action === 'admins') scopedManageAdmins();
+  if (action === 'share') scopedShareInvite();
+  if (action === 'scoring') toast('Open a league, then use Settings to choose the scoring system.');
+}
+
+function getScopedClubShareUrl() {
+  var scope = window._scopedClub;
+  if (!scope) return window.location.href;
+  var params = new URLSearchParams(window.location.search);
+  var slug = params.get('club') || scope.id;
+  return window.location.origin + window.location.pathname + '?club=' + encodeURIComponent(slug);
+}
+
+function getScopedScoringSummary(scope) {
+  var info = (scope && scope.info) || {};
+  var presetId = info.scoringSystem || 'default';
+  var preset = (typeof SCORING_PRESETS !== 'undefined' && SCORING_PRESETS[presetId]) || (typeof SCORING_PRESETS !== 'undefined' && SCORING_PRESETS.default) || null;
+  return {
+    enabled: !!(info.modules && info.modules.scoring),
+    presetId: presetId,
+    presetName: preset ? preset.name : 'Standard (3 / 1 / 0)',
+    footnote: preset ? preset.tableFootnote : 'Win = 3 pts · Loss = 1 pt · Not played = 0 pts'
+  };
+}
+
+function getScopedSetupStatus(clubId) {
+  return db.ref('/clubLeagues/' + clubId).once('value').then(function(snap) {
+    var clubLeagues = snap.val() || {};
+    var ids = Object.keys(clubLeagues);
+    if (ids.length === 0) {
+      return { leagueCount: 0, playerCount: 0, leagues: [] };
+    }
+    return Promise.all(ids.map(function(lid) {
+      return db.ref('/leagues/' + lid).once('value').then(function(leagueSnap) {
+        var league = leagueSnap.val() || {};
+        var info = league.info || clubLeagues[lid] || {};
+        var groups = league.groups || {};
+        var groupList = Array.isArray(groups) ? groups : Object.keys(groups).map(function(k) { return groups[k]; });
+        var clubLeagueInfo = clubLeagues[lid] || {};
+        return {
+          id: lid,
+          name: info.name || clubLeagueInfo.name || 'Unnamed league',
+          format: info.format || 'doubles',
+          groupCount: groupList.filter(Boolean).length
+        };
+      });
+    })).then(function(leagues) {
+      var playerCount = leagues.reduce(function(sum, league) { return sum + (league.groupCount || 0); }, 0);
+      return { leagueCount: leagues.length, playerCount: playerCount, leagues: leagues };
+    });
+  });
+}
+
+function renderScopedOrganiserSetupGuide(clubId) {
+  var guide = document.getElementById('scoped-organiser-setup-guide');
+  if (!guide) return;
+  var scope = window._scopedClub;
+  if (!scope || !clubId || !isClubAdminFor(clubId) || !FIREBASE_READY) {
+    guide.style.display = 'none';
+    guide.innerHTML = '';
+    return;
+  }
+
+  guide.style.display = '';
+  guide.innerHTML = '<div style="background:#fff;border:1px solid #cbd5e1;border-radius:12px;padding:14px;color:#0f172a;box-shadow:0 8px 20px rgba(15,23,42,0.08)">' +
+    '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center">' +
+      '<div><div style="font-size:12px;font-weight:800;color:#0369a1;letter-spacing:0.8px;text-transform:uppercase">First setup</div>' +
+      '<div style="font-size:18px;font-weight:800;margin-top:2px">Let&apos;s get this club ready</div></div>' +
+      '<div style="font-size:12px;color:#64748b;text-align:right">One screen at a time</div>' +
+    '</div>' +
+    '<div style="font-size:13px;color:#64748b;margin-top:10px">Checking the club setup&hellip;</div>' +
+  '</div>';
+
+  getScopedSetupStatus(clubId).then(function(status) {
+    var state = window._scopedSetupGuide || { activeStep: 0, lastClubId: null };
+    if (state.lastClubId !== clubId) {
+      state.activeStep = status.leagueCount === 0 ? 0 : (status.playerCount === 0 ? 1 : 2);
+      state.lastClubId = clubId;
+    }
+    window._scopedSetupGuide = state;
+
+    var scoring = getScopedScoringSummary(scope);
+    var steps = [
+      {
+        label: 'League',
+        done: status.leagueCount > 0,
+        title: status.leagueCount > 0 ? 'League created' : 'Create the league',
+        body: status.leagueCount > 0
+          ? 'This club already has ' + status.leagueCount + ' league' + (status.leagueCount === 1 ? '' : 's') + '. Next, add the players into the right box.'
+          : 'Start by creating the box league players will join. For Derek&apos;s Warkworth test this is the Interhouse singles league.',
+        action: 'league',
+        actionLabel: status.leagueCount > 0 ? 'Create another league' : 'Create league'
+      },
+      {
+        label: 'Players',
+        done: status.playerCount > 0,
+        title: status.playerCount > 0 ? 'Players added' : 'Add the player list',
+        body: status.playerCount > 0
+          ? 'There ' + (status.playerCount === 1 ? 'is' : 'are') + ' ' + status.playerCount + ' player/team entr' + (status.playerCount === 1 ? 'y' : 'ies') + ' across this club&apos;s leagues.'
+          : 'Paste one singles player per line, ideally as "Full Name, email". The app will roster them into the selected league.',
+        action: 'players',
+        secondaryAction: 'accounts',
+        actionLabel: status.playerCount > 0 ? 'Add more players' : 'Bulk add players',
+        secondaryLabel: 'Review accounts'
+      },
+      {
+        label: 'Invite',
+        done: status.playerCount > 0,
+        title: 'Share the club link',
+        body: 'Once the player list is in, copy or share the club link. Players sign in from the same club page and add their availability.',
+        action: 'share',
+        actionLabel: 'Copy/share club link',
+        extra: getScopedClubShareUrl()
+      },
+      {
+        label: 'Scoring',
+        done: scoring.enabled,
+        title: scoring.enabled ? 'Review scoring' : 'Scoring is not switched on',
+        body: scoring.enabled
+          ? 'Current scoring preset: ' + scoring.presetName + '. Check this before results go live, especially if the club wants custom rules.'
+          : 'If the club needs a live table, turn on scoring for the club and choose the closest preset before scores are entered.',
+        action: 'scoring',
+        actionLabel: 'Scoring guidance',
+        extra: scoring.footnote
+      }
+    ];
+
+    var active = Math.max(0, Math.min(steps.length - 1, state.activeStep || 0));
+    var step = steps[active];
+    var completeCount = steps.filter(function(s) { return s.done; }).length;
+    var chips = steps.map(function(s, i) {
+      var bg = i === active ? '#0f172a' : (s.done ? '#dcfce7' : '#f1f5f9');
+      var color = i === active ? '#fff' : (s.done ? '#166534' : '#475569');
+      var mark = s.done ? '&#10003; ' : '';
+      return '<button onclick="setScopedSetupStep(' + i + ')" style="border:none;background:' + bg + ';color:' + color + ';border-radius:999px;padding:7px 10px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap">' + mark + esc(s.label) + '</button>';
+    }).join('');
+    var donePill = step.done
+      ? '<span style="background:#dcfce7;color:#166534;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:800">DONE</span>'
+      : '<span style="background:#fef3c7;color:#92400e;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:800">NEXT</span>';
+    var secondary = step.secondaryAction
+      ? '<button onclick="scopedSetupAction(\'' + step.secondaryAction + '\')" style="background:#f8fafc;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;padding:10px 12px;font-size:13px;font-weight:800;cursor:pointer">' + esc(step.secondaryLabel || 'Review') + '</button>'
+      : '';
+    var extra = step.extra
+      ? '<div style="margin-top:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:9px 10px;font-size:12px;color:#475569;word-break:break-word">' + esc(step.extra) + '</div>'
+      : '';
+
+    guide.innerHTML = '<div style="background:#fff;border:1px solid #cbd5e1;border-radius:12px;padding:14px;color:#0f172a;box-shadow:0 8px 20px rgba(15,23,42,0.08)">' +
+      '<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:12px">' +
+        '<div><div style="font-size:12px;font-weight:800;color:#0369a1;letter-spacing:0.8px;text-transform:uppercase">First setup</div>' +
+        '<div style="font-size:18px;font-weight:800;margin-top:2px">Let&apos;s get this club ready</div></div>' +
+        '<div style="font-size:12px;color:#64748b;text-align:right;white-space:nowrap">' + completeCount + ' of ' + steps.length + ' checked</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">' + chips + '</div>' +
+      '<div style="border-top:1px solid #e2e8f0;padding-top:12px">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px">' +
+          '<div style="font-size:16px;font-weight:800">' + esc(step.title) + '</div>' + donePill +
+        '</div>' +
+        '<div style="font-size:13px;color:#475569;line-height:1.5">' + step.body + '</div>' +
+        extra +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
+          '<button onclick="scopedSetupAction(\'' + step.action + '\')" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:10px 12px;font-size:13px;font-weight:800;cursor:pointer">' + esc(step.actionLabel) + '</button>' +
+          secondary +
+          '<button onclick="scopedSetupPrev()" ' + (active === 0 ? 'disabled' : '') + ' style="background:#fff;color:#334155;border:1px solid #cbd5e1;border-radius:8px;padding:10px 12px;font-size:13px;font-weight:800;cursor:' + (active === 0 ? 'not-allowed' : 'pointer') + ';opacity:' + (active === 0 ? '0.45' : '1') + '">Back</button>' +
+          '<button onclick="scopedSetupNext()" ' + (active === steps.length - 1 ? 'disabled' : '') + ' style="background:#fff;color:#334155;border:1px solid #cbd5e1;border-radius:8px;padding:10px 12px;font-size:13px;font-weight:800;cursor:' + (active === steps.length - 1 ? 'not-allowed' : 'pointer') + ';opacity:' + (active === steps.length - 1 ? '0.45' : '1') + '">Next</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).catch(function(err) {
+    guide.innerHTML = '<div style="background:#fff;border:1px solid #fecaca;border-radius:12px;padding:14px;color:#991b1b;font-size:13px">Setup guide could not load: ' + esc(err.message || String(err)) + '</div>';
+  });
 }
 
 // v4.9.0: Populate #scoped-leagues-list with this club's box leagues, split
@@ -6984,6 +7183,8 @@ async function scopedSubmitBulkAdd() {
         logAction('bulk_add_players', totalRows + ' rows across ' + leagueIds.length + ' league(s)');
         msgEl.innerHTML = '<div style="color:#059669;font-weight:700">&#9989; Added ' + totalRows + ' across ' + leagueIds.length + ' league' + (leagueIds.length === 1 ? '' : 's') + ':</div><div style="font-size:12px;color:#475569;margin-top:6px">' + summaryParts.join('<br>') + '</div>';
         toast('Added ' + totalRows + ' across ' + leagueIds.length + ' league' + (leagueIds.length === 1 ? '' : 's'));
+        renderScopedLeagueList(scope.id);
+        renderScopedOrganiserSetupGuide(scope.id);
         setTimeout(function() { closeScopedModal(); }, 1200);
       }).catch(function(err) {
         msgEl.innerHTML = '<div style="color:#b91c1c">Write failed: ' + esc(err.message || String(err)) + '</div>';
