@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.44</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.47</div>
   </div>
 </div>
 
@@ -1640,7 +1640,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.44 · Build 20260605a</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.47 · Build 20260727c</div>
   </div>
 </div>
 
@@ -1655,6 +1655,14 @@
     <div style="padding:20px" id="changelog-content">
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.47 · 27 Jul 2026</span>
+          <span style="background:#0f766e;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">COMMUNICATIONS</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Organiser-led communication</strong> — match details and club links are shared by organisers through the channels they choose.</li>
+          <li><strong>Private signup handling</strong> — the app records consent in the club system without sending signup details directly to the CRM from a browser.</li>
+        </ul>
+      </div>
           <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.44 &middot; 5 Jun 2026</span>
           <span style="background:#16a34a;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">GRID CLARITY</span>
         </div>
@@ -1963,17 +1971,6 @@
   </div>
 </div>
 
-<!-- ── Notify Players Modal · v4.15.5 ── -->
-<div id="notify-players-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeNotifyPlayers()">
-  <div style="background:#fff;border-radius:16px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e2e8f0">
-      <div style="font-size:17px;font-weight:700">&#128226; Notify Players</div>
-      <button onclick="closeNotifyPlayers()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
-    </div>
-    <div style="padding:20px" id="notify-players-content"></div>
-  </div>
-</div>
-
 <!-- ── Add Match (arranged outside the app) Modal · v4.6.8 ── -->
 <div id="add-match-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeAddMatchModal()">
   <div style="background:#fff;border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
@@ -2207,7 +2204,7 @@
         </div>
         <div style="display:flex;gap:12px;align-items:start">
           <div style="min-width:28px;height:28px;border-radius:50%;background:#3884F4;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">4</div>
-          <div><div style="font-size:14px;font-weight:600;color:#1a1a1a">Find &amp; book matches</div><div style="font-size:13px;color:#6b7280">Players mark their availability; Match Finder compares everyone and shows times when all players can play. Tap to book, everyone gets notified.</div></div>
+          <div><div style="font-size:14px;font-weight:600;color:#1a1a1a">Find &amp; book matches</div><div style="font-size:13px;color:#6b7280">Players mark their availability; Match Finder compares everyone and shows times when all players can play. Tap to book, then share the match details with the group.</div></div>
         </div>
       </div>
 
@@ -2243,7 +2240,7 @@
           ["Can I run multiple leagues at my club?", "Yes. Each club can have unlimited leagues \u2014 e.g. Men\u2019s Singles Box 1, Mixed Doubles Box 2, Ladies\u2019 Box 3, etc. Every league your club runs shows up on the same club welcome screen so players don't have to hunt."],
           ["What\u2019s the difference between Box Leagues and Mix-In Games?", "Box Leagues are structured competitions with teams, availability matching, and match scheduling. Mix-In Games are casual \u2014 post a game, set the date, and let anyone at your club join."],
           ["How does the availability grid work?", "Each player marks their free time in 1.5-hour slots across the week (morning, afternoon, evening). Tap individual slots, copy last week, or clear the week in one go. The grid scrolls to show all time slots and all days."],
-          ["What is Match Finder?", "Match Finder automatically compares everyone\u2019s availability in your league and shows time slots where all players in a potential match are free. One tap to book, and every player is notified."],
+          ["What is Match Finder?", "Match Finder automatically compares everyone\u2019s availability in your league and shows time slots where all players in a potential match are free. One tap books the match, then you can share the details with the group."],
           ["Can I share via WhatsApp?", "Yes. Every league, match, open game, and club link has a WhatsApp share button. Your club link is particularly useful for club WhatsApp groups \u2014 one tap and every player lands on the right screen."],
           ["Do I have to manage everything as organiser?", "No. Players join via link, set their own availability, and the app finds match times automatically. As organiser you only set up the league, bulk add players (optional), and tap \u201cBook\u201d when a match slot looks good. The app does the rest."],
           ["Can I see who hasn\u2019t filled in availability?", "Yes. The Everyone view shows a colour-coded calendar. You can see who\u2019s missing and chase them via WhatsApp with one tap."],
@@ -4760,10 +4757,7 @@ async function emailSignIn() {
     if (btn) btn.disabled = true;
     auth.createUserWithEmailAndPassword(email, password)
       .then(cred => {
-        return cred.user.updateProfile({ displayName: name }).then(() => {
-          // Send to GHL CRM
-          addContactToGHL(name, email);
-        });
+        return cred.user.updateProfile({ displayName: name }).then(recordSignupConsent);
       })
       .then(() => {
         // Profile updated, onAuthStateChanged will handle the rest
@@ -5067,96 +5061,19 @@ function saveProfile() {
   }
 }
 
-// ── GHL CRM Contact Creation ──
-// Webhook URLs are split to avoid simple scraping; reassembled at call time
-const _GHL_BASE = 'https://services.leadconnectorhq.com/hooks/';
-const _GHL_LOC = 'XvQbY3vQ9dnMEnouNyKK';
-const _GHL_SIG = { s: '2a5e4603-b13e-4772-96c7-5da1417abfff', b: '3ed128d1-7b51-4b4f-8eb0-00d6bba22cf8' };
-function _ghlUrl(type) { return _GHL_BASE + _GHL_LOC + '/webhook-trigger/' + _GHL_SIG[type]; }
-
-function addContactToGHL(name, email) {
-  // Only send from authenticated users to reduce abuse
-  if (!currentUser || !currentUser.uid || currentUser.uid === 'demo') return;
-  const nameParts = name.trim().split(' ');
-  const firstName = nameParts[0] || '';
-  const lastName = nameParts.slice(1).join(' ') || '';
-  const payload = {
-    firstName: firstName,
-    lastName: lastName,
-    email: email,
-    source: 'BoxLeague Pro',
-    tags: ['boxleague-pro', 'app-signup'],
-    uid: currentUser.uid
-  };
-  fetch(_ghlUrl('s'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  }).then(r => {
-    console.log('GHL contact created:', r.status);
+// ── Signup consent ──
+// CRM work must run in a trusted, separately approved server-side flow; never from browser code.
+function recordSignupConsent(userOverride) {
+  const authUser = FIREBASE_READY && auth ? auth.currentUser : null;
+  const user = userOverride || authUser || currentUser;
+  if (!FIREBASE_READY || !user || !user.uid || user.uid === 'demo') return Promise.resolve();
+  return db.ref('/users/' + user.uid + '/consent').set({
+    marketing: true,
+    timestamp: Date.now(),
+    source: 'signup'
   }).catch(err => {
-    console.warn('GHL webhook failed (non-blocking):', err);
-  });
-  // Store consent in Firebase
-  if (FIREBASE_READY && currentUser) {
-    db.ref('/users/' + currentUser.uid + '/consent').set({
-      marketing: true,
-      timestamp: Date.now(),
-      source: 'signup'
-    }).catch(err => { console.error('Consent write failed:', err); toast('Note: consent preference could not be saved — please try again'); });
-  }
-}
-
-function notifyBooking(matchKey, date, slot) {
-  // v4.15.10 (S-10): rate-limit / auth gate. Without this, any authed user
-  // could iterate every booked match and re-fire GHL webhooks ad infinitum,
-  // exhausting workflow execution quotas. Match participants and league
-  // managers may legitimately re-trigger notifications.
-  if (!isMatchParticipant(matchKey)) return;
-  // Get team names and player emails from the match
-  const parts = matchKey.split('~~');
-  let teamA = parts.length === 2 ? L.groups.find(g => g.id === parts[0]) : null;
-  let teamB = parts.length === 2 ? L.groups.find(g => g.id === parts[1]) : null;
-  // Legacy fallback for old '_' delimiter
-  if (!teamA || !teamB) {
-    for (const gA of L.groups) { for (const gB of L.groups) {
-      if (gA.id !== gB.id && ([gA.id, gB.id].sort().join('_') === matchKey || [gA.id, gB.id].sort().join('~~') === matchKey)) { teamA = gA; teamB = gB; break; }
-    } if (teamA) break; }
-  }
-  if (!teamA || !teamB) return;
-  // Collect player emails — find members whose playerName is in either team's players list
-  const playerEmails = [];
-  const matchPlayers = [...(teamA.players || []), ...(teamB.players || [])];
-  if (L.members) {
-    Object.values(L.members).forEach(m => {
-      if (m.email && m.playerName && matchPlayers.includes(m.playerName)) {
-        playerEmails.push({ email: m.email, name: m.playerName });
-      }
-    });
-  }
-  // Send one webhook per player so GHL can Find Contact by email
-  const slotLbl = slotLabel(slot);
-  playerEmails.forEach(player => {
-    const payload = {
-      event: 'match_booked',
-      leagueName: L.settings.leagueName || 'League',
-      teamA: teamA.name,
-      teamB: teamB.name,
-      date: date,
-      slot: slotLbl,
-      email: player.email,
-      playerName: player.name,
-      bookedBy: currentUser ? currentUser.email : ''
-    };
-    fetch(_ghlUrl('b'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    }).then(r => {
-      console.log('Booking notification sent to', player.email, ':', r.status);
-    }).catch(err => {
-      console.warn('Booking notification failed (non-blocking):', err);
-    });
+    console.error('Consent write failed:', err);
+    toast('Note: consent preference could not be saved — please try again');
   });
 }
 
@@ -5176,10 +5093,7 @@ function acceptGoogleConsent() {
   modal.style.display = 'none';
   consentModalActive = false;
   if (pendingGoogleUser) {
-    addContactToGHL(
-      pendingGoogleUser.displayName || pendingGoogleUser.email.split('@')[0],
-      pendingGoogleUser.email
-    );
+    recordSignupConsent(pendingGoogleUser);
     pendingGoogleUser = null;
   }
   // Now start tour after consent is dismissed
@@ -5191,7 +5105,7 @@ function declineGoogleConsent() {
   modal.style.display = 'none';
   consentModalActive = false;
   pendingGoogleUser = null;
-  // User declined — still signed in, just not added to CRM
+  // User declined — still signed in without a consent record.
   // Now start tour after consent is dismissed
   setTimeout(checkAndStartTour, 400);
 }
@@ -5742,8 +5656,7 @@ function getCurrentClubId() {
   // of this helper, which broke the `?mixin=1` and `?mixin=1&club=foo` deep
   // links — those paths set userHomeClub but never set _scopedClub, leaving
   // canParticipateInMixIn(null) blocking createOpenMatch / joinOpenMatch /
-  // _loadClubMembersForModal / _resolvePlayerEmails / Notify Players webhook
-  // payload. The R-6/R-10 intent of "prefer scoped over home" is preserved
+  // _loadClubMembersForModal. The intent of "prefer scoped over home" is preserved
   // because _scopedClub is checked FIRST — homeClub is only used when
   // there's no other source.
   if (window._scopedClub && window._scopedClub.id) return window._scopedClub.id;
@@ -5949,10 +5862,7 @@ function isModuleEnabled(moduleName) {
   }
   var mods = window._clubModules[clubId];
   if (mods === undefined) {
-    // v4.15.13: also re-render mix-in cards on cache fill so the Notify
-    // Players button (gated on modules.notifyPlayers) appears without
-    // requiring a user-triggered re-render. Same fan-out pattern as the
-    // existing renderAppTabs / renderAIAvailabilityCard.
+    // Re-render module-dependent views once the club module cache is available.
     loadClubModules(clubId, function() {
       try { renderAppTabs(); } catch (e) {}
       try { renderAIAvailabilityCard(); } catch (e) {}
@@ -11322,7 +11232,7 @@ function bookMatch(matchKey, date, slot) {
   const slotLbl = slotLabel(slot);
   const d = new Date(date + 'T00:00:00');
   const dateLabel = DAY_NAMES[d.getDay()] + ' ' + d.getDate() + ' ' + MONTH_NAMES[d.getMonth()];
-  if (!confirm('Book this match?\n\n' + dateLabel + ' at ' + slotLbl + '\n\nPlayers will be notified.')) return;
+  if (!confirm('Book this match?\n\n' + dateLabel + ' at ' + slotLbl + '\n\nShare the match details with players when you are ready.')) return;
   // v4.16.26: auto-confirm the booker + their doubles partner. If you've
   // booked a slot, you've obviously agreed to it; and your doubles
   // partner has presumably been consulted offline. The opposing team
@@ -11336,9 +11246,8 @@ function bookMatch(matchKey, date, slot) {
   }
   fbSetBooked(matchKey, { date, slot, notes: '', courtBooked: false, agreed: initialAgreed });
   logAction('book_match', dateLabel + ' at ' + slotLbl);
-  notifyBooking(matchKey, date, slot);
   renderMatchFinder(); renderMyMatches();
-  toast('Match booked! Players will be notified.');
+  toast('Match booked! Share the details with players when you are ready.');
 }
 
 /* ══════════════════════════════════════
@@ -11614,11 +11523,9 @@ function saveAddMatchModal(fixedTeamAId) {
 
   fbSetBooked(matchKey, slotData);
   logAction('add_manual_match', teamA.name + ' vs ' + teamB.name + ' — ' + dateLabel + ' at ' + slotLbl);
-  notifyBooking(matchKey, date, slot);
-
   closeAddMatchModal();
   renderMatchFinder(); renderMyMatches();
-  toast('Match added! Players will be notified.');
+  toast('Match added! Share the details with players when you are ready.');
 }
 
 function unbookMatch(matchKey) {
@@ -11964,16 +11871,6 @@ function renderOpenMatches() {
     }
     organiserActionsHtml += `<button class="btn btn-sm btn-whatsapp" onclick="whatsAppShareMatch(${jsAttr(m.id)})" style="font-weight:700;padding:8px 14px;font-size:13px">Share to WhatsApp</button>`;
     organiserActionsHtml += `<button class="btn btn-sm" onclick="shareOpenMatch(${jsAttr(m.id)})" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700;padding:8px 14px;font-size:13px">Copy to Share</button>`;
-    // v4.15.9 (R-9): Notify Players is gated on the per-club `notifyPlayers`
-    // module flag. Default OFF for every club. The notification webhook
-    // currently routes through AIFA's BoxLeague Pro GHL sub-account — until
-    // we implement per-club webhook provisioning, only clubs that have
-    // explicitly opted in (Demo + EGTSC) should be able to use this feature.
-    // Without this gate, every club's member emails would pipe into AIFA's
-    // single CRM regardless of tenant — a GDPR cross-tenant data leak.
-    if ((isCreator || isOrganiser) && players.length > 0 && isModuleEnabled('notifyPlayers')) {
-      organiserActionsHtml += `<button class="btn btn-sm" onclick="showNotifyPlayers(${jsAttr(m.id)})" style="background:#fdf4ff;color:#7c3aed;border:1px solid #e9d5ff;font-weight:700;padding:8px 14px;font-size:13px">&#128226; Notify Players</button>`;
-    }
     if (isCreator) {
       organiserActionsHtml += `<button class="btn btn-sm" onclick="editOpenMatch(${jsAttr(m.id)})" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;font-weight:700">Edit</button>`;
       organiserActionsHtml += `<button class="btn btn-secondary btn-sm" onclick="deleteOpenMatch(${jsAttr(m.id)})">Delete</button>`;
@@ -13532,190 +13429,6 @@ function _loadClubMembersForModal(clubId, alreadyIn) {
   }).catch(() => { _renderAddPlayerMemberList([], 'Select from club players:'); });
 }
 
-/* ── Notify Players (v4.15.5) ── */
-let _notifyMatchId = null;
-let _notifyEmailMap = {};
-
-function showNotifyPlayers(matchId) {
-  // v4.15.9 (R-9): Defense-in-depth — even if a console caller bypasses the
-  // hidden button, refuse to open the modal unless the club has explicitly
-  // opted in via the `notifyPlayers` module flag. See render gate above.
-  if (!isModuleEnabled('notifyPlayers')) {
-    toast('Notify Players is not enabled for this club');
-    return;
-  }
-  _notifyMatchId = matchId;
-  _notifyEmailMap = {};
-  const m = L.openMatches && L.openMatches[matchId];
-  if (!m) { toast('Game not found'); return; }
-  const players = m.players || [];
-  const dateStr = m.date ? new Date(m.date + 'T00:00').toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' }) : 'TBC';
-  const timeStr = m.time || 'TBC';
-  const venueStr = esc(m.venue || L.settings.leagueName || 'League');
-  const courtStr = m.court ? esc(m.court) : '';
-
-  let summaryHtml = `<div style="background:#f8fafc;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:14px">
-    <div style="font-weight:700;margin-bottom:6px">${esc(m.title || 'Open Game')}</div>
-    <div style="color:var(--muted);display:flex;flex-direction:column;gap:3px">
-      <span>&#128197; ${dateStr} &nbsp;&#9201; ${timeStr}</span>
-      <span>&#128205; ${venueStr}${courtStr ? ' &mdash; Court ' + courtStr : ''}</span>
-    </div>
-  </div>`;
-
-  let playersHtml = '<div style="font-weight:700;font-size:13px;margin-bottom:8px">Players (' + players.length + ')</div>';
-  playersHtml += '<div id="notify-player-rows">';
-  players.forEach((p, i) => {
-    playersHtml += `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9">
-      <span style="font-size:14px;font-weight:600">${esc(p)}</span>
-      <span id="notify-status-${i}" style="font-size:12px;color:var(--muted)">&#8987; resolving...</span>
-    </div>`;
-  });
-  playersHtml += '</div>';
-
-  const content = document.getElementById('notify-players-content');
-  if (!content) return;
-  content.innerHTML = summaryHtml + playersHtml +
-    `<button id="notify-send-btn" onclick="sendMixInNotifications()" style="margin-top:18px;width:100%;padding:12px;background:#7c3aed;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">&#128226; Send Notifications</button>
-     <div id="notify-send-result" style="margin-top:10px;text-align:center;font-size:13px"></div>`;
-
-  const modal = document.getElementById('notify-players-modal');
-  modal.style.display = 'flex';
-
-  // v4.15.10 (R-10): use the active scoped club, not stored homeClub.
-  // Stops emails being looked up in the wrong club's leagues, which could
-  // either find no matches (silent failure) or worst case match a same-named
-  // player in a different club and email the wrong person.
-  const clubId = getCurrentClubId();
-  if (clubId && FIREBASE_READY) {
-    _resolvePlayerEmails(clubId, players, function(emailMap) {
-      _notifyEmailMap = emailMap;
-      players.forEach((p, i) => {
-        const el = document.getElementById('notify-status-' + i);
-        if (!el) return;
-        if (emailMap[p]) {
-          el.textContent = '✓ ' + emailMap[p];
-          el.style.color = '#059669';
-        } else {
-          el.textContent = 'No email found';
-          el.style.color = '#dc2626';
-        }
-      });
-    });
-  } else {
-    players.forEach((_, i) => {
-      const el = document.getElementById('notify-status-' + i);
-      if (el) { el.textContent = 'Not available'; el.style.color = '#dc2626'; }
-    });
-  }
-}
-
-function closeNotifyPlayers() {
-  const modal = document.getElementById('notify-players-modal');
-  if (modal) modal.style.display = 'none';
-  _notifyMatchId = null;
-  _notifyEmailMap = {};
-}
-
-function _resolvePlayerEmails(clubId, playerNames, cb) {
-  db.ref('/clubLeagues/' + clubId).once('value').then(snap => {
-    const leagueIds = Object.keys(snap.val() || {});
-    if (leagueIds.length === 0) { cb({}); return; }
-    const emailMap = {};
-    let done = 0;
-    const finish = () => {
-      done++;
-      if (done === leagueIds.length) cb(emailMap);
-    };
-    leagueIds.forEach(lid => {
-      db.ref('/leagues/' + lid + '/members').once('value').then(mSnap => {
-        const members = mSnap.val() || {};
-        Object.values(members).forEach(mem => {
-          if (mem.playerName && mem.email && !emailMap[mem.playerName]) {
-            emailMap[mem.playerName] = mem.email;
-          }
-        });
-        finish();
-      }).catch(finish);
-    });
-  }).catch(() => cb({}));
-}
-
-function sendMixInNotifications() {
-  // v4.15.9 (R-9): Defense-in-depth gate — same module flag as showNotifyPlayers.
-  // Stops a console caller from firing webhooks for a non-opted-in club.
-  if (!isModuleEnabled('notifyPlayers')) {
-    toast('Notify Players is not enabled for this club');
-    return;
-  }
-  const m = L.openMatches && L.openMatches[_notifyMatchId];
-  if (!m) { toast('Game not found'); return; }
-  const btn = document.getElementById('notify-send-btn');
-  const resultEl = document.getElementById('notify-send-result');
-  if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
-
-  const players = m.players || [];
-  const dateStr = m.date ? new Date(m.date + 'T00:00').toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' }) : 'TBC';
-  const timeStr = m.time || 'TBC';
-  const venueStr = m.venue || (L.settings && L.settings.leagueName) || 'League';
-  const courtStr = m.court || '';
-  const playersStr = players.join(', ');
-
-  const targets = players.filter(p => _notifyEmailMap[p]);
-  if (targets.length === 0) {
-    if (btn) { btn.disabled = false; btn.innerHTML = '&#128226; Send Notifications'; }
-    if (resultEl) { resultEl.textContent = 'No email addresses found for players.'; resultEl.style.color = '#dc2626'; }
-    return;
-  }
-
-  const ghlUrl = _ghlUrl('b');
-  if (!ghlUrl) {
-    if (btn) { btn.disabled = false; btn.innerHTML = '&#128226; Send Notifications'; }
-    toast('Notification service not configured for this club');
-    return;
-  }
-
-  let sent = 0;
-  let failed = 0;
-  const done = () => {
-    sent + failed === targets.length && finishSend();
-  };
-  const finishSend = () => {
-    if (btn) { btn.disabled = false; btn.innerHTML = '&#128226; Send Notifications'; }
-    if (resultEl) {
-      resultEl.textContent = sent + ' notification' + (sent !== 1 ? 's' : '') + ' sent' + (failed ? ', ' + failed + ' failed' : '') + '.';
-      resultEl.style.color = sent > 0 ? '#059669' : '#dc2626';
-    }
-    if (sent > 0) toast('Sent ' + sent + ' game notification' + (sent !== 1 ? 's' : ''));
-  };
-
-  targets.forEach(playerName => {
-    const payload = {
-      event: 'mixin_confirmed',
-      playerName: playerName,
-      email: _notifyEmailMap[playerName],
-      gameTitle: m.title || 'Open Game',
-      sport: m.sport || 'tennis',
-      date: dateStr,
-      time: timeStr,
-      venue: venueStr,
-      court: courtStr,
-      players: playersStr,
-      notes: m.notes || '',
-      // v4.15.10 (R-10): tag the webhook payload with the ACTIVE scoped club,
-      // not the user's stored homeClub. Otherwise notifications sent from a
-      // ?club= scoped session get attributed to the wrong club's data.
-      clubId: getCurrentClubId() || '',
-      clubName: (window._scopedClub && window._scopedClub.info && window._scopedClub.info.name) || (userHomeClub && userHomeClub.name) || ''
-    };
-    fetch(ghlUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    }).then(r => { r.ok ? sent++ : failed++; done(); })
-      .catch(() => { failed++; done(); });
-  });
-}
-
 function closeAddPlayer() {
   document.getElementById('add-player-modal').style.display = 'none';
   _addPlayerMatchId = null;
@@ -14116,7 +13829,7 @@ const TAB_GUIDES = {
       { q: 'What would you like to do?', hint: 'Pick what you need help with.',
         options: [
           { label: 'Find a time to play', icon: '&#128269;', desc: 'See which times work for all players in a match', action: 'close', scrollTo: 'match-results' },
-          { label: 'Book a match', icon: '&#9989;', desc: 'Lock in a date and time — both teams get notified', action: 'next' },
+          { label: 'Book a match', icon: '&#9989;', desc: 'Lock in a date and time, ready to share with both teams', action: 'next' },
           { label: 'Share match details', icon: '&#128172;', desc: 'Copy the match summary for WhatsApp', action: 'close', scrollTo: 'share-results' },
           { label: 'Show me how it works', icon: '&#128161;', desc: 'Step-by-step guide to booking matches', action: 'goto', goto: 1 },
         ]},
@@ -14126,7 +13839,7 @@ const TAB_GUIDES = {
           { label: 'How do I book a time?', icon: '&#10145;&#65039;', desc: '', action: 'next' },
         ]},
       { q: 'Booking a Match', hint: 'Found a good time? Here\'s how to lock it in.',
-        visual: '&#128197;', detail: 'Tap a <strong>green time slot</strong> on any match card to book it. Both teams will be notified. You can then <strong>share via WhatsApp</strong> to confirm with your opponent. To unbook, just tap the slot again.',
+        visual: '&#128197;', detail: 'Tap a <strong>green time slot</strong> on any match card to book it. The match is then ready to <strong>share via WhatsApp</strong> with your opponent. To unbook, just tap the slot again.',
         options: [
           { label: 'Got it — show me the matches', icon: '&#127934;', desc: '', action: 'close' },
         ]},
@@ -14404,7 +14117,7 @@ const EXPLAINERS = {
     steps: [
       'The app compares <strong>everyone\'s availability</strong> and finds overlapping slots',
       'Each card shows a potential match and when <strong>all players</strong> are free',
-      'Tap a time slot to <strong>book it</strong> — all players will be notified',
+      'Tap a time slot to <strong>book it</strong>, then share the match details with the group',
       'Use <strong>"Share via WhatsApp"</strong> to send match details to the group'
     ]
   },
@@ -14493,7 +14206,7 @@ const TOUR_STEPS = [
   { target: '#browse-options', title: 'Join or Add a League', text: 'Choose "Join a League" to find an existing league at your club, or if you have a club link, open it directly to see all your club\u2019s leagues in one place.' },
   { target: null, title: 'Quick Setup Wizard', text: "After joining or creating a league, a short wizard walks you through entering your name, picking your doubles partner (if it's a doubles league), and marking when you're free to play.", icon: '\u{2699}\u{FE0F}' },
   { target: null, title: 'Club Organiser Tools', text: 'If you\u2019re a club organiser, the scoped welcome screen shows a Club Organiser Tools panel with one-tap New League, Bulk Add Players, Manage Organisers, and Share Club Link.', icon: '\u{1F6E0}\u{FE0F}' },
-  { target: null, title: 'Find & Book Matches', text: "Once players have marked their availability, Match Finder compares everyone and shows times when all players can play. Tap a slot to book instantly \u2014 everyone gets notified.", icon: '\u{1F3BE}' },
+  { target: null, title: 'Find & Book Matches', text: "Once players have marked their availability, Match Finder compares everyone and shows times when all players can play. Tap a slot to book instantly, then share the match details with the group.", icon: '\u{1F3BE}' },
   { target: null, title: "You're All Set! \u{1F3C6}", text: "That's it \u2014 no spreadsheets, no WhatsApp chaos. Tap the ? button any time for help." }
 ];
 
