@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.47</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.48</div>
   </div>
 </div>
 
@@ -1640,7 +1640,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.47 · Build 20260727c</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.48 · Build 20260727d</div>
   </div>
 </div>
 
@@ -1655,6 +1655,16 @@
     <div style="padding:20px" id="changelog-content">
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.48 &middot; 27 Jul 2026</span>
+          <span style="background:#dc2626;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">RELIABILITY</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Organiser actions fixed</strong> &mdash; removing a player and renaming a league now work for club organisers, not just platform admins.</li>
+          <li><strong>Save feedback</strong> &mdash; availability, teams, and deadline changes now tell you if a save fails instead of silently losing it.</li>
+        </ul>
+      </div>
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.47 · 27 Jul 2026</span>
           <span style="background:#0f766e;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">COMMUNICATIONS</span>
         </div>
@@ -1663,6 +1673,8 @@
           <li><strong>Private signup handling</strong> — the app records consent in the club system without sending signup details directly to the CRM from a browser.</li>
         </ul>
       </div>
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.44 &middot; 5 Jun 2026</span>
           <span style="background:#16a34a;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">GRID CLARITY</span>
         </div>
@@ -2215,7 +2227,7 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
         <button type="button" onclick="closeHelp();openFeedback()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#f1f5f9;border-radius:8px;font-size:13px;font-weight:600;color:#1e293b;border:1px solid #e2e8f0;cursor:pointer">&#128172; Feedback</button>
         <a href="mailto:grant@aifusionautomations.com" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#f1f5f9;border-radius:8px;font-size:13px;font-weight:600;color:#1e293b;text-decoration:none;border:1px solid #e2e8f0">&#9993; Email Us</a>
-        <a href="tel:+447950964670" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#f1f5f9;border-radius:8px;font-size:13px;font-weight:600;color:#1e293b;text-decoration:none;border:1px solid #e2e8f0">&#128222; Call</a>
+        <a href="tel:+447782219066" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#f1f5f9;border-radius:8px;font-size:13px;font-weight:600;color:#1e293b;text-decoration:none;border:1px solid #e2e8f0">&#128222; Call</a>
       </div>
 
       <div style="height:1px;background:#e2e8f0;margin:16px 0"></div>
@@ -2954,7 +2966,7 @@ function renderAdminLeagueList(el, leagues) {
 
       // Delete button inside the panel
       detailHtml += '<div style="border-top:1px solid #fecaca;padding-top:8px;margin-top:4px">' +
-        '<button onclick="adminDeleteLeague(\'' + esc(lg.id) + '\',\'' + esc(lg.name) + '\',\'' + esc(lg.clubId || '') + '\',\'' + esc(lg.code || '') + '\')" ' +
+        '<button onclick="adminDeleteLeague(' + jsAttr(lg.id) + ',' + jsAttr(lg.name) + ',' + jsAttr(lg.clubId || '') + ',' + jsAttr(lg.code || '') + ')" ' +
         'style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">&#128465; Delete League</button>' +
         '</div>';
 
@@ -3207,7 +3219,7 @@ function renderAdminUserList(el, userMap) {
       // Expandable actions (collapsed by default)
       const actionsId = 'user-actions-' + sanitizeEmail(u.email).replace(/[^a-zA-Z0-9]/g,'');
       const actionButtons = u.leagues.map(l =>
-        '<button onclick="adminRemoveUserFromLeague(\'' + esc(l.emailKey) + '\',\'' + esc(l.leagueId) + '\',\'' + esc(u.uid || '') + '\')" ' +
+        '<button onclick="adminRemoveUserFromLeague(' + jsAttr(l.emailKey) + ',' + jsAttr(l.leagueId) + ',' + jsAttr(u.uid || '') + ')" ' +
         'style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer">' +
         'Remove from ' + esc(l.leagueName) + '</button>'
       ).join(' ');
@@ -3229,7 +3241,7 @@ function renderAdminUserList(el, userMap) {
         '<div id="' + actionsId + '" style="display:none;margin-top:8px;padding:10px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px">' +
           '<div style="font-size:11px;font-weight:700;color:#991b1b;margin-bottom:6px;text-transform:uppercase">Actions</div>' +
           '<div style="display:flex;flex-wrap:wrap;gap:6px">' + actionButtons +
-          (u.isAdmin ? '' : ' <button onclick="adminDeleteUser(\'' + esc(u.email) + '\')" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer">Delete from all leagues</button>') +
+          (u.isAdmin ? '' : ' <button onclick="adminDeleteUser(' + jsAttr(u.email) + ')" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer">Delete from all leagues</button>') +
           '</div>' +
         '</div>' +
         '</div>';
@@ -3923,7 +3935,7 @@ function adminLoadApplications() {
           (app.leagueCount ? '<div><strong>Leagues planned:</strong> ' + esc(String(app.leagueCount)) + '</div>' : '') +
           (app.notes ? '<div style="margin-top:4px;padding:6px 8px;background:#f9fafb;border-radius:6px"><em>' + esc(app.notes) + '</em></div>' : '') +
         '</div>' +
-        (status === 'pending' ? '<div style="display:flex;gap:6px;margin-top:8px"><button onclick="adminApproveApplication(\'' + esc(id) + '\')" style="background:#059669;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">&#9989; Approve &amp; Provision</button><button onclick="adminRejectApplication(\'' + esc(id) + '\')" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">Reject</button></div>' : '') +
+        (status === 'pending' ? '<div style="display:flex;gap:6px;margin-top:8px"><button onclick="adminApproveApplication(' + jsAttr(id) + ')" style="background:#059669;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">&#9989; Approve &amp; Provision</button><button onclick="adminRejectApplication(' + jsAttr(id) + ')" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">Reject</button></div>' : '') +
       '</div>';
     });
     el.innerHTML = html;
@@ -7342,7 +7354,7 @@ function scopedLoadAdmins() {
         '<div style="flex:1;min-width:0;overflow:hidden">' +
           '<div style="font-size:14px;color:#0f172a;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(displayEmail) + (isMe ? ' <span style="color:#059669;font-size:11px;font-weight:700">(you)</span>' : '') + '</div>' +
         '</div>' +
-        (isMe ? '<span style="color:#9ca3af;font-size:11px">&mdash;</span>' : '<button onclick="scopedRemoveAdmin(\'' + emailKey + '\')" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">Remove</button>') +
+        (isMe ? '<span style="color:#9ca3af;font-size:11px">&mdash;</span>' : '<button onclick="scopedRemoveAdmin(' + jsAttr(emailKey) + ')" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">Remove</button>') +
       '</div>';
     });
     list.innerHTML = html;
@@ -7821,13 +7833,19 @@ function browseJoinByCode() {
   if (!FIREBASE_READY) { toast('Code lookup not available in demo mode'); return; }
   db.ref('/codes/' + code).once('value', snap => {
     const leagueId = snap.val();
-    if (leagueId) {
+    // v4.16.48: leagues created by non-super-admin organisers leave their code
+    // reservation as a '__pending_<uid>_<ts>' placeholder (rules block the
+    // finalising overwrite). Treating that as a leagueId created junk
+    // memberships pointing at a nonexistent league.
+    if (leagueId && typeof leagueId === 'string' && leagueId.indexOf('__pending_') !== 0) {
       inp.value = '';
       joinAndEnterLeague(leagueId);
     } else {
-      toast('Code not found — check and try again');
+      toast('Code not active — ask your organiser for the club link instead');
       inp.focus();
     }
+  }, () => {
+    toast('Could not check the code — please try again');
   });
 }
 
@@ -8109,11 +8127,11 @@ function renderClubLeagues(leagues) {
     const isMember = !!(userLeagues && userLeagues[id]);
     let action;
     if (isMember) {
-      action = `enterLeague('${esc(id)}')`;
+      action = `enterLeague(${jsAttr(id)})`;
     } else if (isAdminBrowse) {
-      action = `adminEnterLeague('${esc(id)}','${esc(selectedClubId || '')}')`;
+      action = `adminEnterLeague(${jsAttr(id)},${jsAttr(selectedClubId || '')})`;
     } else {
-      action = `joinAndEnterLeague('${esc(id)}')`;
+      action = `joinAndEnterLeague(${jsAttr(id)})`;
     }
     return `<div class="league-card" onclick="${action}">
       <div class="league-card-name">${leagueFormatBadge(lg)}${esc(lg.name)}</div>
@@ -8783,6 +8801,14 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
     document.getElementById('inp-league-name').value = L.settings.leagueName || '';
     document.getElementById('inp-deadline').value = L.settings.deadline || '';
     document.getElementById('inp-booking-url').value = clubBookingUrl || '';
+    // v4.16.48: self-heal — organiser renames can't write other members'
+    // /userLeagues under current rules, so each member syncs their own copy
+    // when they next open the league (own-uid write is always permitted).
+    const selfLg = userLeagues[activeLeagueId];
+    if (L.settings.leagueName && selfLg && !selfLg.__adminView && selfLg.name !== L.settings.leagueName && currentUser) {
+      selfLg.name = L.settings.leagueName;
+      db.ref('/userLeagues/' + currentUser.uid + '/' + activeLeagueId + '/name').set(L.settings.leagueName).catch(() => {});
+    }
     renderHeader(); renderDeadline();
   });
   listeners.push({ ref: ref.child('settings'), event: 'value', fn: l3 });
@@ -8902,7 +8928,10 @@ function fbSetGroups() {
   if (!canManageActiveLeague()) { toast('Only the organiser can update teams'); return; }
   const obj = {}; L.groups.forEach(g => { obj[g.id] = g; });
   const ref = leagueRef('groups');
-  if (ref) ref.set(obj); else localSave();
+  // v4.16.48: surface rejected writes — a silent failure left the UI showing
+  // teams that were never saved.
+  if (ref) ref.set(obj).catch(err => { toast('Saving teams failed: ' + (err.message || err)); });
+  else localSave();
 }
 
 // v4.15.10 (S-2) + v4.15.13: availability slot keys are
@@ -8941,7 +8970,16 @@ function fbSetAvail(key, isAvailable) {
   // v4.15.10 (S-2): per-key ownership gate
   if (!_availKeyOwnedByMe(key)) { return; }
   const ref = leagueRef('availability');
-  if (ref) { if (isAvailable) ref.child(key).set(true); else ref.child(key).remove(); }
+  // v4.16.48: revert + surface rejected writes — a silent failure left the
+  // grid green while the slot was never saved (data gone on refresh).
+  if (ref) {
+    const op = isAvailable ? ref.child(key).set(true) : ref.child(key).remove();
+    op.catch(err => {
+      if (isAvailable) delete L.availability[key]; else L.availability[key] = true;
+      renderAvailGrid();
+      toast('Saving availability failed: ' + (err.message || err));
+    });
+  }
   else { if(isAvailable) L.availability[key]=true; else delete L.availability[key]; localSave(); }
 }
 
@@ -8955,7 +8993,12 @@ function fbSetAvailBatch(updates) {
   }
   if (dropped > 0) console.warn('fbSetAvailBatch: dropped ' + dropped + ' slot(s) not owned by current user');
   const ref = leagueRef('availability');
-  if (ref) ref.update(safeUpdates);
+  // v4.16.48: revert + surface rejected writes (see fbSetAvail)
+  if (ref) ref.update(safeUpdates).catch(err => {
+    Object.entries(safeUpdates).forEach(([k,v]) => { if (v) delete L.availability[k]; else L.availability[k] = true; });
+    renderAvailGrid();
+    toast('Saving availability failed: ' + (err.message || err));
+  });
   else { Object.entries(safeUpdates).forEach(([k,v]) => { if(v) L.availability[k]=true; else delete L.availability[k]; }); localSave(); }
   const count = Object.keys(safeUpdates).length;
   const player = getActivePlayer();
@@ -8989,18 +9032,26 @@ function saveSettings() {
     updates['/clubLeagues/' + clubId + '/' + lid + '/name'] = newName;
   }
 
-  // 3. Global index
-  updates['/leagueIndex/' + lid + '/name'] = newName;
-
-  // 4. ALL members' userLeagues entries (not just current user)
+  // v4.16.48: rules only allow /leagueIndex and other users' /userLeagues
+  // writes for the super admin. Bundling them into the atomic update made the
+  // WHOLE rename fail with PERMISSION_DENIED for every ordinary club
+  // organiser. Core rename stays atomic; the admin-only paths join it only
+  // when the writer is the super admin, and cross-member userLeagues sync is
+  // best-effort for organisers (each member also self-heals on next league
+  // entry — see enterLeagueMain).
+  const memberUids = [];
   if (L.members) {
     Object.values(L.members).forEach(function(m) {
-      if (m && m.uid) {
-        updates['/userLeagues/' + m.uid + '/' + lid + '/name'] = newName;
-      }
+      if (m && m.uid && m.uid !== currentUser.uid) memberUids.push(m.uid);
     });
   }
-  // Also update current user's entry — but ONLY if they actually have a userLeagues record
+  if (isAdmin()) {
+    updates['/leagueIndex/' + lid + '/name'] = newName;
+    memberUids.forEach(function(uid) {
+      updates['/userLeagues/' + uid + '/' + lid + '/name'] = newName;
+    });
+  }
+  // Current user's entry — but ONLY if they actually have a userLeagues record
   // (admins viewing via adminEnterLeague don't, and writing here would create a ghost entry)
   if (userLeagues[lid] && !userLeagues[lid].__adminView) {
     updates['/userLeagues/' + currentUser.uid + '/' + lid + '/name'] = newName;
@@ -9012,9 +9063,16 @@ function saveSettings() {
     renderHeader(); renderDeadline();
     logAction('rename_league', newName + ' (' + Object.keys(updates).length + ' paths)');
     toast('League renamed everywhere!');
+    if (!isAdmin()) {
+      // Best-effort cross-member sync; rejected harmlessly under current
+      // rules, and members self-heal from /leagues info on next entry.
+      memberUids.forEach(function(uid) {
+        db.ref('/userLeagues/' + uid + '/' + lid + '/name').set(newName).catch(function() {});
+      });
+    }
   }).catch(function(e) {
     console.error('[rename]', e);
-    toast('Rename failed — check console');
+    toast('Rename failed — your change was not saved. Please try again.');
   });
 }
 
@@ -9056,7 +9114,9 @@ function saveDeadline() {
   if (!dlVal) { toast('Please pick a date and time first'); return; }
   L.settings.deadline = dlVal;
   const ref = leagueRef('settings');
-  if (ref) ref.update({ deadline: dlVal }); else localSave();
+  // v4.16.48: surface rejected writes
+  if (ref) ref.update({ deadline: dlVal }).catch(err => { toast('Saving deadline failed: ' + (err.message || err)); });
+  else localSave();
   renderDeadline();
   toast('Deadline saved!');
 }
@@ -9067,7 +9127,9 @@ function clearDeadline() {
   document.getElementById('inp-deadline').value = '';
   L.settings.deadline = '';
   const ref = leagueRef('settings');
-  if (ref) ref.update({ deadline: '' }); else localSave();
+  // v4.16.48: surface rejected writes
+  if (ref) ref.update({ deadline: '' }).catch(err => { toast('Clearing deadline failed: ' + (err.message || err)); });
+  else localSave();
   renderDeadline();
   toast('Deadline removed');
 }
@@ -9812,7 +9874,7 @@ function renderResultsList() {
       return '<div class="match-card" style="border-left:4px solid ' + cardBorder + ';margin-bottom:8px">' +
         '<div style="display:flex;justify-content:space-between;align-items:center">' +
         '<div style="font-size:15px"><span style="font-weight:' + (isWinnerA ? '800' : '400') + '">' + teamNameHtml(m.gA.name) + '</span> <span style="color:#9ca3af">vs</span> <span style="font-weight:' + (isWinnerB ? '800' : '400') + '">' + teamNameHtml(m.gB.name) + '</span></div>' +
-        '<button class="btn btn-sm" onclick="openScoreEntry(\'' + esc(m.matchKey) + '\')" style="font-size:11px;padding:3px 8px">Edit</button>' +
+        '<button class="btn btn-sm" onclick="openScoreEntry(' + jsAttr(m.matchKey) + ')" style="font-size:11px;padding:3px 8px">Edit</button>' +
         '</div>' +
         '<div style="font-size:18px;font-weight:800;color:' + scoreColor + ';margin-top:4px">' + scoreStr + '</div>' +
         '<div style="font-size:12px;color:' + captionColor + ';font-weight:600;margin-top:2px">' + caption + (r.date ? ' · ' + fmtFull(r.date) : '') + '</div>' +
@@ -9828,7 +9890,7 @@ function renderResultsList() {
       return '<div class="match-card" style="border-left:4px solid #e2e8f0;margin-bottom:8px">' +
         '<div style="display:flex;justify-content:space-between;align-items:center">' +
         '<div><span style="font-size:15px;font-weight:600">' + teamNameHtml(m.gA.name) + '</span> <span style="color:#9ca3af;font-size:15px">vs</span> <span style="font-size:15px;font-weight:600">' + teamNameHtml(m.gB.name) + '</span></div>' +
-        '<button class="btn btn-primary btn-sm" onclick="openScoreEntry(\'' + esc(m.matchKey) + '\')" style="font-size:12px;padding:4px 12px">Enter Score</button>' +
+        '<button class="btn btn-primary btn-sm" onclick="openScoreEntry(' + jsAttr(m.matchKey) + ')" style="font-size:12px;padding:4px 12px">Enter Score</button>' +
         '</div>' +
         (isBooked ? '<div style="font-size:12px;color:#059669;margin-top:4px">&#9989; Booked: ' + fmtFull(m.booked.date) + ' · ' + slotLabel(m.booked.slot) + '</div>' : '<div style="font-size:12px;color:#9ca3af;margin-top:4px">Not yet booked</div>') +
         '</div>';
@@ -10334,13 +10396,20 @@ function removeMember(emailKey) {
   // Remove from members
   updates['/leagues/' + leagueId + '/members/' + emailKey] = null;
 
-  // Remove from their userLeagues
-  if (m.uid) updates['/userLeagues/' + m.uid + '/' + leagueId] = null;
+  // v4.16.48: their /userLeagues entry is only writable by that user or the
+  // super admin. Bundling it into the atomic update made the WHOLE removal
+  // fail with PERMISSION_DENIED for every ordinary organiser once the member
+  // had signed in. Super admin keeps the atomic cleanup; organisers do a
+  // best-effort separate write (a dangling pointer is harmless — the member
+  // list is the source of truth, matching the deleteLeague organiser path).
+  if (m.uid && isAdmin()) updates['/userLeagues/' + m.uid + '/' + leagueId] = null;
 
   // Find and remove their group/team
+  let removedGroupId = null;
   if (playerName) {
     const group = L.groups.find(g => g.players && g.players.includes(playerName));
     if (group) {
+      removedGroupId = group.id;
       updates['/leagues/' + leagueId + '/groups/' + group.id] = null;
       const groupPlayers = group.players || [];
       Object.keys(L.availability).forEach(key => {
@@ -10356,12 +10425,17 @@ function removeMember(emailKey) {
           updates['/leagues/' + leagueId + '/booked/' + matchKey] = null;
         }
       });
-      L.groups = L.groups.filter(g => g.id !== group.id);
     }
   }
 
-  delete L.members[emailKey];
   db.ref().update(updates).then(() => {
+    // v4.16.48: mutate local state only after the write is confirmed, so a
+    // rejected write no longer leaves the UI showing a removal that didn't happen.
+    if (removedGroupId) L.groups = L.groups.filter(g => g.id !== removedGroupId);
+    delete L.members[emailKey];
+    if (m.uid && !isAdmin()) {
+      db.ref('/userLeagues/' + m.uid + '/' + leagueId).remove().catch(() => {});
+    }
     logAction('remove_member', memberName);
     toast(memberName + ' removed');
     renderGroups(); renderMembers(); renderProgress(); renderAvailGrid(); renderAllAvail();
@@ -10376,13 +10450,26 @@ function resetLeagueData() {
   const lgInfoReset = activeLeagueId ? userLeagues[activeLeagueId] : null;
   if (!isAdmin() && !(lgInfoReset && lgInfoReset.role === 'organiser')) { toast('Only organisers can reset league data'); return; }
   if (!confirm('Reset all availability and bookings? Groups and members will be kept.')) return;
-  L.availability = {};
-  L.booked = {};
   const ref = leagueRef();
-  if (ref) { ref.child('availability').set({}); ref.child('booked').set({}); }
-  else localSave();
-  renderAll();
-  toast('Availability and bookings reset');
+  // v4.16.48: one atomic update instead of two independent set()s (a half-
+  // failure wiped availability but kept bookings, or vice-versa), local state
+  // cleared only after the write is confirmed, and failures surfaced.
+  if (ref) {
+    ref.update({ availability: {}, booked: {} }).then(() => {
+      L.availability = {};
+      L.booked = {};
+      renderAll();
+      toast('Availability and bookings reset');
+    }).catch(err => {
+      toast('Reset failed: ' + (err.message || err));
+    });
+  } else {
+    L.availability = {};
+    L.booked = {};
+    localSave();
+    renderAll();
+    toast('Availability and bookings reset');
+  }
 }
 
 // Recovery helper: if a team was accidentally removed, run this in the browser
@@ -10616,9 +10703,9 @@ function renderNextMatchHero() {
       : '<div style="font-size:12px;opacity:0.9;margin-top:2px">&#9888;&#65039; Court not yet booked</div>') +
     (upcoming.length > 1 ? '<div style="font-size:11px;opacity:0.75;margin-top:2px">+' + (upcoming.length - 1) + ' more upcoming match' + (upcoming.length - 1 === 1 ? '' : 'es') + '</div>' : '') +
     '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">' +
-      (!myAgreed ? '<button onclick="toggleAgreed(\'' + esc(next.matchKey) + '\')" style="' + btn + '">&#9989; Confirm date</button>' : '<button disabled style="' + btn + ';opacity:0.8;cursor:default">&#9989; You\'ve confirmed (' + agreedCount + '/' + allPlayers.length + ')</button>') +
-      '<button onclick="addMatchToCalendar(\'' + esc(next.matchKey) + '\')" style="' + btn + '">&#128197; Calendar</button>' +
-      (scoringOn ? '<button onclick="openScoreEntry(\'' + esc(next.matchKey) + '\')" style="' + btn + '">&#127942; ' + (hasResult ? 'Edit score' : 'Enter score') + '</button>' : '') +
+      (!myAgreed ? '<button onclick="toggleAgreed(' + jsAttr(next.matchKey) + ')" style="' + btn + '">&#9989; Confirm date</button>' : '<button disabled style="' + btn + ';opacity:0.8;cursor:default">&#9989; You\'ve confirmed (' + agreedCount + '/' + allPlayers.length + ')</button>') +
+      '<button onclick="addMatchToCalendar(' + jsAttr(next.matchKey) + ')" style="' + btn + '">&#128197; Calendar</button>' +
+      (scoringOn ? '<button onclick="openScoreEntry(' + jsAttr(next.matchKey) + ')" style="' + btn + '">&#127942; ' + (hasResult ? 'Edit score' : 'Enter score') + '</button>' : '') +
     '</div>';
   hero.style.display = 'block';
 }
@@ -13728,8 +13815,16 @@ async function finishGuided() {
         openMatches: {}, comments: {}
       };
       updates['/userLeagues/' + currentUser.uid + '/' + leagueId] = { name: name || '', sport: leagueSport || '', format: leagueFormat || '', code: code || '', role: 'organiser', clubId: clubId || '', clubName: clubName || '' };
-      updates['/clubLeagues/' + clubId + '/' + leagueId] = { name: name || '', sport: leagueSport || '', format: leagueFormat || '' };
-      updates['/codes/' + code] = leagueId;
+      // v4.16.48: mirror the other two create flows (scopedSubmitCreateLeague /
+      // createLeagueInClub). clubLeagues needs organiserUid for the rules
+      // creation clause, and /codes is only writable by the super admin —
+      // genUniqueCode() already reserved the code via transaction, so a
+      // non-admin overwrite here was rejected and killed the WHOLE create.
+      updates['/clubLeagues/' + clubId + '/' + leagueId] = { name: name || '', sport: leagueSport || '', format: leagueFormat || '', organiserUid: currentUser.uid };
+      if (isAdmin()) {
+        updates['/codes/' + code] = leagueId;
+        updates['/leagueIndex/' + leagueId] = { name: name || '', sport: leagueSport || '', format: leagueFormat || '', clubId: clubId || '', clubName: clubName || '', createdAt: Date.now() };
+      }
       db.ref().update(updates).then(() => {
         // Now enter the wizard with pre-filled name/partner
         selectedGameType = leagueFormat === 'singles' ? 'singles' : 'doubles';
