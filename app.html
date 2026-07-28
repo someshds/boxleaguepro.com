@@ -2558,7 +2558,7 @@ function isAdmin() {
 }
 
 function logAction(action, details) {
-  if (!FIREBASE_READY) return;
+  if (!FIREBASE_READY || !isAdmin()) return;
   try {
     const entry = {
       action: action,
@@ -3786,6 +3786,7 @@ function adminProvisionClub() {
       modules: modules
     };
     updates['/clubsBySlug/' + slug] = slug; // identity map — slug is also the push key
+    updates['/clubPublicMeta/' + slug] = { name: name, bookingUrl: bookingUrl || '' };
     updates['/clubAdmins/' + slug + '/' + emailKey] = true;
     const logKey = db.ref('/activityLog').push().key;
     updates['/activityLog/' + logKey] = {
@@ -3869,6 +3870,7 @@ function adminAttachSlugToExistingClub() {
     const club = snaps[0].val();
     const updates = {};
     updates['/clubsBySlug/' + slug] = cleanKey;
+    updates['/clubPublicMeta/' + cleanKey] = { name: club.name || '', bookingUrl: club.bookingUrl || '' };
     if (email) {
       const eErr = provValidateEmail(email);
       if (eErr) { res.innerHTML = '<div style="color:#b91c1c">' + esc(eErr) + '</div>'; return; }
@@ -5142,10 +5144,9 @@ function onAuthSuccess() {
   loadTabGuideDismissals();
   loadUserLeagues();
   loadUserHomeClub(() => {
-    // v4.8.0: load clubAdmin memberships once per session so scoped-welcome
-    // organiser tools know whether to show. Non-blocking — fires in parallel
-    // with the URL-param routing below.
-    loadClubAdminMemberships();
+    // Organiser membership is checked against the selected club after the
+    // club link resolves. Reading the full cross-club admin map would defeat
+    // Firebase tenant isolation.
 
     // Check URL params for shared league link
     const params = new URLSearchParams(window.location.search);
@@ -5184,11 +5185,10 @@ function onAuthSuccess() {
       if (sharedClub && !userHomeClub) {
         // Look up club name and set as home club
         if (FIREBASE_READY) {
-          db.ref('/clubs/' + sharedClub).once('value', snap => {
+          resolveScopedClub(sharedClub, function(result) {
             if (!currentUser) return; // Auth state may have changed
-            const c = snap.val();
-            if (c) {
-              userHomeClub = { id: sharedClub, name: c.name, bookingUrl: c.bookingUrl || '' };
+            if (result) {
+              userHomeClub = { id: result.id, name: result.info.name, bookingUrl: result.info.bookingUrl || '' };
               db.ref('/users/' + currentUser.uid + '/homeClub').set(userHomeClub);
             }
             setTimeout(() => { goToMixIn(); }, 300);
@@ -5211,6 +5211,9 @@ function onAuthSuccess() {
           return;
         }
         window._scopedClub = { id: result.id, info: result.info };
+        loadClubAdminMemberships(result.id, function() {
+          if (typeof renderScopedWelcome === 'function') renderScopedWelcome();
+        });
         // v4.16.2: persist homeClub to Firebase so a user who later loses the
         // ?club= link can return via the bare URL and still land on their
         // club (auto-scope path at line ~4920). Last-link-wins policy: every
@@ -5286,6 +5289,9 @@ function onAuthSuccess() {
               }
               const info = clubSnap.val();
               window._scopedClub = { id: userHomeClub.id, info: info };
+              loadClubAdminMemberships(userHomeClub.id, function() {
+                if (typeof renderScopedWelcome === 'function') renderScopedWelcome();
+              });
               // v4.16.23: pre-allocation — also runs on the homeClub auto-
               // scope path. A returning user who got bulk-added to new
               // leagues since their last sign-in will pick them up here.
@@ -5394,40 +5400,51 @@ let userPreferredSport = ''; // tennis, padel, squash, etc.
 window._scopedClub = null;   // { id, info, isAdmin } or null
 window._clubAdminFor = [];   // slugs/ids of clubs where this user is a clubAdmin
 
-// v4.8.0: Resolve a ?club= URL param to a club record.
-// Tries /clubs/{param} first (direct push-key or slug-as-key),
-// then /clubsBySlug/{param} (legacy index for push-key clubs with a slug).
-// Calls cb({ id, info }) on success or cb(null) on miss.
+// Resolve a ?club= URL param without exposing private club records across
+// tenants. /clubPublicMeta is intentionally limited to link-safe fields;
+// authorised club members and organisers receive the private club fields as
+// an optional second read.
 function resolveScopedClub(param, cb) {
   if (!param || !FIREBASE_READY) { cb(null); return; }
-  db.ref('/clubs/' + param).once('value').then(function(snap) {
-    if (snap.exists()) { cb({ id: param, info: snap.val() }); return; }
-    // Fallback: slug index → push key
+  function loadLegacyClubInfo(clubId, done) {
+    db.ref('/clubs/' + clubId).once('value').then(function(privateSnap) {
+      done(privateSnap.exists() ? { id: clubId, info: privateSnap.val() || {} } : null);
+    }).catch(function() { done(null); });
+  }
+
+  function loadClubInfo(clubId, done) {
+    db.ref('/clubPublicMeta/' + clubId).once('value').then(function(metaSnap) {
+      if (!metaSnap.exists()) { loadLegacyClubInfo(clubId, done); return; }
+      var publicInfo = metaSnap.val() || {};
+      db.ref('/clubs/' + clubId).once('value').then(function(privateSnap) {
+        done({ id: clubId, info: Object.assign({}, publicInfo, privateSnap.val() || {}) });
+      }).catch(function() {
+        done({ id: clubId, info: publicInfo });
+      });
+    }).catch(function() { loadLegacyClubInfo(clubId, done); });
+  }
+
+  loadClubInfo(param, function(result) {
+    if (result) { cb(result); return; }
+    // Legacy slug index → club ID → limited public metadata.
     db.ref('/clubsBySlug/' + param).once('value').then(function(slugSnap) {
       var pushKey = slugSnap.val();
       if (!pushKey) { cb(null); return; }
-      db.ref('/clubs/' + pushKey).once('value').then(function(clubSnap) {
-        if (!clubSnap.exists()) { cb(null); return; }
-        cb({ id: pushKey, info: clubSnap.val() });
-      }).catch(function() { cb(null); });
+      loadClubInfo(pushKey, cb);
     }).catch(function() { cb(null); });
-  }).catch(function() { cb(null); });
+  });
 }
 
-// v4.8.0: Load clubAdmin memberships for the current user.
-// Reads /clubAdmins/{slug} nodes keyed by sanitized email.
-// This is cheap — only runs once at sign-in.
-function loadClubAdminMemberships(cb) {
+// Load the current user's organiser state only for the selected club. A
+// tenant member has no reason to enumerate every club's organiser list.
+function loadClubAdminMemberships(clubId, cb) {
+  if (typeof clubId === 'function') { cb = clubId; clubId = ''; }
   if (!FIREBASE_READY || !currentUser || !currentUser.email) { if (cb) cb(); return; }
+  clubId = clubId || (window._scopedClub && window._scopedClub.id) || (userHomeClub && userHomeClub.id);
+  if (!clubId) { window._clubAdminFor = []; if (cb) cb(); return; }
   var emailKey = sanitizeEmail(currentUser.email);
-  db.ref('/clubAdmins').once('value').then(function(snap) {
-    var all = snap.val() || {};
-    window._clubAdminFor = [];
-    for (var slug in all) {
-      if (all[slug] && all[slug][emailKey]) {
-        window._clubAdminFor.push(slug);
-      }
-    }
+  db.ref('/clubAdmins/' + clubId + '/' + emailKey).once('value').then(function(snap) {
+    window._clubAdminFor = snap.val() ? [clubId] : [];
     if (cb) cb();
   }).catch(function() { window._clubAdminFor = []; if (cb) cb(); });
 }
@@ -7376,23 +7393,24 @@ function scopedAddAdmin() {
   msg.innerHTML = '<span style="color:#6b7280">Adding&hellip;</span>';
   var updates = {};
   updates['/clubAdmins/' + scope.id + '/' + emailKey] = true;
-  // Activity log entry
-  var logKey = db.ref('/activityLog').push().key;
-  updates['/activityLog/' + logKey] = {
-    action: 'add_club_admin',
-    clubId: scope.id,
-    clubName: scope.info.name || '',
-    addedEmail: email,
-    addedBy: currentUser.email,
-    timestamp: firebase.database.ServerValue.TIMESTAMP
-  };
+  if (isAdmin()) {
+    var logKey = db.ref('/activityLog').push().key;
+    updates['/activityLog/' + logKey] = {
+      action: 'add_club_admin',
+      clubId: scope.id,
+      clubName: scope.info.name || '',
+      addedEmail: email,
+      addedBy: currentUser.email,
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+  }
   db.ref().update(updates).then(function() {
     msg.innerHTML = '<span style="color:#059669">&#10003; Added ' + esc(email) + '</span>';
     document.getElementById('scoped-ma-email').value = '';
     scopedLoadAdmins();
     // If the current user just added themselves, refresh their membership map
     if (currentUser && sanitizeEmail(currentUser.email) === emailKey) {
-      loadClubAdminMemberships();
+      loadClubAdminMemberships(scope.id);
     }
   }).catch(function(e) {
     console.error('[manage-admins] add error', e);
@@ -7410,15 +7428,17 @@ function scopedRemoveAdmin(emailKey) {
   msg.innerHTML = '<span style="color:#6b7280">Removing&hellip;</span>';
   var updates = {};
   updates['/clubAdmins/' + scope.id + '/' + emailKey] = null;
-  var logKey = db.ref('/activityLog').push().key;
-  updates['/activityLog/' + logKey] = {
-    action: 'remove_club_admin',
-    clubId: scope.id,
-    clubName: scope.info.name || '',
-    removedEmail: displayEmail,
-    removedBy: currentUser.email,
-    timestamp: firebase.database.ServerValue.TIMESTAMP
-  };
+  if (isAdmin()) {
+    var logKey = db.ref('/activityLog').push().key;
+    updates['/activityLog/' + logKey] = {
+      action: 'remove_club_admin',
+      clubId: scope.id,
+      clubName: scope.info.name || '',
+      removedEmail: displayEmail,
+      removedBy: currentUser.email,
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+  }
   db.ref().update(updates).then(function() {
     msg.innerHTML = '<span style="color:#059669">&#10003; Removed ' + esc(displayEmail) + '</span>';
     scopedLoadAdmins();
@@ -9094,8 +9114,14 @@ function saveBookingUrl() {
   const url = (document.getElementById('inp-booking-url').value || '').trim();
   clubBookingUrl = url;
   if (cid && FIREBASE_READY) {
-    db.ref('/clubs/' + cid + '/bookingUrl').set(url || null).then(() => {
+    const updates = {};
+    updates['/clubs/' + cid + '/bookingUrl'] = url || null;
+    updates['/clubPublicMeta/' + cid + '/bookingUrl'] = url || null;
+    db.ref().update(updates).then(() => {
       if (allClubs[cid]) allClubs[cid].bookingUrl = url;
+      if (window._scopedClub && window._scopedClub.id === cid && window._scopedClub.info) {
+        window._scopedClub.info.bookingUrl = url;
+      }
       toast(url ? 'Booking URL saved!' : 'Booking URL removed');
     }).catch(err => {
       toast('Failed to save booking URL: ' + (err.message || err));
