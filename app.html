@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.48</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.49</div>
   </div>
 </div>
 
@@ -1267,10 +1267,29 @@
               <option value="competitive">Winners Only (3 / 0 / 0)</option>
               <option value="participation">Participation (2 / 1 / 0.5)</option>
               <option value="set-points-plus-played">Set Points + Played Bonus (EGTSC style)</option>
+              <option value="game-won">Game Wins (1 point per game won)</option>
             </select>
             <button class="btn btn-primary btn-sm" onclick="saveScoringSystem()" style="white-space:nowrap;padding:10px 18px">Save</button>
           </div>
           <div id="scoring-preview" style="font-size:12px;color:#475569;margin-top:8px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;line-height:1.5"></div>
+        </div>
+        <div class="fg" id="season-schedule-planner-wrap" style="display:none">
+          <label class="fl">Season Fixture Planner</label>
+          <div id="season-schedule-planner-summary" style="font-size:12px;color:#64748b;margin-bottom:8px;line-height:1.5"></div>
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px">
+            <div>
+              <label class="fl" style="font-size:11px">First fixture date</label>
+              <input class="fi" type="date" id="inp-season-first-date">
+            </div>
+            <div>
+              <label class="fl" style="font-size:11px">Start time</label>
+              <select class="fi" id="inp-season-slot"></select>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm" onclick="previewSeasonSchedule()">Preview season draw</button>
+          </div>
+          <div style="font-size:11px;color:#64748b;margin-top:7px;line-height:1.45">The preview checks every pairing before anything is published. Publishing will not overwrite an existing booking.</div>
         </div>
       </div>
 
@@ -1640,7 +1659,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.48 · Build 20260727d</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.49 · Build 20260730a</div>
   </div>
 </div>
 
@@ -1653,6 +1672,16 @@
       <button onclick="closeChangelog()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <div style="padding:20px" id="changelog-content">
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.49 &middot; 30 Jul 2026</span>
+          <span style="background:#2563eb;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">SEASON DRAW</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Season Fixture Planner</strong> lets organisers preview a complete weekly round-robin draw before publishing it. Every pairing is checked and existing bookings are never overwritten.</li>
+          <li><strong>Game Wins scoring</strong> awards one table point per individual game won, with no separate match-win bonus.</li>
+        </ul>
+      </div>
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.48 &middot; 27 Jul 2026</span>
@@ -2492,6 +2521,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="season-scheduler.js"></script>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════
@@ -5799,6 +5829,18 @@ const SCORING_PRESETS = {
     notPlayedPoints: 0,
     completionBonus: 0,
     tableFootnote: '1 pt per set won + 1 pt for playing · Walkover = 2 / 0'
+  },
+  'game-won': {
+    id: 'game-won',
+    name: 'Game Wins (1 point per game won)',
+    short: 'Game Wins',
+    description: 'Each player or team earns one table point for every individual game they win. The match winner does not receive a separate bonus. Walkovers are 0-0 because no games were played.',
+    gamePoints: true,
+    win: 0, loss: 0, draw: 0,
+    walkoverWin: 0, walkoverConcede: 0,
+    notPlayedPoints: 0,
+    completionBonus: 0,
+    tableFootnote: '1 table point per game won; walkover = 0 / 0'
   }
 };
 
@@ -5831,11 +5873,20 @@ function getActiveScoringPreset() {
 // All four mechanics combine — a preset can use any subset by setting unused
 // fields to 0. e.g. EGTSC-style uses setPoints + matchPlayedBonus only;
 // classic 3/1/0 uses just win + loss.
-function calculateMatchPoints(preset, result, isWinner) {
+function calculateMatchPoints(preset, result, isWinner, teamSide) {
   if (!result) return 0;
   // Walkover takes precedence: skip everything else, use the walkover-specific points.
   if (result.walkover) {
     return isWinner ? (preset.walkoverWin || 0) : (preset.walkoverConcede || 0);
+  }
+  // Game-won scoring uses each side's actual total. A player can win on sets
+  // while winning fewer games, so the match winner cannot be used as a proxy.
+  if (preset.gamePoints) {
+    if (window.BoxLeagueSeasonScheduler && typeof window.BoxLeagueSeasonScheduler.gamePointsForResult === 'function') {
+      return window.BoxLeagueSeasonScheduler.gamePointsForResult(result, teamSide || (isWinner ? 'A' : 'B'));
+    }
+    const value = teamSide === 'B' ? result.gamesB : result.gamesA;
+    return Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : 0;
   }
   // System 7: result depends on the EXACT set count split.
   // v4.16.11: numbers now come from the preset (win20/loss20/win21/loss21)
@@ -9177,10 +9228,10 @@ function renderScoringPreview() {
   const wo       = { walkover: true, winner: 'A', loser: 'B' };
 
   const fmt = (v) => Number.isInteger(v) ? String(v) : v.toFixed(1);
-  const w20 = fmt(calculateMatchPoints(preset, sample20, true));
-  const l20 = fmt(calculateMatchPoints(preset, sample20, false));
-  const w21 = fmt(calculateMatchPoints(preset, sample21, true));
-  const l21 = fmt(calculateMatchPoints(preset, sample21, false));
+  const w20 = fmt(calculateMatchPoints(preset, sample20, true, 'A'));
+  const l20 = fmt(calculateMatchPoints(preset, sample20, false, 'B'));
+  const w21 = fmt(calculateMatchPoints(preset, sample21, true, 'A'));
+  const l21 = fmt(calculateMatchPoints(preset, sample21, false, 'B'));
   const ww  = fmt(calculateMatchPoints(preset, wo, true));
   const wl  = fmt(calculateMatchPoints(preset, wo, false));
 
@@ -9192,8 +9243,8 @@ function renderScoringPreview() {
     '<div style="font-weight:600;color:#1e293b;margin-bottom:6px">' + esc(preset.name) + '</div>' +
     '<div style="color:#64748b;margin-bottom:8px;font-style:italic">' + esc(preset.description) + '</div>' +
     '<div style="display:grid;grid-template-columns:1fr auto;gap:4px 16px;font-variant-numeric:tabular-nums">' +
-      '<div>Win 2-0</div><div><strong>' + w20 + '</strong> / ' + l20 + '</div>' +
-      '<div>Win 2-1</div><div><strong>' + w21 + '</strong> / ' + l21 + '</div>' +
+      '<div>' + (preset.gamePoints ? 'Example: 12 games / 4 games' : 'Win 2-0') + '</div><div><strong>' + w20 + '</strong> / ' + l20 + '</div>' +
+      '<div>' + (preset.gamePoints ? 'Example: 14 games / 12 games' : 'Win 2-1') + '</div><div><strong>' + w21 + '</strong> / ' + l21 + '</div>' +
       '<div>Walkover</div><div><strong>' + ww + '</strong> / ' + wl + '</div>' +
     '</div>' +
     extras;
@@ -9232,6 +9283,168 @@ function saveScoringSystem() {
   }).catch(err => {
     console.error('saveScoringSystem error:', err);
     toast('Could not save: ' + (err && err.message ? err.message : 'try again'));
+  });
+}
+
+// v4.16.49: organiser-only season fixture planner. It is deliberately a
+// preview-first flow: the draw is validated before the organiser can publish.
+let _seasonSchedulePreview = null;
+
+function defaultSeasonFixtureDate() {
+  const date = new Date();
+  date.setHours(12, 0, 0, 0);
+  const daysUntilThursday = (4 - date.getDay() + 7) % 7;
+  date.setDate(date.getDate() + daysUntilThursday);
+  return ds(date);
+}
+
+function seasonParticipantLabel() {
+  return L && L.settings && L.settings.format === 'singles' ? 'player' : 'team';
+}
+
+function renderSeasonSchedulePlanner() {
+  const wrap = document.getElementById('season-schedule-planner-wrap');
+  const summary = document.getElementById('season-schedule-planner-summary');
+  const firstDate = document.getElementById('inp-season-first-date');
+  const slot = document.getElementById('inp-season-slot');
+  if (!wrap || !summary || !firstDate || !slot) return;
+
+  const canPlan = canManageActiveLeague() && Array.isArray(L.groups) && L.groups.length >= 2;
+  wrap.style.display = canPlan ? 'block' : 'none';
+  if (!canPlan) return;
+
+  if (!firstDate.value) firstDate.value = defaultSeasonFixtureDate();
+  if (!slot.options.length) {
+    slot.innerHTML = SLOTS.map(function(value) {
+      return '<option value="' + esc(value) + '"' + (value === '1730' ? ' selected' : '') + '>' + esc(slotLabel(value)) + '</option>';
+    }).join('');
+  }
+
+  const count = L.groups.length;
+  const noun = seasonParticipantLabel();
+  if (count % 2 !== 0) {
+    summary.innerHTML = '<strong style="color:#b45309">' + count + ' ' + noun + (count === 1 ? '' : 's') + ' currently added.</strong> Add or remove one so every ' + noun + ' can play each week.';
+    return;
+  }
+  const rounds = count - 1;
+  const matches = count / 2;
+  summary.textContent = count + ' ' + noun + (count === 1 ? '' : 's') + ': ' + rounds + ' weekly rounds, ' + matches + ' matches per round, ' + (count * (count - 1) / 2) + ' fixtures in total.';
+}
+
+function closeSeasonSchedulePreview() {
+  const modal = document.getElementById('season-schedule-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function previewSeasonSchedule() {
+  if (!canManageActiveLeague()) { toast('Only the organiser can create a season draw'); return; }
+  if (!window.BoxLeagueSeasonScheduler || typeof window.BoxLeagueSeasonScheduler.buildSeasonPlan !== 'function') {
+    toast('Season planner failed to load. Refresh and try again.');
+    return;
+  }
+
+  const firstDate = document.getElementById('inp-season-first-date');
+  const slot = document.getElementById('inp-season-slot');
+  try {
+    const plan = window.BoxLeagueSeasonScheduler.buildSeasonPlan(L.groups, {
+      firstDate: firstDate && firstDate.value,
+      slot: slot && slot.value
+    });
+    _seasonSchedulePreview = {
+      leagueId: activeLeagueId,
+      groupIds: L.groups.map(function(group) { return group.id; }).sort(),
+      plan: plan
+    };
+
+    const groupById = {};
+    L.groups.forEach(function(group) { groupById[group.id] = group; });
+    const roundsHtml = plan.rounds.map(function(round) {
+      const matchesHtml = round.matches.map(function(match) {
+        const home = groupById[match.homeId] || {};
+        const away = groupById[match.awayId] || {};
+        return '<li style="margin:3px 0">' + esc(home.name || 'Unknown') + ' vs ' + esc(away.name || 'Unknown') + '</li>';
+      }).join('');
+      return '<details style="border:1px solid #e2e8f0;border-radius:8px;padding:9px 10px;margin-top:8px;background:#fff"' + (round.number === 1 ? ' open' : '') + '>' +
+        '<summary style="cursor:pointer;font-weight:700;color:#1e293b">Round ' + round.number + ' - ' + esc(fmtFull(round.date)) + '</summary>' +
+        '<ul style="margin:7px 0 0;padding-left:20px;font-size:13px;color:#475569">' + matchesHtml + '</ul>' +
+      '</details>';
+    }).join('');
+
+    let modal = document.getElementById('season-schedule-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'season-schedule-modal';
+      modal.style.cssText = 'display:none;position:fixed;inset:0;z-index:1100;background:rgba(15,23,42,0.58);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:16px';
+      modal.onclick = function(event) { if (event.target === modal) closeSeasonSchedulePreview(); };
+      document.body.appendChild(modal);
+    }
+    modal.innerHTML = '<div style="background:#fff;border-radius:14px;width:100%;max-width:560px;max-height:88vh;overflow:auto;box-shadow:0 20px 60px rgba(15,23,42,0.35);padding:20px">' +
+      '<div style="font-size:19px;font-weight:800;color:#0f172a">Season draw preview</div>' +
+      '<div style="font-size:13px;color:#475569;line-height:1.5;margin-top:6px">' + plan.totalRounds + ' weekly rounds, ' + plan.matchesPerRound + ' matches each week, and ' + plan.fixtureCount + ' unique fixtures. First fixture: ' + esc(fmtFull(plan.firstDate)) + ' at ' + esc(slotLabel(plan.slot)) + '.</div>' +
+      '<div style="margin-top:14px">' + roundsHtml + '</div>' +
+      '<div style="font-size:12px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:9px 10px;margin-top:14px;line-height:1.45">Publishing creates these bookings together. It stops rather than overwriting an existing booking.</div>' +
+      '<div style="display:flex;gap:8px;margin-top:16px"><button class="btn btn-secondary" onclick="closeSeasonSchedulePreview()" style="flex:1">Back</button><button class="btn btn-primary" onclick="publishSeasonSchedule()" style="flex:1">Publish ' + plan.fixtureCount + ' fixtures</button></div>' +
+    '</div>';
+    modal.style.display = 'flex';
+  } catch (error) {
+    toast(error && error.message ? error.message : 'Could not create the season draw');
+  }
+}
+
+function publishSeasonSchedule() {
+  if (!canManageActiveLeague()) { toast('Only the organiser can publish a season draw'); return; }
+  const preview = _seasonSchedulePreview;
+  if (!preview || preview.leagueId !== activeLeagueId || !preview.plan) {
+    toast('Preview the season draw again before publishing.');
+    return;
+  }
+  const currentIds = L.groups.map(function(group) { return group.id; }).sort();
+  if (currentIds.join('|') !== preview.groupIds.join('|')) {
+    toast('Players changed since this preview. Review the draw again before publishing.');
+    return;
+  }
+
+  const bookingKeys = Object.keys(preview.plan.bookings);
+  const localConflicts = bookingKeys.filter(function(key) { return !!(L.booked && L.booked[key]); });
+  if (localConflicts.length) {
+    toast('Cannot publish: ' + localConflicts.length + ' fixture' + (localConflicts.length === 1 ? ' is' : 's are') + ' already booked.');
+    return;
+  }
+
+  function finishPublished(bookings) {
+    L.booked = bookings || Object.assign({}, L.booked || {}, preview.plan.bookings);
+    localSave();
+    closeSeasonSchedulePreview();
+    _seasonSchedulePreview = null;
+    renderMatchFinder();
+    renderMyMatches();
+    renderBookedTab();
+    logAction('publish_season_schedule', preview.plan.fixtureCount + ' fixtures across ' + preview.plan.totalRounds + ' rounds');
+    toast('Season draw published: ' + preview.plan.fixtureCount + ' fixtures across ' + preview.plan.totalRounds + ' rounds.');
+  }
+
+  const ref = leagueRef('booked');
+  if (!ref) {
+    finishPublished();
+    return;
+  }
+
+  let remoteConflictCount = 0;
+  ref.transaction(function(current) {
+    current = current || {};
+    remoteConflictCount = bookingKeys.filter(function(key) { return !!current[key]; }).length;
+    if (remoteConflictCount) return;
+    return Object.assign({}, current, preview.plan.bookings);
+  }, function(error, committed, snapshot) {
+    if (error) {
+      toast('Publishing the season draw failed: ' + (error.message || error));
+      return;
+    }
+    if (!committed) {
+      toast('Could not publish: ' + remoteConflictCount + ' fixture' + (remoteConflictCount === 1 ? ' was' : 's were') + ' booked while you reviewed the draw.');
+      return;
+    }
+    finishPublished(snapshot && snapshot.val());
   });
 }
 
@@ -9430,7 +9643,7 @@ function showTab(t) {
   if (t === 'booked') { renderBookedTab(); }
   if (t === 'results') { renderStandings(); renderResultsList(); }
   if (t === 'open') { renderOpenMatches(); }
-  if (t === 'setup') { renderGroups(); renderMembers(); try { renderScoringSystemPicker(); } catch (e) {} }
+  if (t === 'setup') { renderGroups(); renderMembers(); try { renderScoringSystemPicker(); renderSeasonSchedulePlanner(); } catch (e) {} }
 
   // Trigger in-tab guide (replaces explainer modals for tabs that have guides)
   const guideTabId = (t === 'open' && mixInMode) ? 'open' : t;
@@ -9732,8 +9945,8 @@ function calculateStandings() {
     }
 
     // Apply preset's points formula
-    standings[idA].points += calculateMatchPoints(preset, r, r.winner === idA);
-    standings[idB].points += calculateMatchPoints(preset, r, r.winner === idB);
+    standings[idA].points += calculateMatchPoints(preset, r, r.winner === idA, 'A');
+    standings[idB].points += calculateMatchPoints(preset, r, r.winner === idB, 'B');
   });
 
   // v4.16.0: not-played points (participation preset) — for every fixture that
