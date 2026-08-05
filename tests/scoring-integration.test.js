@@ -4,6 +4,9 @@ const vm = require('node:vm');
 const scheduler = require('../season-scheduler.js');
 
 const html = fs.readFileSync(require.resolve('../app.html'), 'utf8');
+assert.match(html, /<script src="score-entry\.js"><\/script>/, 'app must load score-entry rules');
+assert.match(html, /BoxLeagueScoreEntry\.inputMax\(scoreSport\)/, 'score modal must use sport-aware input limits');
+assert.match(html, /BoxLeagueScoreEntry\.validateLine\(a, b, scoreSport\)/, 'score save must validate sport rules');
 const start = html.indexOf('const SCORING_PRESETS = {');
 const end = html.indexOf('function setScopedSetupStep', start);
 assert.ok(start >= 0 && end > start, 'could not locate the scoring code in app.html');

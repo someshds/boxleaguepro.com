@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.49</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.50</div>
   </div>
 </div>
 
@@ -1659,7 +1659,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.49 · Build 20260730a</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.50 · Build 20260804a</div>
   </div>
 </div>
 
@@ -1672,6 +1672,16 @@
       <button onclick="closeChangelog()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <div style="padding:20px" id="changelog-content">
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.50 &middot; 4 Aug 2026</span>
+          <span style="background:#7c3aed;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">SQUASH SCORING</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Play to 15</strong> &mdash; squash results now accept the real score, including extended games after 14-14.</li>
+          <li><strong>Two-clear validation</strong> prevents incomplete scores such as 15-14 or 16-15 from entering the Game Wins table.</li>
+        </ul>
+      </div>
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.49 &middot; 30 Jul 2026</span>
@@ -2522,6 +2532,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="season-scheduler.js"></script>
+<script src="score-entry.js"></script>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════
@@ -9698,10 +9709,13 @@ function openScoreEntry(matchKey) {
 
   const existing = L.results[matchKey];
   const s1 = existing ? existing.scores : [];
+  const scoreSport = getActiveScoreSport();
+  const scoreMax = window.BoxLeagueScoreEntry ? window.BoxLeagueScoreEntry.inputMax(scoreSport) : 13;
 
   let html = '<div style="padding:20px">';
   html += '<div style="font-size:16px;font-weight:700;margin-bottom:4px;text-align:center">' + esc(gA.name) + ' vs ' + esc(gB.name) + '</div>';
-  html += '<div style="font-size:13px;color:#64748b;text-align:center;margin-bottom:16px">Enter the score for each set played</div>';
+  html += '<div style="font-size:13px;color:#64748b;text-align:center;margin-bottom:16px">' +
+    (scoreSport === 'squash' ? 'Enter each game score. First to 15; at 14-14, win by two.' : 'Enter the score for each set played') + '</div>';
 
   // Set score inputs (up to 5 sets)
   for (let i = 0; i < 5; i++) {
@@ -9710,9 +9724,9 @@ function openScoreEntry(matchKey) {
     const required = i < 1; // At least 1 set required
     html += '<div class="score-set-row" style="display:flex;align-items:center;gap:8px;margin-bottom:8px' + (i >= 3 ? ';display:none' : '') + '" id="score-set-' + i + '">';
     html += '<span style="font-size:13px;font-weight:600;color:#64748b;width:44px">Set ' + (i+1) + '</span>';
-    html += '<input type="number" min="0" max="13" class="fi score-input" id="score-a-' + i + '" value="' + sA + '" placeholder="-" style="width:56px;text-align:center;font-size:18px;font-weight:700;padding:8px" oninput="scoreChanged()">';
+    html += '<input type="number" min="0" max="' + scoreMax + '" class="fi score-input" id="score-a-' + i + '" value="' + sA + '" placeholder="-" style="width:56px;text-align:center;font-size:18px;font-weight:700;padding:8px" oninput="scoreChanged()">';
     html += '<span style="font-size:14px;color:#9ca3af;font-weight:700">–</span>';
-    html += '<input type="number" min="0" max="13" class="fi score-input" id="score-b-' + i + '" value="' + sB + '" placeholder="-" style="width:56px;text-align:center;font-size:18px;font-weight:700;padding:8px" oninput="scoreChanged()">';
+    html += '<input type="number" min="0" max="' + scoreMax + '" class="fi score-input" id="score-b-' + i + '" value="' + sB + '" placeholder="-" style="width:56px;text-align:center;font-size:18px;font-weight:700;padding:8px" oninput="scoreChanged()">';
     html += '</div>';
   }
   html += '<div style="display:flex;gap:8px;margin-bottom:12px">';
@@ -9774,17 +9788,30 @@ function toggleExtraSets() {
   }
 }
 
+function getActiveScoreSport() {
+  const info = (activeLeagueId && userLeagues && userLeagues[activeLeagueId]) || {};
+  return String(info.sport || (L.settings && L.settings.sport) || '').trim().toLowerCase();
+}
+
 function scoreChanged() {
   const preview = document.getElementById('score-winner-preview');
   if (!preview) return;
   let setsA = 0, setsB = 0;
+  let invalidMessage = '';
+  const scoreSport = getActiveScoreSport();
   for (let i = 0; i < 5; i++) {
     const a = parseInt(document.getElementById('score-a-' + i).value);
     const b = parseInt(document.getElementById('score-b-' + i).value);
     if (isNaN(a) || isNaN(b)) continue;
+    if (window.BoxLeagueScoreEntry) {
+      const check = window.BoxLeagueScoreEntry.validateLine(a, b, scoreSport);
+      if (!check.valid) { invalidMessage = check.message; continue; }
+    }
     if (a > b) setsA++;
     else if (b > a) setsB++;
   }
+  if (invalidMessage) { preview.style.color = '#b91c1c'; preview.textContent = invalidMessage; return; }
+  preview.style.color = '#059669';
   if (setsA === 0 && setsB === 0) { preview.textContent = ''; return; }
   if (setsA > setsB) preview.innerHTML = '&#127942; Team A leads ' + setsA + '-' + setsB;
   else if (setsB > setsA) preview.innerHTML = '&#127942; Team B leads ' + setsB + '-' + setsA;
@@ -9802,10 +9829,15 @@ function saveScore(matchKey, gAId, gBId) {
   // and never did. Participants OR league managers may edit.
   if (!isMatchParticipant(matchKey)) { toast('Only match players or the organiser can record this result'); return; }
   const scores = [];
+  const scoreSport = getActiveScoreSport();
   for (let i = 0; i < 5; i++) {
     const a = parseInt(document.getElementById('score-a-' + i).value);
     const b = parseInt(document.getElementById('score-b-' + i).value);
     if (isNaN(a) || isNaN(b)) continue;
+    if (window.BoxLeagueScoreEntry) {
+      const check = window.BoxLeagueScoreEntry.validateLine(a, b, scoreSport);
+      if (!check.valid) { toast(check.message); return; }
+    }
     scores.push([a, b]);
   }
   if (scores.length === 0) { toast('Enter at least one set score'); return; }
