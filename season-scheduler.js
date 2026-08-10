@@ -113,11 +113,11 @@
     };
   }
 
-  // Deliberately reads the side-specific game total rather than inferring it
-  // from the match winner. A player can win on sets while winning fewer games.
+  // Each completed score row is one game. The numerical scores inside that
+  // row are rally totals used for countback, not league points.
   function gamePointsForResult(result, side) {
     if (!result || result.walkover) return 0;
-    var value = side === 'A' ? result.gamesA : result.gamesB;
+    var value = side === 'A' ? result.setsA : result.setsB;
     value = Number(value);
     return Number.isFinite(value) && value >= 0 ? value : 0;
   }
