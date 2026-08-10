@@ -32,9 +32,9 @@ plan.rounds.forEach((round) => {
 });
 assert.equal(pairings.size, 45);
 
-assert.equal(scheduler.gamePointsForResult({ gamesA: 14, gamesB: 16, walkover: false }, 'A'), 14);
-assert.equal(scheduler.gamePointsForResult({ gamesA: 14, gamesB: 16, walkover: false }, 'B'), 16);
-assert.equal(scheduler.gamePointsForResult({ gamesA: 14, gamesB: 16, walkover: true }, 'A'), 0);
+assert.equal(scheduler.gamePointsForResult({ setsA: 1, setsB: 0, gamesA: 15, gamesB: 9, walkover: false }, 'A'), 1);
+assert.equal(scheduler.gamePointsForResult({ setsA: 1, setsB: 0, gamesA: 15, gamesB: 9, walkover: false }, 'B'), 0);
+assert.equal(scheduler.gamePointsForResult({ setsA: 1, setsB: 0, gamesA: 15, gamesB: 9, walkover: true }, 'A'), 0);
 assert.throws(() => scheduler.buildSeasonPlan(players.slice(0, 9), { firstDate: '2026-08-06', slot: '1730' }), /even number/);
 
 console.log('season-scheduler.test.js: all assertions passed');

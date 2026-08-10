@@ -17,13 +17,14 @@ const context = vm.createContext({
 });
 const scoringSource = html.slice(start, end) + `
 globalThis.__points = [
-  calculateMatchPoints(SCORING_PRESETS['game-won'], { gamesA: 14, gamesB: 16, walkover: false, winner: 'A' }, true, 'A'),
-  calculateMatchPoints(SCORING_PRESETS['game-won'], { gamesA: 14, gamesB: 16, walkover: false, winner: 'A' }, false, 'B'),
-  calculateMatchPoints(SCORING_PRESETS['game-won'], { gamesA: 14, gamesB: 16, walkover: true, winner: 'A' }, true, 'A')
+  calculateMatchPoints(SCORING_PRESETS['game-won'], { setsA: 1, setsB: 0, gamesA: 15, gamesB: 9, walkover: false, winner: 'A' }, true, 'A'),
+  calculateMatchPoints(SCORING_PRESETS['game-won'], { setsA: 1, setsB: 0, gamesA: 15, gamesB: 9, walkover: false, winner: 'A' }, false, 'B'),
+  calculateMatchPoints(SCORING_PRESETS['game-won'], { setsA: 1, setsB: 0, gamesA: 15, gamesB: 9, walkover: true, winner: 'A' }, true, 'A'),
+  calculateMatchPoints(SCORING_PRESETS['default'], { setsA: 1, setsB: 0, gamesA: 15, gamesB: 9, walkover: false, winner: 'A' }, true, 'A')
 ];
 `;
 
 vm.runInContext(scoringSource, context);
-assert.deepEqual(Array.from(context.__points), [14, 16, 0]);
+assert.deepEqual(Array.from(context.__points), [1, 0, 0, 3]);
 
 console.log('scoring-integration.test.js: all assertions passed');

@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.50</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.51</div>
   </div>
 </div>
 
@@ -1659,7 +1659,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.50 · Build 20260804a</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.51 · Build 20260810a</div>
   </div>
 </div>
 
@@ -1672,6 +1672,16 @@
       <button onclick="closeChangelog()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <div style="padding:20px" id="changelog-content">
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.51 &middot; 10 Aug 2026</span>
+          <span style="background:#0f766e;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">GAME WINS</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>One point per game won</strong> &mdash; a squash game recorded as 15-9 now awards 1-0 league points, not 15-9.</li>
+          <li><strong>Rally countback</strong> &mdash; Game Wins tables show cumulative rally points for and against while keeping league points separate.</li>
+        </ul>
+      </div>
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.50 &middot; 4 Aug 2026</span>
@@ -5845,13 +5855,13 @@ const SCORING_PRESETS = {
     id: 'game-won',
     name: 'Game Wins (1 point per game won)',
     short: 'Game Wins',
-    description: 'Each player or team earns one table point for every individual game they win. The match winner does not receive a separate bonus. Walkovers are 0-0 because no games were played.',
+    description: 'Each player or team earns one league point for every completed game they win. Rally scores are retained separately for countback. Walkovers are 0-0 because no games were played.',
     gamePoints: true,
     win: 0, loss: 0, draw: 0,
     walkoverWin: 0, walkoverConcede: 0,
     notPlayedPoints: 0,
     completionBonus: 0,
-    tableFootnote: '1 table point per game won; walkover = 0 / 0'
+    tableFootnote: '1 league point per game won · RF/RA = rally points for/against · Walkover = 0 / 0'
   }
 };
 
@@ -5890,13 +5900,13 @@ function calculateMatchPoints(preset, result, isWinner, teamSide) {
   if (result.walkover) {
     return isWinner ? (preset.walkoverWin || 0) : (preset.walkoverConcede || 0);
   }
-  // Game-won scoring uses each side's actual total. A player can win on sets
-  // while winning fewer games, so the match winner cannot be used as a proxy.
+  // Game-won scoring awards one league point for each completed score row won.
+  // Rally totals remain in gamesA/gamesB for standings countback.
   if (preset.gamePoints) {
     if (window.BoxLeagueSeasonScheduler && typeof window.BoxLeagueSeasonScheduler.gamePointsForResult === 'function') {
       return window.BoxLeagueSeasonScheduler.gamePointsForResult(result, teamSide || (isWinner ? 'A' : 'B'));
     }
-    const value = teamSide === 'B' ? result.gamesB : result.gamesA;
+    const value = teamSide === 'B' ? result.setsB : result.setsA;
     return Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : 0;
   }
   // System 7: result depends on the EXACT set count split.
@@ -9254,8 +9264,8 @@ function renderScoringPreview() {
     '<div style="font-weight:600;color:#1e293b;margin-bottom:6px">' + esc(preset.name) + '</div>' +
     '<div style="color:#64748b;margin-bottom:8px;font-style:italic">' + esc(preset.description) + '</div>' +
     '<div style="display:grid;grid-template-columns:1fr auto;gap:4px 16px;font-variant-numeric:tabular-nums">' +
-      '<div>' + (preset.gamePoints ? 'Example: 12 games / 4 games' : 'Win 2-0') + '</div><div><strong>' + w20 + '</strong> / ' + l20 + '</div>' +
-      '<div>' + (preset.gamePoints ? 'Example: 14 games / 12 games' : 'Win 2-1') + '</div><div><strong>' + w21 + '</strong> / ' + l21 + '</div>' +
+      '<div>' + (preset.gamePoints ? 'Games won 2-0' : 'Win 2-0') + '</div><div><strong>' + w20 + '</strong> / ' + l20 + '</div>' +
+      '<div>' + (preset.gamePoints ? 'Games won 2-1' : 'Win 2-1') + '</div><div><strong>' + w21 + '</strong> / ' + l21 + '</div>' +
       '<div>Walkover</div><div><strong>' + ww + '</strong> / ' + wl + '</div>' +
     '</div>' +
     extras;
@@ -10045,6 +10055,7 @@ function renderStandings() {
     return;
   }
 
+  const standingsPreset = getActiveScoringPreset();
   let html = '<table style="width:100%;border-collapse:collapse;font-size:14px">';
   html += '<thead><tr style="border-bottom:2px solid #e2e8f0;font-size:12px;text-transform:uppercase;color:#64748b;font-weight:700">';
   html += '<th style="text-align:left;padding:8px 6px">#</th>';
@@ -10052,8 +10063,14 @@ function renderStandings() {
   html += '<th style="text-align:center;padding:8px 4px" title="Played">P</th>';
   html += '<th style="text-align:center;padding:8px 4px" title="Won">W</th>';
   html += '<th style="text-align:center;padding:8px 4px" title="Lost">L</th>';
-  html += '<th style="text-align:center;padding:8px 4px" title="Sets Won-Lost">Sets</th>';
-  html += '<th style="text-align:center;padding:8px 4px" title="Games Won-Lost">Games</th>';
+  if (standingsPreset.gamePoints) {
+    html += '<th style="text-align:center;padding:8px 4px" title="Games Won-Lost">Games</th>';
+    html += '<th style="text-align:center;padding:8px 4px" title="Rally Points For">RF</th>';
+    html += '<th style="text-align:center;padding:8px 4px" title="Rally Points Against">RA</th>';
+  } else {
+    html += '<th style="text-align:center;padding:8px 4px" title="Sets Won-Lost">Sets</th>';
+    html += '<th style="text-align:center;padding:8px 4px" title="Games Won-Lost">Games</th>';
+  }
   html += '<th style="text-align:center;padding:8px 6px;font-weight:800" title="Points">Pts</th>';
   html += '</tr></thead><tbody>';
 
@@ -10075,7 +10092,12 @@ function renderStandings() {
     html += '<td style="text-align:center;padding:10px 4px;color:#059669;font-weight:600">' + s.won + '</td>';
     html += '<td style="text-align:center;padding:10px 4px;color:#dc2626">' + s.lost + '</td>';
     html += '<td style="text-align:center;padding:10px 4px;font-size:12px">' + s.setsWon + '-' + s.setsLost + '</td>';
-    html += '<td style="text-align:center;padding:10px 4px;font-size:12px">' + s.gamesWon + '-' + s.gamesLost + '</td>';
+    if (standingsPreset.gamePoints) {
+      html += '<td style="text-align:center;padding:10px 4px;font-size:12px">' + s.gamesWon + '</td>';
+      html += '<td style="text-align:center;padding:10px 4px;font-size:12px">' + s.gamesLost + '</td>';
+    } else {
+      html += '<td style="text-align:center;padding:10px 4px;font-size:12px">' + s.gamesWon + '-' + s.gamesLost + '</td>';
+    }
     html += '<td style="text-align:center;padding:10px 6px;font-weight:800;font-size:16px;' + (isTop ? 'color:#059669' : '') + '">' + s.points + '</td>';
     html += '</tr>';
   });
@@ -10084,7 +10106,7 @@ function renderStandings() {
   // v4.16.1: footnote now reflects the active per-club preset, so the rule
   // shown matches the rule the table is being calculated under. Previously
   // hardcoded to "3/1/0" — wrong for System 7 / EGTSC / participation clubs.
-  const footnotePreset = getActiveScoringPreset();
+  const footnotePreset = standingsPreset;
   const footnoteText = footnotePreset.tableFootnote || 'Scoring: ' + (footnotePreset.short || footnotePreset.name || 'custom');
   html += '<div style="font-size:11px;color:#94a3b8;margin-top:8px;text-align:center">' + esc(footnoteText) + '</div>';
   el.innerHTML = html;
