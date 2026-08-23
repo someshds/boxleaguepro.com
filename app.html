@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.52</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.53</div>
   </div>
 </div>
 
@@ -1659,7 +1659,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.52 · Build 20260823a</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.53 · Build 20260823b</div>
   </div>
 </div>
 
@@ -1672,6 +1672,15 @@
       <button onclick="closeChangelog()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <div style="padding:20px" id="changelog-content">
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.53 &middot; 23 Aug 2026</span>
+          <span style="background:#0f766e;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">SIGN-IN</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Cleaner club sign-in</strong> removes an obsolete cross-club request while preserving the organiser's linked or saved club.</li>
+        </ul>
+      </div>
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.52 &middot; 23 Aug 2026</span>
@@ -7956,10 +7965,20 @@ function loadUserLeagues() {
   });
   globalListenerRefs.push({ ref: ulRef, event: 'value', fn: ulFn });
 
-  // Load all clubs once for search (no live listener — clubs change rarely)
-  db.ref('/clubs').once('value', snap => {
-    allClubs = snap.val() || {};
-  });
+  // Cross-club enumeration is intentionally blocked by the tenant-isolation
+  // rules. Keep only club metadata the user already knows through an active
+  // scoped link or their saved home club; exact club resolution happens in
+  // resolveScopedClub() via clubPublicMeta and authorised private reads.
+  allClubs = {};
+  if (userHomeClub && userHomeClub.id) {
+    allClubs[userHomeClub.id] = {
+      name: userHomeClub.name || '',
+      bookingUrl: userHomeClub.bookingUrl || ''
+    };
+  }
+  if (window._scopedClub && window._scopedClub.id) {
+    allClubs[window._scopedClub.id] = Object.assign({}, window._scopedClub.info || {});
+  }
 }
 
 function maybeAutoEnterScopedLeague() {
