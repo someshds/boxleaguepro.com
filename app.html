@@ -660,7 +660,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.51</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.52</div>
   </div>
 </div>
 
@@ -1659,7 +1659,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.51 · Build 20260810a</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.52 · Build 20260823a</div>
   </div>
 </div>
 
@@ -1672,6 +1672,16 @@
       <button onclick="closeChangelog()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <div style="padding:20px" id="changelog-content">
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.52 &middot; 23 Aug 2026</span>
+          <span style="background:#2563eb;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">PLAYER EMAILS</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Add missing player emails</strong> from Players / Accounts without rebuilding the league roster.</li>
+          <li><strong>Exact assignment checks</strong> protect the selected player, team, and league before the email is saved.</li>
+        </ul>
+      </div>
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.51 &middot; 10 Aug 2026</span>
@@ -2543,6 +2553,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="season-scheduler.js"></script>
 <script src="score-entry.js"></script>
+<script src="player-email.js"></script>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════
@@ -7340,21 +7351,24 @@ function scopedLoadPlayers() {
         var league = item.league || {};
         var leagueName = (league.info && league.info.name) || item.id;
         var groups = league.groups || {};
-        var groupList = Array.isArray(groups) ? groups : Object.keys(groups).map(function(k) { return groups[k]; });
-        groupList.forEach(function(g) {
+        var groupList = Array.isArray(groups)
+          ? groups.map(function(g, index) { return { key: String(index), group: g }; })
+          : Object.keys(groups).map(function(k) { return { key: k, group: groups[k] }; });
+        groupList.forEach(function(entry) {
+          var g = entry.group;
           if (!g) return;
           var players = g.players || [];
           var p1 = players[0] || g.playerName || g.name || '';
           var p2 = players[1] || g.partnerName || '';
           if (g.email) {
-            addAssignment(ensure(sanitizeEmail(g.email), g.email, p1), { leagueName: leagueName, playerName: p1, partnerName: p2 });
+            addAssignment(ensure(sanitizeEmail(g.email), g.email, p1), { leagueId: item.id, leagueName: leagueName, groupKey: entry.key, emailField: 'email', playerName: p1, partnerName: p2 });
           } else if (p1) {
-            addAssignment(ensure('name:' + item.id + ':' + p1, '', p1), { leagueName: leagueName, playerName: p1, partnerName: p2 });
+            addAssignment(ensure('name:' + item.id + ':' + p1, '', p1), { leagueId: item.id, leagueName: leagueName, groupKey: entry.key, emailField: 'email', playerName: p1, partnerName: p2 });
           }
           if (g.partnerEmail) {
-            addAssignment(ensure(sanitizeEmail(g.partnerEmail), g.partnerEmail, p2), { leagueName: leagueName, playerName: p2, partnerName: p1 });
+            addAssignment(ensure(sanitizeEmail(g.partnerEmail), g.partnerEmail, p2), { leagueId: item.id, leagueName: leagueName, groupKey: entry.key, emailField: 'partnerEmail', playerName: p2, partnerName: p1 });
           } else if (p2 && p2 !== '(partner TBD)') {
-            addAssignment(ensure('name:' + item.id + ':' + p2, '', p2), { leagueName: leagueName, playerName: p2, partnerName: p1 });
+            addAssignment(ensure('name:' + item.id + ':' + p2, '', p2), { leagueId: item.id, leagueName: leagueName, groupKey: entry.key, emailField: 'partnerEmail', playerName: p2, partnerName: p1 });
           }
         });
         var members = league.members || {};
@@ -7374,7 +7388,8 @@ function scopedLoadPlayers() {
         list.innerHTML = '<div style="padding:18px;color:#6b7280;font-size:13px;text-align:center">No players found yet. Bulk add players with emails to populate the account register.</div>';
         return;
       }
-      list.innerHTML = keys.map(function(key) {
+      window._scopedPlayerRows = rows;
+      list.innerHTML = keys.map(function(key, rowIndex) {
         var p = rows[key];
         var linkedBadge = p.linked
           ? '<span style="background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:800">Account linked</span>'
@@ -7383,6 +7398,17 @@ function scopedLoadPlayers() {
           var partner = a.partnerName ? ' with ' + a.partnerName : '';
           return '<div style="font-size:12px;color:#475569;margin-top:3px">' + esc(a.leagueName) + (a.playerName ? ': ' + esc(a.playerName) : '') + esc(partner) + '</div>';
         }).join('');
+        var canAddEmail = !p.email && (p.assignments || []).some(function(a) {
+          return a.leagueId && a.groupKey !== undefined && a.emailField;
+        });
+        var emailAction = canAddEmail
+          ? '<button onclick="scopedShowPlayerEmailForm(' + jsAttr(key) + ',' + rowIndex + ')" style="margin-top:7px;background:#eff6ff;color:#1d4ed8;border:1px solid #93c5fd;border-radius:7px;padding:5px 9px;font-size:12px;font-weight:800;cursor:pointer">Add email</button>' +
+            '<div id="scoped-player-email-form-' + rowIndex + '" style="display:none;margin-top:8px;padding:9px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px">' +
+              '<label for="scoped-player-email-' + rowIndex + '" style="display:block;font-size:11px;font-weight:800;color:#334155;margin-bottom:5px">Email for ' + esc(p.name) + '</label>' +
+              '<div style="display:flex;gap:6px;align-items:center"><input id="scoped-player-email-' + rowIndex + '" type="email" autocomplete="off" placeholder="player@example.com" style="min-width:0;flex:1;border:1px solid #cbd5e1;border-radius:7px;padding:7px 8px;font-size:13px"><button id="scoped-player-email-save-' + rowIndex + '" onclick="scopedSavePlayerEmail(' + jsAttr(key) + ',' + rowIndex + ')" style="background:#2563eb;color:#fff;border:0;border-radius:7px;padding:7px 10px;font-size:12px;font-weight:800;cursor:pointer">Save</button></div>' +
+              '<div id="scoped-player-email-msg-' + rowIndex + '" style="font-size:11px;margin-top:5px"></div>' +
+            '</div>'
+          : '';
         return '<div style="padding:12px 14px;border-bottom:1px solid #f1f5f9">' +
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">' +
             '<div style="min-width:0;flex:1">' +
@@ -7392,12 +7418,100 @@ function scopedLoadPlayers() {
             linkedBadge +
           '</div>' +
           assignments +
+          emailAction +
         '</div>';
       }).join('');
     });
   }).catch(function(e) {
     console.warn('[manage-players] load error', e);
     list.innerHTML = '<div style="padding:14px;color:#b91c1c;font-size:13px;text-align:center">Could not load players: ' + esc(e.message || String(e)) + '</div>';
+  });
+}
+
+function scopedShowPlayerEmailForm(rowKey, rowIndex) {
+  var row = window._scopedPlayerRows && window._scopedPlayerRows[rowKey];
+  var form = document.getElementById('scoped-player-email-form-' + rowIndex);
+  var input = document.getElementById('scoped-player-email-' + rowIndex);
+  if (!row || row.email || !form || !input) return;
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  if (form.style.display === 'block') input.focus();
+}
+
+function scopedSavePlayerEmail(rowKey, rowIndex) {
+  var scope = window._scopedClub;
+  var row = window._scopedPlayerRows && window._scopedPlayerRows[rowKey];
+  var input = document.getElementById('scoped-player-email-' + rowIndex);
+  var button = document.getElementById('scoped-player-email-save-' + rowIndex);
+  var msg = document.getElementById('scoped-player-email-msg-' + rowIndex);
+  if (!scope || !row || !input || !button || !msg) return;
+  if (!isClubAdminFor(scope.id)) { toast('Club organisers only'); return; }
+  if (!FIREBASE_READY || !window.BoxLeaguePlayerEmail) { toast('Player email tools are unavailable'); return; }
+
+  var helper = window.BoxLeaguePlayerEmail;
+  var email;
+  try {
+    email = helper.normalizeEmail(input.value);
+  } catch (e) {
+    msg.innerHTML = '<span style="color:#b91c1c">' + esc(e.message) + '</span>';
+    return;
+  }
+  var assignments = (row.assignments || []).filter(function(a) {
+    return a.leagueId && a.groupKey !== undefined && a.emailField;
+  });
+  if (!assignments.length) {
+    msg.innerHTML = '<span style="color:#b91c1c">No editable league assignment was found.</span>';
+    return;
+  }
+
+  button.disabled = true;
+  msg.innerHTML = '<span style="color:#64748b">Checking player and league&hellip;</span>';
+  var playerKey = helper.emailKey(email);
+  var reads = [db.ref('/clubPlayers/' + scope.id + '/' + playerKey).once('value')];
+  assignments.forEach(function(a) {
+    reads.push(db.ref('/leagues/' + a.leagueId + '/groups/' + a.groupKey).once('value'));
+  });
+
+  Promise.all(reads).then(function(snaps) {
+    var existing = snaps[0].val() || {};
+    if (existing.name && String(existing.name).trim().toLowerCase() !== String(row.name).trim().toLowerCase()) {
+      throw new Error('That email is already assigned to ' + existing.name + '.');
+    }
+    assignments.forEach(function(a, index) {
+      var group = snaps[index + 1].val();
+      if (!group) throw new Error('A league assignment has changed. Reload and try again.');
+      var currentEmail = String(group[a.emailField] || '').trim().toLowerCase();
+      if (currentEmail && currentEmail !== email) throw new Error('This player already has a different email in ' + a.leagueName + '.');
+      var players = group.players || [];
+      var currentName = a.emailField === 'partnerEmail'
+        ? (players[1] || group.partnerName || '')
+        : (players[0] || group.playerName || group.name || '');
+      if (String(currentName).trim().toLowerCase() !== String(a.playerName || row.name).trim().toLowerCase()) {
+        throw new Error('The player roster changed. Reload and try again.');
+      }
+    });
+
+    var activityPath = '';
+    if (isAdmin()) activityPath = '/activityLog/' + db.ref('/activityLog').push().key;
+    var plan = helper.buildUpdates({
+      clubId: scope.id,
+      clubName: (scope.info && scope.info.name) || '',
+      playerName: row.name,
+      email: email,
+      assignments: assignments,
+      updatedBy: (currentUser && currentUser.email) || '',
+      updatedAt: firebase.database.ServerValue.TIMESTAMP,
+      now: firebase.database.ServerValue.TIMESTAMP,
+      activityPath: activityPath
+    });
+    msg.innerHTML = '<span style="color:#64748b">Saving&hellip;</span>';
+    return db.ref().update(plan.updates);
+  }).then(function() {
+    toast('Player email saved');
+    scopedLoadPlayers();
+  }).catch(function(e) {
+    console.warn('[manage-players] email save error', e);
+    msg.innerHTML = '<span style="color:#b91c1c">' + esc(e.message || String(e)) + '</span>';
+    button.disabled = false;
   });
 }
 
