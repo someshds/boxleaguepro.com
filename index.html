@@ -21,9 +21,7 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='14' cy='8' r='6'/><path d='M10.5 11.5L3 19'/><path d='M10 4l-1 8'/><path d='M20 4l-8 1'/><path d='M17.4 10.6l-6.8-6.8'/><path d='M5 17l-2 2'/></svg>">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="manifest" href="manifest.json">
-<!-- GA4 -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-41R6M69CBW"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-41R6M69CBW');</script>
+<script defer src="/privacy-consent.js"></script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -280,7 +278,7 @@ footer a:hover{text-decoration:underline}
       "name": "What sports does it support?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Tennis, padel, squash, racketball, badminton, and any other racquet sport. It works for both singles and doubles."
+        "text": "Tennis, squash, racketball and badminton can use singles or doubles leagues. Padel leagues are doubles-only."
       }
     },
     {
@@ -296,7 +294,7 @@ footer a:hover{text-decoration:underline}
       "name": "How do I get my club added to BoxLeague Pro?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Fill in the application form at boxleaguepro.com/apply.html with your club name, location, sport and rough setup. We create your club sandbox and email you a dedicated club link within 24 hours. Free for any club, any sport."
+        "text": "Fill in the application form at boxleaguepro.com/apply.html with your club name, location, sport and rough setup. Once your club is provisioned, we email the organiser a dedicated link and the on-screen guide leads them through setup."
       }
     },
     {
@@ -643,12 +641,12 @@ footer a:hover{text-decoration:underline}
         <div class="mode-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 22V14.6a8 8 0 0 1-4-6.8V4h12v3.8a8 8 0 0 1-4 6.8V22"/></svg></div>
         <span class="mode-badge" style="background:var(--blue-light);color:var(--blue)">Structured</span>
         <div class="mode-title">Box Leagues</div>
-        <p class="mode-desc">Organised rounds with teams, availability matching, and automatic scheduling. Singles or doubles.</p>
+        <p class="mode-desc">Organised rounds with player availability, Match Finder suggestions, booking tools and results tables. Singles or doubles, with padel always doubles.</p>
         <ul class="mode-features">
           <li>Self-service onboarding — no admin bottleneck</li>
           <li>6 daily time slots across a rolling calendar</li>
           <li>Match Finder finds times when everyone's free</li>
-          <li>One-tap booking with instant notifications</li>
+          <li>One-tap booking with organiser-led sharing</li>
           <li>Progress tracking and deadline reminders</li>
           <li>WhatsApp share to chase missing players</li>
         </ul>
@@ -688,7 +686,7 @@ footer a:hover{text-decoration:underline}
       <div class="feature-card">
         <div class="feature-icon" style="background:#dcfce7"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg></div>
         <h3>Match Finder</h3>
-        <p>Automatically finds time slots when all players in a match are available. One tap to book.</p>
+        <p>Finds time slots when all players in a match are available. Players can then choose and book a suitable slot.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon" style="background:#fef3c7"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
@@ -734,24 +732,24 @@ footer a:hover{text-decoration:underline}
   <div class="section-inner">
     <div class="section-label">Getting Started</div>
     <div class="section-title">From Zero to Playing in 4 Steps</div>
-    <p class="section-subtitle">No download, no setup fees, no spreadsheets. Your own club sandbox, ready in 24 hours.</p>
+    <p class="section-subtitle">No download or setup fee. Your organiser gets a dedicated club area and an on-screen setup guide.</p>
 
     <div class="steps">
       <div class="step">
         <h3><a href="/apply.html" style="color:inherit;text-decoration:none;border-bottom:2px solid var(--blue)">Apply for Your Club</a></h3>
-        <p>Fill in a 30-second form at <a href="/apply.html" style="color:var(--blue);font-weight:700">/apply.html</a>. We create your club sandbox &mdash; like <code>?club=your-club</code> &mdash; and email you a dedicated link within 24 hours.</p>
+        <p>Tell us about your club at <a href="/apply.html" style="color:var(--blue);font-weight:700">/apply.html</a>. Once it is provisioned, we email the organiser a dedicated club link &mdash; like <code>?club=your-club</code>.</p>
       </div>
       <div class="step">
-        <h3>Share Your Club Link</h3>
-        <p>Send your club link to players via WhatsApp, email, or text. They click it and land straight in <em>your</em> club &mdash; no hunting, no other clubs in the way.</p>
+        <h3>Follow the Setup Guide</h3>
+        <p>Open the link, sign in as the organiser, create the first league, choose a supported scoring preset and add the first players.</p>
       </div>
       <div class="step">
         <h3>Create Leagues &amp; Add Players</h3>
-        <p>Use the Club Organiser Tools panel to create leagues, bulk add players (paste a list), and (optionally) add other club organisers. Singles, doubles, or mixed doubles &mdash; any format.</p>
+        <p>Use Club Organiser Tools to create leagues, paste in player lists and optionally add other organisers. Tennis, squash, racketball and badminton can use singles or doubles; padel is doubles-only.</p>
       </div>
       <div class="step">
         <h3>Start Playing</h3>
-        <p>Players fill in their own availability, Match Finder shows overlapping slots, and anyone can book a match in one tap. Or post an Open Match and let the club join.</p>
+        <p>Share the club link through your chosen channel. Players sign in, add availability, use Match Finder and book their matches.</p>
       </div>
     </div>
   </div>
@@ -763,7 +761,7 @@ footer a:hover{text-decoration:underline}
   <div class="section-inner" style="text-align:center;position:relative;z-index:1">
     <div class="section-label">Multi-Sport</div>
     <div class="section-title">Works for Any Racquet Sport</div>
-    <p class="section-subtitle" style="margin-left:auto;margin-right:auto">Singles or doubles. Friendly or competitive. One app for everything.</p>
+    <p class="section-subtitle" style="margin-left:auto;margin-right:auto">Singles or doubles for supported sports, with padel always played as doubles. Friendly or competitive.</p>
 
     <div class="sports-row">
       <div class="sport-pill"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="14" cy="8" r="6"/><path d="M10.5 11.5L3 19"/><path d="M5 17l-2 2"/></svg> Tennis</div>
@@ -792,7 +790,7 @@ footer a:hover{text-decoration:underline}
         <li>Unlimited players and teams</li>
         <li>Box Leagues (singles &amp; doubles)</li>
         <li>Mix-In Games (open to all)</li>
-        <li>Match Finder with auto-scheduling</li>
+        <li>Match Finder availability suggestions</li>
         <li>Open Matches with share links</li>
         <li>League Chat</li>
         <li>Court booking integration</li>
@@ -863,7 +861,7 @@ footer a:hover{text-decoration:underline}
 
       <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">What sports does it support?<span class="faq-arrow">&#9660;</span></div>
-        <div class="faq-a"><p>Tennis, padel, squash, racketball, badminton, and any other racquet sport. It works for both singles and doubles.</p></div>
+        <div class="faq-a"><p>Tennis, squash, racketball and badminton can use singles or doubles leagues. Padel is always doubles-only.</p></div>
       </div>
 
       <!-- Club Setup -->
@@ -874,12 +872,12 @@ footer a:hover{text-decoration:underline}
 
       <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">How do I get my club added to BoxLeague Pro?<span class="faq-arrow">&#9660;</span></div>
-        <div class="faq-a"><p>Fill in the 30-second application form at <a href="/apply.html" style="color:var(--blue);font-weight:700">/apply.html</a> with your club name, location, sport and how many leagues you want to start with. We create your club sandbox and email you a dedicated link within 24 hours. Free for any club, any sport.</p></div>
+        <div class="faq-a"><p>Complete the application at <a href="/apply.html" style="color:var(--blue);font-weight:700">/apply.html</a> with your club, sport and planned leagues. Once the club is provisioned, we email the organiser a dedicated link. The on-screen guide then leads you through creating a league, adding players, reviewing scoring and sharing the link.</p></div>
       </div>
 
       <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="faq-q">How do I create a box league?<span class="faq-arrow">&#9660;</span></div>
-        <div class="faq-a"><p>Open your club link, tap <strong>Club Organiser Tools</strong>, and hit <em>New League</em>. Pick singles, doubles or mixed doubles, set the dates, and you're done. You can run as many leagues as you want inside one club &mdash; e.g. Men's Singles Premier, Ladies' Doubles Box 1, Mixed Box 2, etc.</p></div>
+        <div class="faq-a"><p>Open your club link, tap <strong>Club Organiser Tools</strong>, and choose <em>New League</em>. Select an available format and scoring preset, then set the dates and add players. Padel leagues are always doubles.</p></div>
       </div>
 
       <div class="faq-item" tabindex="0" role="button" onclick="this.classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
@@ -1014,11 +1012,13 @@ footer a:hover{text-decoration:underline}
       <a href="/app.html">Login</a>
       <a href="#features">Features</a>
       <a href="#pricing">Pricing</a>
-      <a href="https://tools.aifusionautomations.com/privacy-policy.html" target="_blank">Privacy Policy</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <button type="button" onclick="BoxLeagueConsent.show()" style="background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer">Cookie choices</button>
       <a href="mailto:grant@aifusionautomations.com">Contact</a>
-      <a href="https://www.youtube.com/@BoxLeaguePro" target="_blank">YouTube</a>
+      <a href="https://www.youtube.com/@BoxLeaguePro" target="_blank" rel="noopener">YouTube</a>
     </div>
-    <div>&copy; 2026 BoxLeague Pro &middot; Built by <a href="https://aifusionautomations.com" target="_blank">AI Fusion Automations</a></div>
+    <div>&copy; 2026 BoxLeague Pro &middot; Built by <a href="https://aifusionautomations.com" target="_blank" rel="noopener">AI Fusion Automations</a></div>
     <div class="footer-brand"><a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &middot; <a href="tel:+447782219066">+44 7782 219066</a></div>
   </div>
 </footer>
@@ -1026,27 +1026,18 @@ footer a:hover{text-decoration:underline}
 <!-- Cookie Consent Banner -->
 <div id="cookie-consent" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#1e293b;color:#fff;padding:16px 20px;box-shadow:0 -4px 20px rgba(0,0,0,0.3);font-size:14px;line-height:1.5">
   <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-    <div style="flex:1;min-width:240px">We use cookies for analytics and to improve your experience. By continuing, you agree to our <a href="https://tools.aifusionautomations.com/privacy-policy.html" target="_blank" style="color:#60a5fa;text-decoration:underline">Privacy Policy</a>.</div>
+    <div style="flex:1;min-width:240px">Optional cookies let us measure usage and provide support chat. They load only if you accept. The core site and app work without them. Read our <a href="/privacy.html" style="color:#60a5fa;text-decoration:underline">Privacy Policy</a>.</div>
     <div style="display:flex;gap:8px;flex-shrink:0">
-      <button onclick="document.getElementById('cookie-consent').style.display='none';localStorage.setItem('blp_cookies','declined')" style="padding:8px 16px;border-radius:8px;border:1px solid #475569;background:transparent;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Decline</button>
-      <button onclick="document.getElementById('cookie-consent').style.display='none';localStorage.setItem('blp_cookies','accepted')" style="padding:8px 16px;border-radius:8px;border:none;background:#2563eb;color:#fff;font-size:13px;font-weight:700;cursor:pointer">Accept</button>
+      <button onclick="BoxLeagueConsent.decline()" style="padding:8px 16px;border-radius:8px;border:1px solid #475569;background:transparent;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Decline optional cookies</button>
+      <button onclick="BoxLeagueConsent.accept()" style="padding:8px 16px;border-radius:8px;border:none;background:#2563eb;color:#fff;font-size:13px;font-weight:700;cursor:pointer">Accept optional cookies</button>
     </div>
   </div>
 </div>
-<script>if(!localStorage.getItem('blp_cookies')){document.getElementById('cookie-consent').style.display='block'}</script>
 
 <!-- Scroll-to-top button -->
 <button id="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Scroll to top" style="display:none;position:fixed;bottom:80px;right:20px;z-index:99998;width:44px;height:44px;border-radius:50%;border:none;background:#2563eb;color:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 16px rgba(37,99,235,0.3);transition:opacity .3s,transform .3s;align-items:center;justify-content:center">&#9650;</button>
 <script>
 (function(){var b=document.getElementById('scroll-top');window.addEventListener('scroll',function(){b.style.display=window.scrollY>600?'flex':'none'},{passive:true})})();
-</script>
-
-<!-- BoxLeague Pro Support Chatbot -->
-<script
-  async
-  src="https://widgets.leadconnectorhq.com/loader.js"
-  data-resources-url="https://widgets.leadconnectorhq.com/chat-widget/loader.js"
-  data-widget-id="69c2d44d510b6031cc38ed0e">
 </script>
 
 </body>
