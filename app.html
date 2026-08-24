@@ -2,14 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <!-- Google Analytics (GA4) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-41R6M69CBW"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-41R6M69CBW');
-  </script>
+  <script defer src="/privacy-consent.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BoxLeague Pro</title>
   <meta name="description" content="Free app for organising box league matches. Find times, book matches, share with your club.">
@@ -646,7 +639,7 @@
     <input class="fi" id="auth-password" type="password" placeholder="Password (min 6 characters)">
     <label id="auth-gdpr" style="display:none;color:rgba(255,255,255,0.85);font-size:13px;line-height:1.5;margin:8px 0 12px;text-align:left;cursor:pointer">
       <input type="checkbox" id="auth-consent" style="margin-right:8px;vertical-align:middle;width:16px;height:16px">
-      I agree to receive match updates and league communications. We'll store your name and email to manage your league. You can unsubscribe or request data deletion at any time. <a href="https://tools.aifusionautomations.com/privacy-policy.html" target="_blank" style="color:#93c5fd">Privacy Policy</a>
+      I agree to receive match updates and league communications. We'll store your name and email to manage your league. You can unsubscribe or request data deletion at any time. <a href="/privacy.html" target="_blank" rel="noopener" style="color:#93c5fd">Privacy Policy</a>
     </label>
     <button class="btn-email" id="btn-email-signin" onclick="emailSignIn()">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 4L12 13 2 4"/></svg>
@@ -660,7 +653,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.53</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.54</div>
   </div>
 </div>
 
@@ -1652,14 +1645,17 @@
     <div class="aifa-footer-brand">Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a></div>
     <div class="aifa-footer-sub">Helping clubs &amp; players organise matches with AI</div>
     <div class="aifa-footer-links">
-      <a href="https://aifusionautomations.com" target="_blank">&#127760; Website</a>
-      <button type="button" onclick="try{document.querySelector('[data-widget-id] button, .lc_text-widget-open, .chat-widget-open-btn').click()}catch(e){toast('Look for the chat bubble in the corner!')}" title="Open support chat" style="background:none;border:none;color:inherit;font:inherit;cursor:pointer;padding:0">&#129302; Support Chatbot</button>
+      <a href="https://aifusionautomations.com" target="_blank" rel="noopener">&#127760; Website</a>
+      <button type="button" onclick="BoxLeagueConsent.openSupport()" title="Open support chat" style="background:none;border:none;color:inherit;font:inherit;cursor:pointer;padding:0">&#129302; Support Chatbot</button>
       <button type="button" onclick="openFeedback()" style="background:none;border:none;color:inherit;font:inherit;cursor:pointer;padding:0">&#128172; Feedback &amp; Support</button>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <button type="button" onclick="BoxLeagueConsent.show()" style="background:none;border:none;color:inherit;font:inherit;cursor:pointer;padding:0">Cookie choices</button>
     </div>
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.53 · Build 20260823b</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.54 · Build 20260824a</div>
   </div>
 </div>
 
@@ -1672,6 +1668,16 @@
       <button onclick="closeChangelog()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <div style="padding:20px" id="changelog-content">
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.54 &middot; 24 Aug 2026</span>
+          <span style="background:#1d4ed8;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">PRIVACY &amp; CLARITY</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Optional services wait for consent</strong> &mdash; analytics and support chat load only after optional cookies are accepted.</li>
+          <li><strong>Clearer club setup</strong> &mdash; public guidance now matches the organiser-led process and keeps padel doubles-only.</li>
+        </ul>
+      </div>
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.53 &middot; 23 Aug 2026</span>
@@ -1887,7 +1893,7 @@
           <span style="background:#dbeafe;color:#1d4ed8;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">WELCOME CARD</span>
         </div>
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
-          <li><strong>New welcome hero card</strong> &mdash; one clean &ldquo;Box Leagues&rdquo; card with a fresh photo overlay that reads &ldquo;Join a Singles or Doubles Box League &middot; Tennis &middot; Padel &middot; Squash &middot; Badminton&rdquo;. Makes it obvious up front that the app supports both singles and doubles without confusing players with two near-identical cards (the v4.9.5 layout)</li>
+          <li><strong>New welcome hero card</strong> &mdash; one clean &ldquo;Box Leagues&rdquo; card for tennis, padel, squash and badminton. Supported formats are shown for the selected club, with padel kept doubles-only.</li>
           <li><strong>Image:</strong> new <code>images/box-league-card-sm.jpg</code> generated from the high-res doubles photo, with the old baked-in doubles-only caption cropped out and a new dark gradient + headline rendered over the bottom. The two-image v4.9.5 layout is rolled back</li>
         </ul>
       </div>
@@ -2072,7 +2078,7 @@
       <button onclick="closeFeedback()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <iframe
-      src="https://link.aifusionautomations.com/widget/form/CJsmRFcGQmwdDTy7pvsZ"
+      data-src="https://link.aifusionautomations.com/widget/form/CJsmRFcGQmwdDTy7pvsZ"
       style="width:100%;height:80vh;border:none"
       id="inline-CJsmRFcGQmwdDTy7pvsZ"
       data-layout="{'id':'INLINE'}"
@@ -2108,7 +2114,7 @@
         <span style="font-size:22px">&#9993;</span>
         <span>grant@aifusionautomations.com</span>
       </a>
-      <a href="https://aifusionautomations.com" target="_blank" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:#faf5ff;border:1px solid #e9d5ff;border-radius:12px;text-decoration:none;color:#7e22ce;font-weight:600;font-size:15px">
+      <a href="https://aifusionautomations.com" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:#faf5ff;border:1px solid #e9d5ff;border-radius:12px;text-decoration:none;color:#7e22ce;font-weight:600;font-size:15px">
         <span style="font-size:22px">&#127760;</span>
         <span>aifusionautomations.com</span>
       </a>
@@ -2244,7 +2250,7 @@
     </p>
     <label style="display:flex;align-items:flex-start;gap:10px;text-align:left;font-size:13px;color:#374151;line-height:1.5;margin-bottom:20px;cursor:pointer">
       <input type="checkbox" id="google-consent-check" checked style="margin-top:3px;width:16px;height:16px;flex-shrink:0">
-      I agree to receive match updates and league communications. You can unsubscribe or request data deletion at any time. <a href="https://tools.aifusionautomations.com/privacy-policy.html" target="_blank" style="color:#2563eb">Privacy Policy</a>
+      I agree to receive match updates and league communications. You can unsubscribe or request data deletion at any time. <a href="/privacy.html" target="_blank" rel="noopener" style="color:#2563eb">Privacy Policy</a>
     </label>
     <div style="display:flex;gap:10px">
       <button onclick="declineGoogleConsent()" style="flex:1;padding:12px;border-radius:10px;border:1.5px solid #e2e8f0;background:#fff;font-size:15px;font-weight:600;cursor:pointer;color:#6b7280">No thanks</button>
@@ -2360,7 +2366,7 @@
           <span style="font-size:11px;color:#60a5fa;background:rgba(56,132,244,0.15);padding:3px 8px;border-radius:4px">CRM Systems</span>
           <span style="font-size:11px;color:#60a5fa;background:rgba(56,132,244,0.15);padding:3px 8px;border-radius:4px">Club Branding</span>
         </div>
-        <div style="text-align:center;margin-top:10px"><a href="https://tools.aifusionautomations.com" target="_blank" style="font-size:12px;color:#60a5fa">tools.aifusionautomations.com</a></div>
+        <div style="text-align:center;margin-top:10px"><a href="https://tools.aifusionautomations.com" target="_blank" rel="noopener" style="font-size:12px;color:#60a5fa">tools.aifusionautomations.com</a></div>
       </div>
     </div>
   </div>
@@ -13246,6 +13252,16 @@ function getTimeAgo(isoStr) {
    FEEDBACK FORM MODAL
    ══════════════════════════════════════ */
 function openFeedback() {
+  const iframe = document.getElementById('inline-CJsmRFcGQmwdDTy7pvsZ');
+  if (iframe && !iframe.getAttribute('src')) {
+    iframe.src = iframe.dataset.src;
+    if (!document.getElementById('ghl-form-embed-script')) {
+      const script = document.createElement('script');
+      script.id = 'ghl-form-embed-script';
+      script.src = 'https://link.aifusionautomations.com/js/form_embed.js';
+      document.head.appendChild(script);
+    }
+  }
   document.getElementById('feedback-modal').style.display = 'flex';
 }
 function closeFeedback() {
@@ -14830,16 +14846,15 @@ function checkAndStartTour() {
 let _deadlineInterval = setInterval(renderDeadline, 60000);
 </script>
 
-<!-- GHL Form Embed -->
-<script src="https://link.aifusionautomations.com/js/form_embed.js"></script>
-
-<!-- BoxLeague Pro Support Chatbot -->
-<script
-  async
-  src="https://widgets.leadconnectorhq.com/loader.js"
-  data-resources-url="https://widgets.leadconnectorhq.com/chat-widget/loader.js"
-  data-widget-id="69c2d44d510b6031cc38ed0e">
-</script>
+<div id="cookie-consent" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:100000;background:#1e293b;color:#fff;padding:14px 18px;box-shadow:0 -4px 20px rgba(0,0,0,0.3);font-size:13px;line-height:1.5">
+  <div style="max-width:1000px;margin:0 auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+    <div style="flex:1;min-width:240px">Optional cookies let us measure usage and provide support chat. They load only if you accept. The app works without them. <a href="/privacy.html" style="color:#93c5fd">Privacy Policy</a></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" onclick="BoxLeagueConsent.decline()" style="padding:8px 12px;border-radius:6px;border:1px solid #64748b;background:transparent;color:#fff;font-weight:600;cursor:pointer">Decline optional cookies</button>
+      <button type="button" onclick="BoxLeagueConsent.accept()" style="padding:8px 12px;border-radius:6px;border:0;background:#2563eb;color:#fff;font-weight:700;cursor:pointer">Accept optional cookies</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
