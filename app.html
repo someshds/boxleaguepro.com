@@ -653,7 +653,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.54</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.55</div>
   </div>
 </div>
 
@@ -1655,7 +1655,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.54 · Build 20260824a</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.55 · Build 20260825a</div>
   </div>
 </div>
 
@@ -1668,6 +1668,15 @@
       <button onclick="closeChangelog()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;padding:4px">&times;</button>
     </div>
     <div style="padding:20px" id="changelog-content">
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.55 &middot; 25 Aug 2026</span>
+          <span style="background:#1d4ed8;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">PLAYER SETUP</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Format-aware player entry</strong> &mdash; singles leagues accept individual players while doubles and mixed-doubles leagues retain paired-team entry.</li>
+        </ul>
+      </div>
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.54 &middot; 24 Aug 2026</span>
@@ -2464,14 +2473,14 @@
   <div style="font-size:12px;color:#6b7280;margin-bottom:14px">Paste players one per line. Each line is a <strong>full name</strong> (first + last), or <code>full name, email</code>. For doubles, write teams as <code>Jane Doe &amp; John Smith</code> or <code>Jane Doe, jane@x.com &amp; John Smith, john@y.com</code>. Full names matter — they keep "Mike A" separate from "Mike B" once your club grows past one box.</div>
 
   <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px">Default league <span style="color:#b91c1c">*</span></label>
-  <select id="scoped-ba-league" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;margin-bottom:12px"></select>
+  <select id="scoped-ba-league" onchange="syncScopedBulkAddFormat()" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;margin-bottom:12px"></select>
   <div style="font-size:11px;color:#6b7280;margin-bottom:12px">Used for any line that isn't under a <code>[Box Name]</code> header. To split a roster across multiple boxes, see below.</div>
 
   <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:12px">
-    <div style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:4px">Doubles pairs</div>
-    <div style="font-size:11px;color:#64748b;margin-bottom:10px">One row = one doubles team. Emails are optional for testing.</div>
+    <div id="scoped-ba-structured-title" style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:4px">Players</div>
+    <div id="scoped-ba-structured-help" style="font-size:11px;color:#64748b;margin-bottom:10px">One row = one player. Emails are optional for testing.</div>
     <div id="scoped-ba-pair-rows" style="display:grid;gap:8px"></div>
-    <button onclick="scopedSubmitStructuredPairs()" style="width:100%;margin-top:10px;padding:10px;border:none;background:#2563eb;color:#fff;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer">Add these doubles pairs</button>
+    <button id="scoped-ba-structured-submit" onclick="scopedSubmitStructuredPlayers()" style="width:100%;margin-top:10px;padding:10px;border:none;background:#2563eb;color:#fff;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer">Add these players</button>
   </div>
 
   <details style="margin-bottom:12px">
@@ -6787,13 +6796,15 @@ function scopedBulkAddPlayers() {
   openScopedModal('scoped-bulk-add-modal');
   document.getElementById('scoped-ba-text').value = '';
   document.getElementById('scoped-ba-msg').innerHTML = '';
-  renderStructuredPairRows();
+  window._scopedBulkLeagues = {};
+  renderStructuredPlayerRows('singles');
   // Populate league dropdown
   var sel = document.getElementById('scoped-ba-league');
   sel.innerHTML = '<option value="">Loading leagues&hellip;</option>';
   if (!FIREBASE_READY) return;
   db.ref('/clubLeagues/' + scope.id).once('value').then(function(snap) {
     var leagues = snap.val() || {};
+    window._scopedBulkLeagues = leagues;
     var ids = Object.keys(leagues);
     if (ids.length === 0) {
       sel.innerHTML = '<option value="">No leagues yet — create one first</option>';
@@ -6803,49 +6814,68 @@ function scopedBulkAddPlayers() {
       var lg = leagues[lid] || {};
       return '<option value="' + esc(lid) + '">' + esc(lg.name || '(unnamed)') + '</option>';
     }).join('');
+    syncScopedBulkAddFormat();
   });
 }
 
-function renderStructuredPairRows() {
+function scopedBulkAddFormat() {
+  var sel = document.getElementById('scoped-ba-league');
+  var league = (window._scopedBulkLeagues || {})[sel ? sel.value : ''] || {};
+  var sport = String(league.sport || '').toLowerCase();
+  return league.format === 'singles' && sport !== 'padel' ? 'singles' : (league.format === 'mixed' ? 'mixed' : 'doubles');
+}
+
+function syncScopedBulkAddFormat() {
+  renderStructuredPlayerRows(scopedBulkAddFormat());
+}
+
+function renderStructuredPlayerRows(format) {
   var wrap = document.getElementById('scoped-ba-pair-rows');
   if (!wrap) return;
+  var isSingles = format === 'singles';
+  document.getElementById('scoped-ba-structured-title').textContent = isSingles ? 'Players' : (format === 'mixed' ? 'Mixed doubles pairs' : 'Doubles pairs');
+  document.getElementById('scoped-ba-structured-help').textContent = isSingles ? 'One row = one player. Emails are optional for testing.' : 'One row = one doubles team. Emails are optional for testing.';
+  document.getElementById('scoped-ba-structured-submit').textContent = isSingles ? 'Add these players' : 'Add these doubles pairs';
   var html = '';
   for (var i = 0; i < 8; i++) {
-    html += '<div style="background:#fff;border:1px solid #dbeafe;border-radius:12px;padding:10px">' +
-      '<div style="font-size:12px;font-weight:900;color:#1d4ed8;margin-bottom:8px">Team ' + (i + 1) + '</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+    html += '<div class="scoped-ba-structured-row" style="background:#fff;border:1px solid #dbeafe;border-radius:12px;padding:10px">' +
+      '<div style="font-size:12px;font-weight:900;color:#1d4ed8;margin-bottom:8px">' + (isSingles ? 'Player ' : 'Team ') + (i + 1) + '</div>' +
+      '<div style="display:grid;grid-template-columns:' + (isSingles ? '1fr' : '1fr 1fr') + ';gap:8px">' +
       '<div style="display:grid;gap:4px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px">' +
-        '<div style="font-size:11px;font-weight:800;color:#475569">Player 1</div>' +
+        '<div style="font-size:11px;font-weight:800;color:#475569">' + (isSingles ? 'Player' : 'Player 1') + '</div>' +
         '<input class="fi structured-p1-name" placeholder="Name" style="font-size:13px;padding:8px">' +
         '<input class="fi structured-p1-email" placeholder="Email" style="font-size:13px;padding:8px">' +
-      '</div>' +
+      '</div>' + (isSingles ? '' :
       '<div style="display:grid;gap:4px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px">' +
         '<div style="font-size:11px;font-weight:800;color:#475569">Player 2</div>' +
         '<input class="fi structured-p2-name" placeholder="Name" style="font-size:13px;padding:8px">' +
         '<input class="fi structured-p2-email" placeholder="Email" style="font-size:13px;padding:8px">' +
-      '</div>' +
+      '</div>') +
       '</div>' +
     '</div>';
   }
   wrap.innerHTML = html;
 }
 
-function scopedSubmitStructuredPairs() {
+function scopedSubmitStructuredPlayers() {
   var msgEl = document.getElementById('scoped-ba-msg');
   msgEl.innerHTML = '';
   var rows = [];
   var errors = [];
+  var isSingles = scopedBulkAddFormat() === 'singles';
   var wrap = document.getElementById('scoped-ba-pair-rows');
   var rowEls = wrap ? Array.prototype.slice.call(wrap.children) : [];
   rowEls.forEach(function(rowEl, idx) {
     var p1Name = (rowEl.querySelector('.structured-p1-name').value || '').trim();
     var p1Email = (rowEl.querySelector('.structured-p1-email').value || '').trim();
-    var p2Name = (rowEl.querySelector('.structured-p2-name').value || '').trim();
-    var p2Email = (rowEl.querySelector('.structured-p2-email').value || '').trim();
+    var p2NameEl = rowEl.querySelector('.structured-p2-name');
+    var p2EmailEl = rowEl.querySelector('.structured-p2-email');
+    var p2Name = p2NameEl ? (p2NameEl.value || '').trim() : '';
+    var p2Email = p2EmailEl ? (p2EmailEl.value || '').trim() : '';
     var hasAny = p1Name || p1Email || p2Name || p2Email;
     if (!hasAny) return;
-    if (!p1Name || !p2Name) {
-      errors.push('Row ' + (idx + 1) + ': enter both player names');
+    if (!p1Name || (!isSingles && !p2Name)) {
+      errors.push('Row ' + (idx + 1) + ': enter ' + (isSingles ? 'the player name' : 'both player names'));
       return;
     }
     [p1Email, p2Email].forEach(function(email) {
@@ -6853,14 +6883,14 @@ function scopedSubmitStructuredPairs() {
         errors.push('Row ' + (idx + 1) + ': invalid email "' + email + '"');
       }
     });
-    rows.push(p1Name + (p1Email ? ', ' + p1Email : '') + ' & ' + p2Name + (p2Email ? ', ' + p2Email : ''));
+    rows.push(p1Name + (p1Email ? ', ' + p1Email : '') + (isSingles ? '' : ' & ' + p2Name + (p2Email ? ', ' + p2Email : '')));
   });
   if (errors.length) {
     msgEl.innerHTML = '<div style="color:#b91c1c">' + errors.map(esc).join('<br>') + '</div>';
     return;
   }
   if (!rows.length) {
-    msgEl.innerHTML = '<div style="color:#b91c1c">Add at least one complete doubles pair.</div>';
+    msgEl.innerHTML = '<div style="color:#b91c1c">Add at least one complete ' + (isSingles ? 'player.' : 'doubles pair.') + '</div>';
     return;
   }
   document.getElementById('scoped-ba-text').value = rows.join('\n');
