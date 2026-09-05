@@ -653,7 +653,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.55</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.56</div>
   </div>
 </div>
 
@@ -1655,7 +1655,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.55 · Build 20260825a</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.56 · Build 20260905a</div>
   </div>
 </div>
 
@@ -1670,11 +1670,13 @@
     <div style="padding:20px" id="changelog-content">
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.55 &middot; 25 Aug 2026</span>
-          <span style="background:#1d4ed8;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">PLAYER SETUP</span>
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.56 &middot; 5 Sep 2026</span>
+          <span style="background:#1d4ed8;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">ORGANISER SETUP</span>
         </div>
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
-          <li><strong>Format-aware player entry</strong> &mdash; singles leagues accept individual players while doubles and mixed-doubles leagues retain paired-team entry.</li>
+          <li><strong>Organiser-first league access</strong> &mdash; club organisers can open Settings even when they are also listed as players.</li>
+          <li><strong>Direct scoring setup</strong> &mdash; the setup guide now opens Settings directly for a club with one league.</li>
+          <li><strong>Club-aware Home</strong> &mdash; Home keeps organisers inside their club instead of dropping the club link.</li>
         </ul>
       </div>
       <div style="margin-bottom:20px">
@@ -4448,10 +4450,9 @@ function updateTopBarLocation(screenId) {
 function topBarGoHome() {
   closeTopMenu();
   if (!currentUser) return;
-  // v4.14.9: Home always takes the user to the app-home (3-hero-image welcome),
-  // not the scoped-club welcome. Clearing _scopedClub + stripping ?club= from
-  // the URL means a subsequent refresh also lands on app-home.
-  clearScopedClub();
+  // Keep a club-scoped customer inside their club. The club link is their
+  // operational home, and stripping it here strands organisers on the generic
+  // marketing-style app home with no direct route back to their tools.
   if (activeLeagueId || mixInMode) {
     goToHub();
   } else {
@@ -6378,7 +6379,26 @@ function scopedSetupAction(action) {
   if (action === 'accounts') scopedManagePlayers();
   if (action === 'admins') scopedManageAdmins();
   if (action === 'share') scopedShareInvite();
-  if (action === 'scoring') toast('Open a league, then use Settings to choose the scoring system.');
+  if (action === 'scoring') scopedOpenScoringSettings();
+}
+
+function scopedOpenScoringSettings() {
+  var scope = window._scopedClub;
+  if (!scope || !scope.id) { toast('No club scope'); return; }
+  if (!isClubAdminFor(scope.id)) { toast('Club organisers only'); return; }
+  db.ref('/clubLeagues/' + scope.id).once('value').then(function(snap) {
+    var leagueIds = Object.keys(snap.val() || {});
+    if (leagueIds.length === 0) { toast('Create a league before choosing scoring'); return; }
+    if (leagueIds.length > 1) {
+      toast('Choose a league below, then open Settings');
+      return;
+    }
+    window._pendingTab = 'setup';
+    adminEnterLeague(leagueIds[0], scope.id);
+  }).catch(function(err) {
+    console.error('[scoped-scoring-settings]', err);
+    toast('Could not open scoring settings');
+  });
 }
 
 function getScopedClubShareUrl() {
@@ -6628,10 +6648,10 @@ function renderScopedLeagueList(clubId) {
       // v4.9.1: Club admins clicking a non-member league must NOT be auto-joined.
       // adminEnterLeague opens the league as organiser without writing /members.
       var actionCall;
-      if (isMember) {
-        actionCall = 'enterLeague(\'' + lid + '\')';
-      } else if (isAdminHere) {
+      if (isAdminHere) {
         actionCall = 'adminEnterLeague(\'' + lid + '\',\'' + clubId + '\')';
+      } else if (isMember) {
+        actionCall = 'enterLeague(\'' + lid + '\')';
       } else {
         actionCall = 'requestAssignedBoxAccess(\'' + lid + '\')';
       }
