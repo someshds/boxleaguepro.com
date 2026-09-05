@@ -6,10 +6,14 @@ const html = fs.readFileSync(require.resolve('../app.html'), 'utf8');
 
 assert.match(html, /id="btn-organiser-signup"[^>]+onclick="beginOrganiserSignup\(\)"/);
 assert.match(html, /id="screen-club-create"/);
-assert.match(html, /const SELF_SERVICE_CREATE_ENABLED = false;/,
-  'local review build must not enable live club creation');
-assert.match(html, /const SELF_SERVICE_CREATE_ENDPOINT = '';/,
-  'local review build must not contain a live endpoint');
+assert.match(html, /const SELF_SERVICE_CREATE_ENABLED = SELF_SERVICE_EMULATOR_MODE;/,
+  'club creation must remain restricted to explicit emulator mode');
+assert.match(html, /SELF_SERVICE_EMULATOR_MODE[\s\S]+window\.location\.hostname === '127\.0\.0\.1'[\s\S]+get\('emulator'\) === '1'/,
+  'emulator mode must require localhost plus an explicit URL switch');
+assert.match(html, /FIREBASE_RUNTIME_CONFIG = SELF_SERVICE_EMULATOR_MODE[\s\S]+databaseURL: 'http:\/\/127\.0\.0\.1:9002\?ns=demo-boxleague-pro-self-service'[\s\S]+: FIREBASE_CONFIG;/,
+  'emulator mode must use an isolated demo namespace while production keeps its normal config');
+assert.match(html, /SELF_SERVICE_CREATE_ENDPOINT = SELF_SERVICE_EMULATOR_MODE[\s\S]+127\.0\.0\.1:5002[\s\S]+: '';/,
+  'production must retain a blank creation endpoint');
 
 function sliceBetween(startText, endText) {
   const start = html.indexOf(startText);
@@ -49,5 +53,7 @@ assert.doesNotMatch(submit, /db\.ref\(/, 'club creation must not write directly 
 assert.match(submit, /currentUser\.getIdToken\(\)/, 'enabled path must authenticate to the server');
 assert.match(submit, /'Authorization': 'Bearer ' \+ token/);
 assert.match(submit, /!SELF_SERVICE_CREATE_ENABLED \|\| !SELF_SERVICE_CREATE_ENDPOINT/);
+assert.match(submit, /SELF_SERVICE_EMULATOR_MODE \? '&emulator=1' : ''/,
+  'localhost staging redirect must remain in the isolated emulator environment');
 
 console.log('self-service-club.test.js: all assertions passed');

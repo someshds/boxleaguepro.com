@@ -2687,13 +2687,29 @@ const FIREBASE_CONFIG = {
   measurementId:     "G-41R6M69CBW"
 };
 
+const SELF_SERVICE_EMULATOR_MODE =
+  (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') &&
+  new URLSearchParams(window.location.search).get('emulator') === '1';
+const FIREBASE_RUNTIME_CONFIG = SELF_SERVICE_EMULATOR_MODE
+  ? Object.assign({}, FIREBASE_CONFIG, {
+      projectId: 'demo-boxleague-pro-self-service',
+      authDomain: 'demo-boxleague-pro-self-service.firebaseapp.com',
+      databaseURL: 'http://127.0.0.1:9002?ns=demo-boxleague-pro-self-service'
+    })
+  : FIREBASE_CONFIG;
+
 const FIREBASE_READY = !FIREBASE_CONFIG.apiKey.includes('REPLACE');
 let app, auth, db;
 
 if (FIREBASE_READY) {
-  app = firebase.initializeApp(FIREBASE_CONFIG);
+  app = firebase.initializeApp(FIREBASE_RUNTIME_CONFIG);
   auth = firebase.auth();
   db = firebase.database();
+  if (SELF_SERVICE_EMULATOR_MODE) {
+    auth.useEmulator('http://127.0.0.1:9098', { disableWarnings: true });
+    db.useEmulator('127.0.0.1', 9002);
+    console.info('[self-service] Firebase emulator mode enabled');
+  }
 } else {
   // Local-only mode for testing
   console.warn('Firebase not configured — running in local demo mode');
@@ -4835,8 +4851,10 @@ document.addEventListener('keydown', function(e) {
    ══════════════════════════════════════ */
 let authMode = 'signin'; // 'signin' or 'signup'
 let pendingSignOut = null;
-const SELF_SERVICE_CREATE_ENABLED = false;
-const SELF_SERVICE_CREATE_ENDPOINT = '';
+const SELF_SERVICE_CREATE_ENABLED = SELF_SERVICE_EMULATOR_MODE;
+const SELF_SERVICE_CREATE_ENDPOINT = SELF_SERVICE_EMULATOR_MODE
+  ? 'http://127.0.0.1:5002/demo-boxleague-pro-self-service/europe-west2/createSelfServiceClub'
+  : '';
 const SELF_SERVICE_INTENT_KEY = 'blp_signup_intent';
 
 function toggleAuthMode() {
@@ -4978,7 +4996,8 @@ async function submitSelfServiceClub() {
     if (!response.ok || !result.clubId || !result.slug) throw new Error(result.error || 'Club creation failed. Please try again.');
     try { sessionStorage.removeItem(SELF_SERVICE_INTENT_KEY); } catch (e) {}
     userHomeClub = { id: result.clubId, name: result.name || payload.name, bookingUrl: payload.bookingUrl };
-    window.location.assign(window.location.pathname + '?club=' + encodeURIComponent(result.slug));
+    const stagingSuffix = SELF_SERVICE_EMULATOR_MODE ? '&emulator=1' : '';
+    window.location.assign(window.location.pathname + '?club=' + encodeURIComponent(result.slug) + stagingSuffix);
   } catch (err) {
     if (errorEl) { errorEl.textContent = err.message || 'Club creation failed. Please try again.'; errorEl.style.display = 'block'; }
   } finally {
