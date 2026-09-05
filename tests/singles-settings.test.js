@@ -14,6 +14,8 @@ assert.match(html, /loadTemplate\('singles'\)/,
   'Singles Settings must select the one-player template');
 assert.match(html, /singlesTemplate\s*\? 'One player per line/,
   'Singles quick add must explain one player per line');
+assert.match(html, /setText\('setup-quick-add-line-label', singlesLeague \? '\(one player per line\)' : '\(one team per line\)'\)/,
+  'Quick-add field label must follow the league format');
 assert.match(html, /No \$\{singlesLeague \? 'players' : 'teams'\} yet/,
   'Empty-state terminology must follow the league format');
 
@@ -25,7 +27,7 @@ const elements = {};
 [
   'setup-groups-title', 'setup-new-group-title', 'setup-add-group-submit',
   'btn-add-group', 'setup-quick-add-title', 'setup-quick-add-button',
-  'setup-quick-add-wrap'
+  'setup-quick-add-wrap', 'setup-quick-add-line-label'
 ].forEach(id => {
   elements[id] = {
     textContent: '',
@@ -46,6 +48,7 @@ assert.equal(elements['setup-new-group-title'].textContent, 'New Player');
 assert.equal(elements['setup-add-group-submit'].textContent, 'Add Player');
 assert.equal(elements['setup-quick-add-button'].textContent, 'Add Players');
 assert.equal(elements['setup-quick-add-button'].onclick, "loadTemplate('singles')");
+assert.equal(elements['setup-quick-add-line-label'].textContent, '(one player per line)');
 assert.equal(elements['setup-quick-add-wrap'].style.display, '');
 
 context.syncSettingsGroupLabels({ format: 'doubles' });
@@ -54,5 +57,6 @@ assert.equal(elements['setup-new-group-title'].textContent, 'New Team');
 assert.equal(elements['setup-add-group-submit'].textContent, 'Add Team');
 assert.equal(elements['setup-quick-add-button'].textContent, 'Add Doubles Pairs');
 assert.equal(elements['setup-quick-add-button'].onclick, "loadTemplate('doubles')");
+assert.equal(elements['setup-quick-add-line-label'].textContent, '(one team per line)');
 
 console.log('singles-settings.test.js: all assertions passed');

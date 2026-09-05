@@ -1339,7 +1339,7 @@
           <div class="card-title" style="margin-bottom:8px" id="template-title">Quick Add</div>
           <div class="info-box" id="template-info"></div>
           <div class="fg">
-            <label class="fl">Paste names <span style="font-weight:400;text-transform:none">(one team per line)</span></label>
+            <label class="fl">Paste names <span id="setup-quick-add-line-label" style="font-weight:400;text-transform:none">(one team per line)</span></label>
             <textarea class="fi" id="inp-template" rows="6" style="font-size:15px;line-height:1.6"></textarea>
           </div>
           <div style="display:flex;gap:8px">
@@ -10637,6 +10637,7 @@ function syncSettingsGroupLabels(leagueInfo) {
   setText('setup-add-group-submit', singlesLeague ? 'Add Player' : 'Add Team');
   setText('btn-add-group', singlesLeague ? '+ Add Player' : '+ Add Team');
   setText('setup-quick-add-title', singlesLeague ? 'Quick Add All Players' : 'Quick Add All Teams');
+  setText('setup-quick-add-line-label', singlesLeague ? '(one player per line)' : '(one team per line)');
   const quickButton = document.getElementById('setup-quick-add-button');
   if (quickButton) {
     quickButton.textContent = singlesLeague ? 'Add Players' : 'Add Doubles Pairs';
