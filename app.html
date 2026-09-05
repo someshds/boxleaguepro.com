@@ -653,7 +653,7 @@
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
-    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.56</div>
+    <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.57</div>
   </div>
 </div>
 
@@ -1301,12 +1301,12 @@
 
       <div class="divider"></div>
 
-      <div class="section-title">Teams</div>
+      <div class="section-title" id="setup-groups-title">Teams</div>
       <div id="groups-list"></div>
 
       <div id="add-group-form" style="display:none">
         <div class="card">
-          <div class="card-title" style="margin-bottom:12px">New Team</div>
+          <div class="card-title" id="setup-new-group-title" style="margin-bottom:12px">New Team</div>
           <div class="fg">
             <label class="fl">Player 1 <span style="font-weight:400;text-transform:none">(full name)</span></label>
             <input class="fi" id="inp-gplayer1" placeholder="e.g. Grant de Swardt">
@@ -1318,7 +1318,7 @@
           <input type="hidden" id="inp-gname">
           <input type="hidden" id="inp-gplayers">
           <div style="display:flex;gap:8px">
-            <button class="btn btn-primary" onclick="addGroup()">Add Team</button>
+            <button class="btn btn-primary" id="setup-add-group-submit" onclick="addGroup()">Add Team</button>
             <button class="btn btn-secondary" onclick="hideGroupForm()">Cancel</button>
           </div>
         </div>
@@ -1329,9 +1329,9 @@
       <div id="setup-quick-add-wrap">
       <div class="divider"></div>
 
-      <div class="card-title" style="margin-bottom:10px">Quick Add All Teams</div>
+      <div class="card-title" id="setup-quick-add-title" style="margin-bottom:10px">Quick Add All Teams</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
-        <button class="btn btn-secondary btn-sm" onclick="loadTemplate('doubles')">Add Doubles Pairs</button>
+        <button class="btn btn-secondary btn-sm" id="setup-quick-add-button" onclick="loadTemplate('doubles')">Add Doubles Pairs</button>
       </div>
 
       <div id="template-form" style="display:none">
@@ -1655,7 +1655,7 @@
     <div class="aifa-footer-contact">
       <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
-    <div class="aifa-footer-version">BoxLeague Pro v4.16.56 · Build 20260905a</div>
+    <div class="aifa-footer-version">BoxLeague Pro v4.16.57 · Build 20260905b</div>
   </div>
 </div>
 
@@ -1670,12 +1670,21 @@
     <div style="padding:20px" id="changelog-content">
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.57 &middot; 5 Sep 2026</span>
+          <span style="background:#1d4ed8;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">SINGLES SETUP</span>
+        </div>
+        <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
+          <li><strong>Format-aware Settings</strong> &mdash; singles leagues now use player terminology and a one-player-per-line quick-add tool.</li>
+        </ul>
+      </div>
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="background:#ecfdf5;color:#047857;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">v4.16.56 &middot; 5 Sep 2026</span>
           <span style="background:#1d4ed8;color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">ORGANISER SETUP</span>
         </div>
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
           <li><strong>Organiser-first league access</strong> &mdash; club organisers can open Settings even when they are also listed as players.</li>
-          <li><strong>Direct scoring setup</strong> &mdash; the setup guide now opens Settings directly for a club with one league.</li>
+          <li><strong>Direct scoring setup</strong> &mdash; the setup guide opens Settings directly for a club with one league.</li>
           <li><strong>Club-aware Home</strong> &mdash; Home keeps organisers inside their club instead of dropping the club link.</li>
         </ul>
       </div>
@@ -9016,12 +9025,7 @@ function enterLeagueMain(leagueId, leagueInfo, isOrganiser) {
   document.getElementById('app-league-code-wrap').style.display = 'none';
   document.getElementById('progress-wrap').style.display = mixInMode ? 'none' : '';
   document.getElementById('deadline-banner').style.display = mixInMode ? 'none' : '';
-  // Hide "Quick Add All Teams" in singles leagues
-  const quickAddWrap = document.getElementById('setup-quick-add-wrap');
-  if (quickAddWrap) {
-    const leagueSport = (leagueInfo.sport || '').toLowerCase();
-    quickAddWrap.style.display = (leagueSport === 'singles' || leagueSport === 'squash') ? 'none' : '';
-  }
+  syncSettingsGroupLabels(leagueInfo);
   document.getElementById('app-league-name').textContent = mixInMode ? 'Create or Join Friendly Mix-In Games' : (leagueInfo.name || 'League');
 
   showScreen('app');
@@ -10601,11 +10605,11 @@ function renderDeadline() {
 function renderGroups() {
   const el = document.getElementById('groups-list');
   if (!el) return;
+  const leagueInfo = activeLeagueId && userLeagues[activeLeagueId];
+  const singlesLeague = !!(leagueInfo && isSinglesLeague(leagueInfo));
   if (L.groups.length === 0) {
-    // v4.7.3: pass whole league object so format field is honoured
-    const singlesLeague = activeLeagueId && userLeagues[activeLeagueId] && isSinglesLeague(userLeagues[activeLeagueId]);
     const emptyMsg = singlesLeague ? 'Add your players to get started' : 'Add your doubles pairs to get started';
-    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted)"><div style="font-size:46px;margin-bottom:10px">&#128101;</div><h3 style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px">No teams yet</h3><p style="font-size:15px">${emptyMsg}</p></div>`;
+    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted)"><div style="font-size:46px;margin-bottom:10px">&#128101;</div><h3 style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px">No ${singlesLeague ? 'players' : 'teams'} yet</h3><p style="font-size:15px">${emptyMsg}</p></div>`;
     return;
   }
   el.innerHTML = L.groups.map((g, gi) => {
@@ -10623,6 +10627,23 @@ function renderGroups() {
       </div>
     </div>`;
   }).join('');
+}
+
+function syncSettingsGroupLabels(leagueInfo) {
+  const singlesLeague = !!(leagueInfo && isSinglesLeague(leagueInfo));
+  const setText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+  setText('setup-groups-title', singlesLeague ? 'Players' : 'Teams');
+  setText('setup-new-group-title', singlesLeague ? 'New Player' : 'New Team');
+  setText('setup-add-group-submit', singlesLeague ? 'Add Player' : 'Add Team');
+  setText('btn-add-group', singlesLeague ? '+ Add Player' : '+ Add Team');
+  setText('setup-quick-add-title', singlesLeague ? 'Quick Add All Players' : 'Quick Add All Teams');
+  const quickButton = document.getElementById('setup-quick-add-button');
+  if (quickButton) {
+    quickButton.textContent = singlesLeague ? 'Add Players' : 'Add Doubles Pairs';
+    quickButton.setAttribute('onclick', singlesLeague ? "loadTemplate('singles')" : "loadTemplate('doubles')");
+  }
+  const quickWrap = document.getElementById('setup-quick-add-wrap');
+  if (quickWrap) quickWrap.style.display = '';
 }
 
 function showGroupForm() {
@@ -10757,9 +10778,14 @@ function loadTemplate(type) {
   const info = document.getElementById('template-info');
   const ta = document.getElementById('inp-template');
   form.style.display = 'block';
-  title.textContent = 'Quick Add \u2014 All Teams';
-  info.innerHTML = 'One team per line. Two players per team, comma-separated.<br><strong>Example:</strong><br>Grant de Swardt, James Smith<br>Mark Wilson, Dave Brown<br>Sean Taylor, Pete Adams';
-  ta.placeholder = 'Grant de Swardt, James Smith\nMark Wilson, Dave Brown\nSean Taylor, Pete Adams';
+  const singlesTemplate = type === 'singles';
+  title.textContent = singlesTemplate ? 'Quick Add \u2014 All Players' : 'Quick Add \u2014 All Teams';
+  info.innerHTML = singlesTemplate
+    ? 'One player per line.<br><strong>Example:</strong><br>Grant de Swardt<br>Mark Wilson<br>Sean Taylor'
+    : 'One team per line. Two players per team, comma-separated.<br><strong>Example:</strong><br>Grant de Swardt, James Smith<br>Mark Wilson, Dave Brown<br>Sean Taylor, Pete Adams';
+  ta.placeholder = singlesTemplate
+    ? 'Grant de Swardt\nMark Wilson\nSean Taylor'
+    : 'Grant de Swardt, James Smith\nMark Wilson, Dave Brown\nSean Taylor, Pete Adams';
   ta.value = ''; ta.focus();
 }
 
@@ -10785,10 +10811,11 @@ function applyTemplate() {
       added++;
     }
   }
-  if (added === 0) { toast('No new teams added (duplicates?)'); return; }
+  const singlesTemplate = activeTemplate === 'singles';
+  if (added === 0) { toast('No new ' + (singlesTemplate ? 'players' : 'teams') + ' added (duplicates?)'); return; }
   fbSetGroups(); renderGroups(); renderMembers(); renderProgress();
   document.getElementById('template-form').style.display = 'none';
-  toast(`${added} team${added!==1?'s':''} added!`);
+  toast(`${added} ${singlesTemplate ? 'player' : 'team'}${added!==1?'s':''} added!`);
 }
 
 /* ══════════════════════════════════════
