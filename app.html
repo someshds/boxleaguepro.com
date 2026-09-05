@@ -559,6 +559,17 @@
     .spinner { display: inline-block; width: 20px; height: 20px; border: 2.5px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    .self-service-shell { max-width: 560px; margin: 0 auto; padding: 24px 18px 48px; }
+    .self-service-progress { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 18px; }
+    .self-service-progress span { height: 5px; border-radius: 3px; background: #dbe4f0; }
+    .self-service-progress span.active { background: #2563eb; }
+    .self-service-panel { background: #fff; border: 1px solid #dbe4f0; border-radius: 8px; padding: 22px; box-shadow: 0 12px 32px rgba(30, 64, 175, 0.08); }
+    .self-service-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .self-service-choice { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .self-service-note { margin-top: 12px; padding: 11px 12px; border-radius: 6px; background: #eff6ff; color: #1e3a8a; font-size: 13px; line-height: 1.45; }
+    .self-service-error { display: none; margin: 12px 0; padding: 10px 12px; border-radius: 6px; background: #fef2f2; color: #b91c1c; font-size: 13px; }
+    @media (max-width: 520px) { .self-service-grid, .self-service-choice { grid-template-columns: 1fr; } }
+
     @media (min-width: 600px) { .content { padding: 24px; } }
 
     /* v4.13.5: tablet breakpoint — use the extra real estate instead of looking like a stretched phone */
@@ -649,11 +660,74 @@
     <div class="auth-toggle" id="auth-toggle">
       Don't have an account? <a onclick="toggleAuthMode()">Create one</a>
     </div>
+    <button class="btn btn-primary btn-full" id="btn-organiser-signup" onclick="beginOrganiserSignup()" style="margin-top:14px;background:#0f766e">Set up a club</button>
   </div>
 
   <div class="auth-footer">
     Made by Grant de Swardt &middot; <a href="https://aifusionautomations.com">AI Fusion Automations</a>
     <div style="margin-top:4px;font-size:11px;opacity:0.6">v4.16.57</div>
+  </div>
+</div>
+
+<!-- Native organiser self-service. Kept behind SELF_SERVICE_CREATE_ENABLED until
+     its authenticated server endpoint and production rules are separately approved. -->
+<div id="screen-club-create" class="screen" style="background:#f4f7fb;min-height:100vh">
+  <div class="self-service-shell">
+    <button class="btn btn-secondary btn-sm" onclick="cancelSelfServiceClub()" style="margin-bottom:14px">Back</button>
+    <div class="self-service-progress" aria-label="Club setup progress"><span class="active"></span><span class="active"></span><span></span></div>
+    <div class="self-service-panel">
+      <div style="font-size:12px;font-weight:800;color:#2563eb;text-transform:uppercase;margin-bottom:6px">Organiser setup</div>
+      <h1 style="font-size:24px;margin:0 0 6px">Create your club</h1>
+      <p style="margin:0 0 20px;color:#64748b;font-size:14px">Add the essentials now. You can create leagues and add players immediately after setup.</p>
+
+      <div class="fg">
+        <label class="fl" for="self-club-name">Club name</label>
+        <input class="fi" id="self-club-name" maxlength="80" autocomplete="organization" placeholder="e.g. Riverside Tennis Club" oninput="syncSelfServiceSlug()">
+      </div>
+      <div class="fg">
+        <label class="fl" for="self-club-slug">Club link</label>
+        <div style="display:flex;align-items:center;border:1px solid #dbe4f0;border-radius:8px;background:#f8fafc;overflow:hidden">
+          <span style="padding-left:12px;color:#64748b;font-size:13px">boxleaguepro.com/app.html?club=</span>
+          <input class="fi" id="self-club-slug" maxlength="48" style="border:0;background:transparent;padding-left:3px" oninput="normaliseSelfServiceSlugInput()">
+        </div>
+      </div>
+      <div class="self-service-grid">
+        <div class="fg">
+          <label class="fl" for="self-club-sport">Primary sport</label>
+          <select class="fi" id="self-club-sport" onchange="syncSelfServiceFormat()">
+            <option value="tennis">Tennis</option><option value="padel">Padel</option><option value="squash">Squash</option><option value="racketball">Racketball</option><option value="badminton">Badminton</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl" for="self-club-format">Starting format</label>
+          <select class="fi" id="self-club-format">
+            <option value="singles">Singles</option><option value="doubles">Doubles</option><option value="mixed">Mixed doubles</option>
+          </select>
+        </div>
+      </div>
+      <div id="self-padel-note" class="self-service-note" style="display:none">Padel is always doubles, so the starting format has been set for you.</div>
+      <div class="fg" style="margin-top:14px">
+        <label class="fl" for="self-club-scoring">Scoring system</label>
+        <select class="fi" id="self-club-scoring">
+          <option value="default">Standard (3 / 1 / 0)</option>
+          <option value="competitive">Winners Only (3 / 0 / 0)</option>
+          <option value="participation">Participation (2 / 1 / 0.5)</option>
+          <option value="gameWins">Game Wins (1 point per game won)</option>
+        </select>
+        <div style="font-size:12px;color:#64748b;margin-top:6px">More scoring systems remain available from league Settings.</div>
+      </div>
+      <div class="fg">
+        <label class="fl" for="self-club-booking-url">Court booking link <span style="font-weight:400">(optional)</span></label>
+        <input class="fi" id="self-club-booking-url" type="url" inputmode="url" placeholder="https://your-club-booking-system.example">
+      </div>
+      <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;line-height:1.45;color:#475569;margin-top:10px">
+        <input id="self-club-confirm" type="checkbox" style="margin-top:3px">
+        <span>I am authorised to organise leagues for this club and agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span>
+      </label>
+      <div class="self-service-error" id="self-club-error" role="alert"></div>
+      <button class="btn btn-primary btn-full" id="self-club-submit" onclick="submitSelfServiceClub()" style="margin-top:16px">Create club and continue</button>
+      <div id="self-service-review-note" class="self-service-note" style="display:none">Local review mode: the wizard is complete, but live club creation stays disabled until the authenticated server endpoint is approved and deployed.</div>
+    </div>
   </div>
 </div>
 
@@ -4761,6 +4835,9 @@ document.addEventListener('keydown', function(e) {
    ══════════════════════════════════════ */
 let authMode = 'signin'; // 'signin' or 'signup'
 let pendingSignOut = null;
+const SELF_SERVICE_CREATE_ENABLED = false;
+const SELF_SERVICE_CREATE_ENDPOINT = '';
+const SELF_SERVICE_INTENT_KEY = 'blp_signup_intent';
 
 function toggleAuthMode() {
   authMode = authMode === 'signin' ? 'signup' : 'signin';
@@ -4781,6 +4858,131 @@ function toggleAuthMode() {
     gdprLabel.style.display = 'none';
     btnText.textContent = 'Sign in with Email';
     toggle.innerHTML = 'Don\'t have an account? <a onclick="toggleAuthMode()">Create one</a>';
+  }
+}
+
+function selfServiceSlugify(value) {
+  return String(value || '').toLowerCase().normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '').replace(/[’']/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+    .slice(0, 48).replace(/-+$/g, '');
+}
+
+function syncSelfServiceSlug() {
+  const name = document.getElementById('self-club-name');
+  const slug = document.getElementById('self-club-slug');
+  if (!name || !slug || slug.dataset.edited === 'true') return;
+  slug.value = selfServiceSlugify(name.value);
+}
+
+function normaliseSelfServiceSlugInput() {
+  const slug = document.getElementById('self-club-slug');
+  if (!slug) return;
+  slug.dataset.edited = 'true';
+  slug.value = selfServiceSlugify(slug.value);
+}
+
+function syncSelfServiceFormat() {
+  const sport = document.getElementById('self-club-sport');
+  const format = document.getElementById('self-club-format');
+  const note = document.getElementById('self-padel-note');
+  if (!sport || !format) return;
+  const isPadel = sport.value === 'padel';
+  if (isPadel) format.value = 'doubles';
+  format.disabled = isPadel;
+  if (note) note.style.display = isPadel ? 'block' : 'none';
+}
+
+function buildSelfServiceClubRequest(values, user) {
+  const allowedSports = ['tennis', 'padel', 'squash', 'racketball', 'badminton'];
+  const allowedFormats = ['singles', 'doubles', 'mixed'];
+  const allowedScoring = ['default', 'competitive', 'participation', 'gameWins'];
+  const name = String(values.name || '').trim();
+  const slug = selfServiceSlugify(values.slug);
+  const sport = String(values.sport || '');
+  const format = sport === 'padel' ? 'doubles' : String(values.format || '');
+  const scoringSystem = String(values.scoringSystem || '');
+  const bookingUrl = String(values.bookingUrl || '').trim();
+  if (!user || !user.uid || !user.email) throw new Error('Sign in before creating a club.');
+  if (name.length < 3 || name.length > 80) throw new Error('Enter a club name between 3 and 80 characters.');
+  if (!/^[a-z][a-z0-9-]{1,46}[a-z0-9]$/.test(slug)) throw new Error('Use a club link between 3 and 48 characters, starting with a letter.');
+  if (allowedSports.indexOf(sport) === -1) throw new Error('Choose a supported sport.');
+  if (allowedFormats.indexOf(format) === -1) throw new Error('Choose a supported league format.');
+  if (allowedScoring.indexOf(scoringSystem) === -1) throw new Error('Choose a supported scoring system.');
+  if (bookingUrl) {
+    let parsed;
+    try { parsed = new URL(bookingUrl); } catch (e) { throw new Error('Enter a complete booking link, including https://.'); }
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') throw new Error('The booking link must start with https:// or http://.');
+  }
+  if (!values.confirmed) throw new Error('Confirm that you are authorised to organise leagues for this club.');
+  return {
+    name: name, slug: slug, sport: sport, format: format,
+    scoringSystem: scoringSystem, bookingUrl: bookingUrl,
+    organiser: { uid: user.uid, email: String(user.email).trim().toLowerCase(), displayName: String(user.displayName || '').trim() },
+    requestVersion: 1
+  };
+}
+
+function beginOrganiserSignup() {
+  try { sessionStorage.setItem(SELF_SERVICE_INTENT_KEY, 'organiser'); } catch (e) {}
+  if (currentUser) {
+    showScreen('club-create');
+    syncSelfServiceFormat();
+    return;
+  }
+  if (authMode !== 'signup') toggleAuthMode();
+  const name = document.getElementById('auth-name');
+  if (name) name.focus();
+}
+
+function shouldStartSelfServiceClub(params) {
+  let intent = '';
+  try { intent = sessionStorage.getItem(SELF_SERVICE_INTENT_KEY) || ''; } catch (e) {}
+  return intent === 'organiser' && !userHomeClub && !params.get('club') && !params.get('league') && !params.get('mixin');
+}
+
+function cancelSelfServiceClub() {
+  try { sessionStorage.removeItem(SELF_SERVICE_INTENT_KEY); } catch (e) {}
+  showScreen('welcome');
+}
+
+async function submitSelfServiceClub() {
+  const errorEl = document.getElementById('self-club-error');
+  const reviewEl = document.getElementById('self-service-review-note');
+  const button = document.getElementById('self-club-submit');
+  if (errorEl) { errorEl.style.display = 'none'; errorEl.textContent = ''; }
+  if (reviewEl) reviewEl.style.display = 'none';
+  let payload;
+  try {
+    payload = buildSelfServiceClubRequest({
+      name: val('self-club-name'), slug: val('self-club-slug'), sport: val('self-club-sport'),
+      format: val('self-club-format'), scoringSystem: val('self-club-scoring'),
+      bookingUrl: val('self-club-booking-url'), confirmed: !!(document.getElementById('self-club-confirm') || {}).checked
+    }, currentUser);
+  } catch (err) {
+    if (errorEl) { errorEl.textContent = err.message; errorEl.style.display = 'block'; }
+    return;
+  }
+  if (!SELF_SERVICE_CREATE_ENABLED || !SELF_SERVICE_CREATE_ENDPOINT) {
+    console.info('[self-service review] validated club request', payload);
+    if (reviewEl) reviewEl.style.display = 'block';
+    return;
+  }
+  try {
+    if (button) { button.disabled = true; button.textContent = 'Creating club...'; }
+    const token = await currentUser.getIdToken();
+    const response = await fetch(SELF_SERVICE_CREATE_ENDPOINT, {
+      method: 'POST', headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    });
+    const result = await response.json().catch(function() { return {}; });
+    if (!response.ok || !result.clubId || !result.slug) throw new Error(result.error || 'Club creation failed. Please try again.');
+    try { sessionStorage.removeItem(SELF_SERVICE_INTENT_KEY); } catch (e) {}
+    userHomeClub = { id: result.clubId, name: result.name || payload.name, bookingUrl: payload.bookingUrl };
+    window.location.assign(window.location.pathname + '?club=' + encodeURIComponent(result.slug));
+  } catch (err) {
+    if (errorEl) { errorEl.textContent = err.message || 'Club creation failed. Please try again.'; errorEl.style.display = 'block'; }
+  } finally {
+    if (button) { button.disabled = false; button.textContent = 'Create club and continue'; }
   }
 }
 
@@ -4927,6 +5129,7 @@ function resetPassword() {
 
 function signOut() {
   logAction('sign_out');
+  try { sessionStorage.removeItem(SELF_SERVICE_INTENT_KEY); } catch (e) {}
   clearAIAvailabilityResult();
   detachListeners();
   detachGlobalListeners();
@@ -5272,6 +5475,11 @@ function onAuthSuccess() {
     const sharedClub = _validSlug(_rawSharedClub) ? _rawSharedClub : null;
     if (_rawSharedLeagueId && !sharedLeagueId) { console.warn('Rejecting invalid ?league= param:', _rawSharedLeagueId); toast('Invalid league link — opening main app'); }
     if (_rawSharedClub && !sharedClub) { console.warn('Rejecting invalid ?club= param:', _rawSharedClub); toast('Invalid club link — opening main app'); }
+    if (shouldStartSelfServiceClub(params)) {
+      showScreen('club-create');
+      syncSelfServiceFormat();
+      return;
+    }
     if (sharedLeagueId) {
       window.history.replaceState({}, '', window.location.pathname);
       setTimeout(() => { joinAndEnterLeague(sharedLeagueId); }, 500);
