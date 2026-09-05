@@ -6,14 +6,18 @@ const html = fs.readFileSync(require.resolve('../app.html'), 'utf8');
 
 assert.match(html, /id="btn-organiser-signup"[^>]+onclick="beginOrganiserSignup\(\)"/);
 assert.match(html, /id="screen-club-create"/);
-assert.match(html, /const SELF_SERVICE_CREATE_ENABLED = SELF_SERVICE_EMULATOR_MODE;/,
-  'club creation must remain restricted to explicit emulator mode');
+assert.match(html, /const SELF_SERVICE_PRODUCTION_ENABLED = true;/,
+  'reviewed production source must expose an explicit kill switch');
+assert.match(html, /SELF_SERVICE_PRODUCTION_HOSTS = new Set\(\['boxleaguepro\.com', 'www\.boxleaguepro\.com'\]\)/,
+  'production self-service must be restricted to the canonical hosts');
+assert.match(html, /SELF_SERVICE_CREATE_ENABLED = SELF_SERVICE_EMULATOR_MODE \|\|[\s\S]+SELF_SERVICE_PRODUCTION_ENABLED[\s\S]+SELF_SERVICE_PRODUCTION_HOSTS\.has\(window\.location\.hostname\)/,
+  'self-service must require emulator mode or the enabled canonical production host');
 assert.match(html, /SELF_SERVICE_EMULATOR_MODE[\s\S]+window\.location\.hostname === '127\.0\.0\.1'[\s\S]+get\('emulator'\) === '1'/,
   'emulator mode must require localhost plus an explicit URL switch');
 assert.match(html, /FIREBASE_RUNTIME_CONFIG = SELF_SERVICE_EMULATOR_MODE[\s\S]+databaseURL: 'http:\/\/127\.0\.0\.1:9002\?ns=demo-boxleague-pro-self-service'[\s\S]+: FIREBASE_CONFIG;/,
   'emulator mode must use an isolated demo namespace while production keeps its normal config');
-assert.match(html, /SELF_SERVICE_CREATE_ENDPOINT = SELF_SERVICE_EMULATOR_MODE[\s\S]+127\.0\.0\.1:5002[\s\S]+: '';/,
-  'production must retain a blank creation endpoint');
+assert.match(html, /SELF_SERVICE_CREATE_ENDPOINT = SELF_SERVICE_EMULATOR_MODE[\s\S]+127\.0\.0\.1:5002[\s\S]+https:\/\/europe-west2-boxleague-pro\.cloudfunctions\.net\/createSelfServiceClub/,
+  'production endpoint must use the reviewed regional Firebase Function URL');
 
 function sliceBetween(startText, endText) {
   const start = html.indexOf(startText);
