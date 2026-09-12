@@ -62,7 +62,7 @@ assert(!app.includes('<script src="https://link.aifusionautomations.com/js/form_
 assert(app.includes('data-src="https://link.aifusionautomations.com/widget/form/'), 'feedback form should retain a lazy data source');
 
 const landing = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-for (const staleClaim of ['automatic scheduling', 'instant notifications', 'any format', 'within 24 hours']) {
+for (const staleClaim of ['automatic scheduling', 'instant notifications', 'any format', 'within 24 hours', 'in 24 hours']) {
   assert(!landing.toLowerCase().includes(staleClaim), `landing page still contains stale claim: ${staleClaim}`);
 }
 assert(landing.toLowerCase().includes('padel is always doubles-only'));
