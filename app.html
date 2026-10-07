@@ -4168,6 +4168,9 @@ function adminRejectApplication(appId) {
 }
 
 function esc(s) { if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/\\/g,'&#92;').replace(/`/g,'&#96;'); }
+// Values under mixInGames are stored user input. Keep their rendering path
+// explicitly escaped so legacy records can never become executable markup.
+function storedText(value) { return esc(value == null ? '' : String(value)); }
 function safeHref(url) { if (!url) return ''; const s = String(url).trim(); return /^https?:\/\//i.test(s) ? esc(s) : ''; }
 // v4.14.2: safe embedding of a user-controlled string as a JS argument inside an
 // HTML onclick="..." attribute. Defeats the "onclick breakout via &#39; decode"
@@ -6970,8 +6973,8 @@ function renderScopedMixInList(clubId) {
       var when = g.date || g.when || '';
       html += '<div onclick="enterMixInAsScopedClub()" style="cursor:pointer;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:flex;align-items:center;justify-content:space-between;gap:10px">' +
         '<div style="flex:1;min-width:0">' +
-          '<div style="font-weight:700;font-size:15px;color:#0f172a;margin-bottom:2px">' + esc(title) + '</div>' +
-          (when ? '<div style="font-size:12px;color:#6b7280">' + esc(when) + '</div>' : '') +
+          '<div style="font-weight:700;font-size:15px;color:#0f172a;margin-bottom:2px">' + storedText(title) + '</div>' +
+          (when ? '<div style="font-size:12px;color:#6b7280">' + storedText(when) + '</div>' : '') +
         '</div>' +
         '<div style="color:#9ca3af;font-size:20px;font-weight:700">&rsaquo;</div>' +
       '</div>';
@@ -12612,7 +12615,7 @@ function renderOpenMatches() {
         const sportIcon = { tennis:'🎾', padel:'🥎', squash:'🏸', racketball:'🏸', badminton:'🏸' }[m.sport] || '🎾';
         return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid #f3f4f6">
           <div style="flex:1;min-width:0">
-            <div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sportIcon} ${esc(m.title || 'Open Game')}</div>
+            <div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sportIcon} ${storedText(m.title || 'Open Game')}</div>
             <div style="font-size:12px;color:var(--muted)">${dateStr} · ${slotLbl}</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
@@ -12706,12 +12709,12 @@ function renderOpenMatches() {
 
     return `<div class="om-card">
       <div class="om-card-header">
-        <div class="om-card-title">${esc(m.title || 'Open Game')}</div>
+        <div class="om-card-title">${storedText(m.title || 'Open Game')}</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
           <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:20px;font-size:14px;font-weight:700;color:#059669">${sportIcons[mSport] || '🏅'} ${esc(mSport.charAt(0).toUpperCase() + mSport.slice(1))}</span>
           ${mLevel ? `<span style="display:inline-flex;align-items:center;padding:4px 12px;background:${levelColors[mLevel] || '#6b7280'}15;border:1px solid ${levelColors[mLevel] || '#6b7280'}40;border-radius:20px;font-size:14px;font-weight:700;color:${levelColors[mLevel] || '#6b7280'}">${levelLabels[mLevel] || mLevel}</span>` : ''}
         </div>
-        <div class="om-card-venue">${esc(m.venue || L.settings.leagueName || 'League')}</div>
+        <div class="om-card-venue">${storedText(m.venue || L.settings.leagueName || 'League')}</div>
       </div>
       <div class="om-card-players">${avatarsHtml}</div>
       ${playerNamesHtml ? `<div class="om-player-names">${playerNamesHtml}</div>` : ''}
@@ -12720,7 +12723,7 @@ function renderOpenMatches() {
         <span class="om-meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>${dateStr}</span>
         <span class="om-spots ${isFull ? 'full' : 'available'}">${isFull ? 'Full' : spotsLeft + '/' + maxP + ' Slots Available'}</span>
       </div>
-      ${m.notes ? `<div style="margin-top:8px;font-size:13px;color:var(--muted);font-style:italic">${esc(m.notes)}</div>` : ''}
+      ${m.notes ? `<div style="margin-top:8px;font-size:13px;color:var(--muted);font-style:italic">${storedText(m.notes)}</div>` : ''}
       <div onclick="${iJoined || isCreator ? `toggleOmCourtBooked(${jsAttr(m.id)})` : ''}" style="margin-top:8px;padding:8px 12px;border-radius:10px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;${iJoined || isCreator ? 'cursor:pointer;' : ''}${m.courtBooked ? 'background:#f0fdf4;border:1.5px solid #86efac;color:#059669' : 'background:#fef9c3;border:1.5px solid #fde047;color:#a16207'}">
         ${m.courtBooked ? '&#9989; Court Booked' + (m.courtBookedBy ? '<span style="font-weight:500;font-size:12px;opacity:0.8;margin-left:4px">by ' + esc(m.courtBookedBy.split(' ')[0]) + '</span>' : '') : '&#9888;&#65039; Court Not Booked'}${iJoined || isCreator ? '<span style="margin-left:auto;font-size:11px;font-weight:600;opacity:0.7">tap to change</span>' : ''}
       </div>

@@ -20,7 +20,7 @@
         },
         "mixInGames": {
           "$gameId": {
-            ".write": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || newData.child('createdBy').val() === auth.token.email || data.child('createdBy').val() === auth.token.email || root.child('clubAdmins').child($clubId).child(auth.token.email.replace('.', ',')).exists())"
+            ".write": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || root.child('clubAdmins').child($clubId).child(auth.token.email.replace('.', ',')).exists())"
           }
         },
         "mixInComments": {
@@ -139,7 +139,9 @@
       ".write": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'",
       "$uid": {
         ".read": "auth != null && auth.uid == $uid",
-        ".write": "auth != null && auth.uid == $uid"
+        "$leagueId": {
+          ".write": "auth != null && auth.uid == $uid && root.child('leagues').child($leagueId).child('members').child(auth.token.email.replace('.', ',')).child('role').val() === 'player' && newData.child('role').val() === 'player' && newData.child('clubId').val() === root.child('leagues').child($leagueId).child('info').child('clubId').val() && (!data.exists() || (newData.child('role').val() === data.child('role').val() && newData.child('clubId').val() === data.child('clubId').val()))"
+        }
       }
     },
     "codes": {
@@ -153,9 +155,15 @@
     "users": {
       "$uid": {
         ".read": "auth != null && auth.uid == $uid",
-        ".write": "auth != null && auth.uid == $uid",
+        "homeClub": {
+          ".write": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'"
+        },
         "consent": {
+          ".write": "auth != null && auth.uid == $uid",
           ".validate": "newData.hasChildren(['marketing', 'timestamp', 'source'])"
+        },
+        "$profileField": {
+          ".write": "auth != null && auth.uid == $uid && $profileField != 'homeClub'"
         }
       }
     },

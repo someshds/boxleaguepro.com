@@ -1,0 +1,19 @@
+{
+  "name": "boxleague-pro-self-service-functions",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.js",
+  "engines": {
+    "node": "22"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.3.0",
+    "firebase-functions": "^7.3.2"
+  },
+  "devDependencies": {
+    "playwright": "^1.58.2"
+  },
+  "scripts": {
+    "test": "node test/create-club-emulator.test.js"
+  }
+}
