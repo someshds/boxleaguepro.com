@@ -1,0 +1,200 @@
+{
+  "rules": {
+    "clubs": {
+      ".read": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'",
+      "$clubId": {
+        ".read": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || root.child('clubAdmins').child($clubId).child(auth.token.email.replace('.', ',')).exists() || root.child('clubPlayers').child($clubId).child(auth.token.email.replace('.', ',')).exists())",
+        ".write": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'",
+        "bookingUrl": {
+          ".write": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || root.child('clubAdmins').child($clubId).child(auth.token.email.replace('.', ',')).exists())",
+          ".validate": "!newData.exists() || (newData.isString() && newData.val().matches(/^https?:\\/\\//i))"
+        },
+        "availabilityHours": {
+          ".write": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || root.child('clubAdmins').child($clubId).child(auth.token.email.replace('.', ',')).exists())"
+        },
+        "scoringSystem": {
+          ".write": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || root.child('clubAdmins').child($clubId).child(auth.token.email.replace('.', ',')).exists())"
+        },
+        "modules": {
+          ".write": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'"
+        },
+        "mixInGames": {
+          "$gameId": {
+            ".write": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || newData.child('createdBy').val() === auth.token.email || data.child('createdBy').val() === auth.token.email || root.child('clubAdmins').child($clubId).child(auth.token.email.replace('.', ',')).exists())"
+          }
+        },
+        "mixInComments": {
+          "$commentId": {
+            ".write": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || newData.child('uid').val() === auth.uid || data.child('uid').val() === auth.uid || root.child('clubAdmins').child($clubId).child(auth.token.email.replace('.', ',')).exists())"
+          }
+        }
+      }
+    },
+    "clubsBySlug": {
+      ".read": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'",
+      "$slug": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'",
+        ".validate": "newData.isString() && newData.val().length > 0"
+      }
+    },
+    "clubPublicMeta": {
+      "$clubId": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'",
+        ".validate": "newData.hasChildren(['name'])",
+        "bookingUrl": {
+          ".write": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || root.child('clubAdmins').child($clubId).child(auth.token.email.replace('.', ',')).exists())",
+          ".validate": "!newData.exists() || (newData.isString() && newData.val().matches(/^https?:\\/\\//i))"
+        }
+      }
+    },
+    "platformAdmins": {
+      ".read": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'",
+      "$emailKey": {
+        ".write": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'"
+      }
+    },
+    "clubAdmins": {
+      ".read": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'",
+      "$clubId": {
+        ".read": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || root.child('clubAdmins').child($clubId).child(auth.token.email.replace('.', ',')).exists())",
+        "$emailKey": {
+          ".read": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || auth.token.email.replace('.', ',') == $emailKey)",
+          ".write": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || (root.child('clubAdmins').child($clubId).child(auth.token.email.replace('.', ',')).exists() && $emailKey != 'grantdeswardt@gmail,com' && !root.child('platformAdmins').child($emailKey).exists()))"
+        }
+      }
+    },
+    "clubPlayers": {
+      "$clubId": {
+        ".read": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || root.child('clubAdmins').child($clubId).child(auth.token.email.replace('.', ',')).exists())",
+        "$emailKey": {
+          ".write": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || root.child('clubAdmins').child($clubId).child(auth.token.email.replace('.', ',')).exists())"
+        }
+      }
+    },
+    "clubApplications": {
+      ".read": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'",
+      "$applicationId": {
+        ".write": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || (!data.exists() && newData.child('email').val() === auth.token.email))"
+      },
+      ".indexOn": ["submittedAt", "reviewedAt"]
+    },
+    "leagues": {
+      ".read": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'",
+      "$leagueId": {
+        ".read": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || root.child('clubAdmins').child(data.child('info').child('clubId').val()).child(auth.token.email.replace('.', ',')).exists() || data.child('members').child(auth.token.email.replace('.', ',')).exists() || root.child('clubPlayers').child(data.child('info').child('clubId').val()).child(auth.token.email.replace('.', ',')).exists())",
+        ".write": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || root.child('clubAdmins').child(newData.child('info').child('clubId').val()).child(auth.token.email.replace('.', ',')).exists() || root.child('clubAdmins').child(data.child('info').child('clubId').val()).child(auth.token.email.replace('.', ',')).exists())",
+        "info": {
+          ".validate": "newData.hasChildren(['name', 'clubId', 'organiserUid']) && (!data.exists() || newData.child('clubId').val() === data.child('clubId').val())"
+        },
+        "settings": {
+          ".write": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || root.child('clubAdmins').child(root.child('leagues').child($leagueId).child('info').child('clubId').val()).child(auth.token.email.replace('.', ',')).exists() || root.child('leagues').child($leagueId).child('members').child(auth.token.email.replace('.', ',')).child('role').val() === 'organiser')"
+        },
+        "members": {
+          "$emailKey": {
+            ".write": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || root.child('clubAdmins').child(root.child('leagues').child($leagueId).child('info').child('clubId').val()).child(auth.token.email.replace('.', ',')).exists() || root.child('leagues').child($leagueId).child('members').child(auth.token.email.replace('.', ',')).child('role').val() === 'organiser' || (auth.token.email.replace('.', ',') === $emailKey && ((!data.exists() && newData.child('email').val() === auth.token.email && newData.child('role').val() === 'player') || (data.exists() && newData.child('email').val() === data.child('email').val() && newData.child('role').val() === data.child('role').val()))))"
+          }
+        },
+        "groups": {
+          ".write": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || root.child('clubAdmins').child(root.child('leagues').child($leagueId).child('info').child('clubId').val()).child(auth.token.email.replace('.', ',')).exists() || root.child('leagues').child($leagueId).child('members').child(auth.token.email.replace('.', ',')).child('role').val() === 'organiser')"
+        },
+        "availability": {
+          ".write": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || root.child('leagues').child($leagueId).child('members').child(auth.token.email.replace('.', ',')).exists() || root.child('clubAdmins').child(root.child('leagues').child($leagueId).child('info').child('clubId').val()).child(auth.token.email.replace('.', ',')).exists())"
+        },
+        "booked": {
+          ".write": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || root.child('leagues').child($leagueId).child('members').child(auth.token.email.replace('.', ',')).exists() || root.child('clubAdmins').child(root.child('leagues').child($leagueId).child('info').child('clubId').val()).child(auth.token.email.replace('.', ',')).exists())"
+        },
+        "results": {
+          ".write": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || root.child('leagues').child($leagueId).child('members').child(auth.token.email.replace('.', ',')).exists() || root.child('clubAdmins').child(root.child('leagues').child($leagueId).child('info').child('clubId').val()).child(auth.token.email.replace('.', ',')).exists())"
+        },
+        "comments": {
+          "$commentId": {
+            ".write": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || newData.child('uid').val() === auth.uid || data.child('uid').val() === auth.uid || root.child('leagues').child($leagueId).child('members').child(auth.token.email.replace('.', ',')).child('role').val() === 'organiser' || root.child('clubAdmins').child(root.child('leagues').child($leagueId).child('info').child('clubId').val()).child(auth.token.email.replace('.', ',')).exists())"
+          }
+        },
+        "activityLog": {
+          "$entryId": {
+            ".write": "auth != null && auth.token.email == 'grantdeswardt@gmail.com' && !data.exists()"
+          }
+        },
+        "openMatches": {
+          "$matchId": {
+            ".write": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || newData.child('createdBy').val() === auth.token.email || data.child('createdBy').val() === auth.token.email || root.child('leagues').child($leagueId).child('members').child(auth.token.email.replace('.', ',')).exists() || root.child('clubAdmins').child(root.child('leagues').child($leagueId).child('info').child('clubId').val()).child(auth.token.email.replace('.', ',')).exists())"
+          }
+        }
+      }
+    },
+    "clubLeagues": {
+      ".read": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'",
+      "$clubId": {
+        ".read": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || root.child('clubAdmins').child($clubId).child(auth.token.email.replace('.', ',')).exists() || root.child('clubPlayers').child($clubId).child(auth.token.email.replace('.', ',')).exists())",
+        "$leagueId": {
+          ".write": "auth != null && (auth.token.email == 'grantdeswardt@gmail.com' || root.child('clubAdmins').child($clubId).child(auth.token.email.replace('.', ',')).exists() || data.child('organiserUid').val() === auth.uid)"
+        }
+      }
+    },
+    "userLeagues": {
+      ".read": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'",
+      ".write": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'",
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "codes": {
+      ".read": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'",
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'",
+        ".validate": "newData.isString() && newData.val().length > 0"
+      }
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid",
+        "consent": {
+          ".validate": "newData.hasChildren(['marketing', 'timestamp', 'source'])"
+        }
+      }
+    },
+    "activityLog": {
+      ".read": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'",
+      "$entryId": {
+        ".write": "auth != null && auth.token.email == 'grantdeswardt@gmail.com' && !data.exists()",
+        ".validate": "newData.hasChildren(['action', 'user', 'timestamp'])"
+      },
+      ".indexOn": ["timestamp"]
+    },
+    "leagueIndex": {
+      ".read": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'",
+      ".write": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'"
+    },
+    "serverQueue": {
+      "ghlWebhooks": {
+        ".read": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'",
+        "$jobId": {
+          ".write": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'",
+          ".validate": "newData.hasChildren(['type', 'payload', 'requestedAt', 'requestedBy', 'status'])"
+        },
+        ".indexOn": ["status", "requestedAt"]
+      }
+    },
+    "selfServiceClubRequests": {
+      ".read": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'",
+      ".write": "false"
+    },
+    "selfServiceRateLimits": {
+      ".read": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'",
+      ".write": "false"
+    },
+    "errorLog": {
+      ".read": "auth != null && auth.token.email == 'grantdeswardt@gmail.com'",
+      "$entryId": {
+        ".write": "auth != null && auth.token.email == 'grantdeswardt@gmail.com' && !data.exists()"
+      },
+      ".indexOn": ["ts"]
+    }
+  }
+}
