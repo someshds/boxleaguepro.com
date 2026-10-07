@@ -102,7 +102,7 @@ assert.match(submit, /ORIGIN_DENIED/);
 assert.match(submit, /Please create your club from boxleaguepro\.com/);
 assert.match(submit, /getIdToken\(true\)/);
 assert.match(submit, /VERIFICATION_RESEND_WAIT_MS/);
-assert.equal(context.VERIFICATION_RESEND_WAIT_MS, 60000);
+assert.match(helpers, /const VERIFICATION_RESEND_WAIT_MS = 60000/);
 
 assert.match(html, /sendSignupVerificationEmail\(cred\.user\)/);
 assert.match(html, /user\.sendEmailVerification\(getEmailVerificationActionSettings\(\)\)/);
