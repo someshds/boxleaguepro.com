@@ -719,11 +719,19 @@
       <div class="fg">
         <label class="fl" for="self-club-booking-url">Court booking link <span style="font-weight:400">(optional)</span></label>
         <input class="fi" id="self-club-booking-url" type="url" inputmode="url" placeholder="https://your-club-booking-system.example">
+        <div style="font-size:12px;color:#64748b;margin-top:6px">Use an https link. Links from common court-booking systems such as ClubSpark, MyCourts or Playtomic, or the club's own website, work best.</div>
       </div>
       <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;line-height:1.45;color:#475569;margin-top:10px">
         <input id="self-club-confirm" type="checkbox" style="margin-top:3px">
         <span>I am authorised to organise leagues for this club and agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span>
       </label>
+      <div id="self-club-verify" class="self-service-note" style="display:none" role="status">
+        <div id="self-club-verify-text"></div>
+        <div id="self-club-verify-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <button type="button" class="btn btn-secondary btn-sm" id="self-club-resend-verify" onclick="resendSelfServiceVerificationEmail()">Resend email</button>
+          <button type="button" class="btn btn-primary btn-sm" id="self-club-retry-verify" onclick="continueSelfServiceClubAfterVerify()">I've verified, continue</button>
+        </div>
+      </div>
       <div class="self-service-error" id="self-club-error" role="alert"></div>
       <button class="btn btn-primary btn-full" id="self-club-submit" onclick="submitSelfServiceClub()" style="margin-top:16px">Create club and continue</button>
       <div id="self-service-review-note" class="self-service-note" style="display:none">Local review mode: the wizard is complete, but live club creation stays disabled until the authenticated server endpoint is approved and deployed.</div>
@@ -4927,7 +4935,7 @@ function buildSelfServiceClubRequest(values, user) {
   if (bookingUrl) {
     let parsed;
     try { parsed = new URL(bookingUrl); } catch (e) { throw new Error('Enter a complete booking link, including https://.'); }
-    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') throw new Error('The booking link must start with https:// or http://.');
+    if (parsed.protocol !== 'https:') throw new Error('The booking link must start with https://.');
   }
   if (!values.confirmed) throw new Error('Confirm that you are authorised to organise leagues for this club.');
   return {
@@ -4938,11 +4946,129 @@ function buildSelfServiceClubRequest(values, user) {
   };
 }
 
+function userHasAuthProvider(user, providerId) {
+  const providers = (user && user.providerData) || [];
+  for (let i = 0; i < providers.length; i++) {
+    if (providers[i] && providers[i].providerId === providerId) return true;
+  }
+  return false;
+}
+
+function needsSelfServiceEmailVerification(user) {
+  if (!user || userHasAuthProvider(user, 'google.com')) return false;
+  if (!userHasAuthProvider(user, 'password')) return false;
+  return user.emailVerified !== true;
+}
+
+function getEmailVerificationContinueUrl(search) {
+  const raw = (search === undefined && typeof window !== 'undefined' && window.location)
+    ? window.location.search : (search || '');
+  const params = new URLSearchParams(raw);
+  const next = new URLSearchParams();
+  ['club', 'league', 'mixin', 'tab'].forEach(function(key) {
+    const value = params.get(key);
+    if (value) next.set(key, value);
+  });
+  const query = next.toString();
+  return 'https://boxleaguepro.com/app.html' + (query ? '?' + query : '');
+}
+
+function emailVerificationNoticeText(email) {
+  const address = String(email || '').trim() || 'your email';
+  return "We've sent a verification link to " + address + '. Please click it, then come back and continue.';
+}
+
+function readSelfServiceFunctionErrorCode(result, fallbackText) {
+  const parts = [];
+  if (result) {
+    if (typeof result.error === 'string') parts.push(result.error);
+    if (typeof result.code === 'string') parts.push(result.code);
+    if (result.error && typeof result.error === 'object') {
+      if (result.error.code) parts.push(result.error.code);
+      if (result.error.message) parts.push(result.error.message);
+    }
+  }
+  if (fallbackText) parts.push(fallbackText);
+  const joined = parts.join(' ');
+  if (joined.indexOf('EMAIL_NOT_VERIFIED') !== -1) return 'EMAIL_NOT_VERIFIED';
+  if (joined.indexOf('ORIGIN_DENIED') !== -1) return 'ORIGIN_DENIED';
+  return '';
+}
+
+function getEmailVerificationActionSettings() {
+  return { url: getEmailVerificationContinueUrl() };
+}
+
+let lastVerificationEmailAt = 0;
+let selfServiceVerifyProceed = false;
+const VERIFICATION_RESEND_WAIT_MS = 60000;
+
+function showSelfServiceVerificationNotice(email, options) {
+  options = options || {};
+  const box = document.getElementById('self-club-verify');
+  const text = document.getElementById('self-club-verify-text');
+  const retry = document.getElementById('self-club-retry-verify');
+  if (text) text.textContent = emailVerificationNoticeText(email);
+  if (retry) retry.style.display = options.showContinue === false ? 'none' : '';
+  if (box) box.style.display = 'block';
+}
+
+function hideSelfServiceVerificationNotice() {
+  const box = document.getElementById('self-club-verify');
+  if (box) box.style.display = 'none';
+}
+
+function startVerificationResendCooldown() {
+  const btn = document.getElementById('self-club-resend-verify');
+  if (!btn) return;
+  const until = lastVerificationEmailAt + VERIFICATION_RESEND_WAIT_MS;
+  function tick() {
+    const remain = Math.ceil((until - Date.now()) / 1000);
+    if (remain <= 0) {
+      btn.disabled = false;
+      btn.textContent = 'Resend email';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Resend email (' + remain + 's)';
+    setTimeout(tick, 1000);
+  }
+  tick();
+}
+
+function showSignupVerificationNotice(email) {
+  const errEl = document.getElementById('auth-error');
+  if (!errEl) return;
+  errEl.style.display = 'block';
+  errEl.style.background = 'rgba(34,197,94,0.2)';
+  errEl.style.borderColor = 'rgba(34,197,94,0.4)';
+  errEl.style.color = '#bbf7d0';
+  errEl.textContent = emailVerificationNoticeText(email);
+}
+
+function sendSignupVerificationEmail(user) {
+  if (!user || typeof user.sendEmailVerification !== 'function') return Promise.resolve();
+  return user.sendEmailVerification(getEmailVerificationActionSettings()).then(function() {
+    lastVerificationEmailAt = Date.now();
+    showSignupVerificationNotice(user.email);
+    startVerificationResendCooldown();
+  }).catch(function(err) {
+    console.error('Verification email error:', err);
+    showSignupVerificationNotice(user.email);
+  });
+}
+
+function maybeShowSelfServiceVerificationHint() {
+  if (!needsSelfServiceEmailVerification(currentUser)) return;
+  showSelfServiceVerificationNotice(currentUser.email, { showContinue: false });
+}
+
 function beginOrganiserSignup() {
   try { sessionStorage.setItem(SELF_SERVICE_INTENT_KEY, 'organiser'); } catch (e) {}
   if (currentUser) {
     showScreen('club-create');
     syncSelfServiceFormat();
+    maybeShowSelfServiceVerificationHint();
     return;
   }
   if (authMode !== 'signup') toggleAuthMode();
@@ -4983,15 +5109,33 @@ async function submitSelfServiceClub() {
     if (reviewEl) reviewEl.style.display = 'block';
     return;
   }
+  if (!selfServiceVerifyProceed && needsSelfServiceEmailVerification(currentUser)) {
+    try { if (currentUser.reload) await currentUser.reload(); } catch (e) {}
+    if (needsSelfServiceEmailVerification(currentUser)) {
+      showSelfServiceVerificationNotice(currentUser.email, { showContinue: true });
+      return;
+    }
+  }
+  selfServiceVerifyProceed = false;
   try {
     if (button) { button.disabled = true; button.textContent = 'Creating club...'; }
-    const token = await currentUser.getIdToken();
+    const token = await currentUser.getIdToken(true);
     const response = await fetch(SELF_SERVICE_CREATE_ENDPOINT, {
       method: 'POST', headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
     });
     const result = await response.json().catch(function() { return {}; });
-    if (!response.ok || !result.clubId || !result.slug) throw new Error(result.error || 'Club creation failed. Please try again.');
+    if (!response.ok || !result.clubId || !result.slug) {
+      const code = readSelfServiceFunctionErrorCode(result);
+      if (code === 'EMAIL_NOT_VERIFIED') {
+        showSelfServiceVerificationNotice((currentUser && currentUser.email) || '', { showContinue: true });
+        return;
+      }
+      if (code === 'ORIGIN_DENIED') throw new Error('Please create your club from boxleaguepro.com');
+      const message = (typeof result.error === 'string' && result.error) || 'Club creation failed. Please try again.';
+      throw new Error(message);
+    }
     try { sessionStorage.removeItem(SELF_SERVICE_INTENT_KEY); } catch (e) {}
+    hideSelfServiceVerificationNotice();
     userHomeClub = { id: result.clubId, name: result.name || payload.name, bookingUrl: payload.bookingUrl };
     const stagingSuffix = SELF_SERVICE_EMULATOR_MODE ? '&emulator=1' : '';
     window.location.assign(window.location.pathname + '?club=' + encodeURIComponent(result.slug) + stagingSuffix);
@@ -5000,6 +5144,44 @@ async function submitSelfServiceClub() {
   } finally {
     if (button) { button.disabled = false; button.textContent = 'Create club and continue'; }
   }
+}
+
+async function resendSelfServiceVerificationEmail() {
+  const user = currentUser || (typeof auth !== 'undefined' && auth ? auth.currentUser : null);
+  if (!user || typeof user.sendEmailVerification !== 'function') return;
+  const now = Date.now();
+  if (lastVerificationEmailAt && now - lastVerificationEmailAt < VERIFICATION_RESEND_WAIT_MS) {
+    const wait = Math.ceil((VERIFICATION_RESEND_WAIT_MS - (now - lastVerificationEmailAt)) / 1000);
+    toast('Please wait ' + wait + ' seconds before resending.');
+    startVerificationResendCooldown();
+    return;
+  }
+  const btn = document.getElementById('self-club-resend-verify');
+  if (btn) btn.disabled = true;
+  try {
+    await user.sendEmailVerification(getEmailVerificationActionSettings());
+    lastVerificationEmailAt = Date.now();
+    showSelfServiceVerificationNotice(user.email, { showContinue: true });
+    startVerificationResendCooldown();
+    toast('Verification email sent.');
+  } catch (err) {
+    console.error('Resend verification failed:', err);
+    if (btn) btn.disabled = false;
+    toast('Could not send the email. Please try again shortly.');
+  }
+}
+
+async function continueSelfServiceClubAfterVerify() {
+  if (currentUser) {
+    try {
+      if (currentUser.reload) await currentUser.reload();
+      if (currentUser.getIdToken) await currentUser.getIdToken(true);
+    } catch (e) {
+      console.error('Verification refresh failed:', e);
+    }
+  }
+  selfServiceVerifyProceed = true;
+  return submitSelfServiceClub();
 }
 
 function showAuthError(msg) {
@@ -5085,7 +5267,11 @@ async function emailSignIn() {
     if (btn) btn.disabled = true;
     auth.createUserWithEmailAndPassword(email, password)
       .then(cred => {
-        return cred.user.updateProfile({ displayName: name }).then(recordSignupConsent);
+        return cred.user.updateProfile({ displayName: name }).then(function() {
+          return recordSignupConsent(cred.user);
+        }).then(function() {
+          return sendSignupVerificationEmail(cred.user);
+        });
       })
       .then(() => {
         // Profile updated, onAuthStateChanged will handle the rest
@@ -5494,6 +5680,7 @@ function onAuthSuccess() {
     if (shouldStartSelfServiceClub(params)) {
       showScreen('club-create');
       syncSelfServiceFormat();
+      maybeShowSelfServiceVerificationHint();
       return;
     }
     if (sharedLeagueId) {
