@@ -178,10 +178,12 @@
           source +
           '<p class="blp-promo-headline">' + escapeHtml(offer.headline) + '</p>' +
           '<p class="blp-promo-line">' + escapeHtml(offer.line) + '</p>' +
-          '<a class="blp-promo-cta" href="' + href + '" target="_blank" rel="noopener sponsored">' +
-            escapeHtml(offer.cta) +
-          '</a>' +
-          '<button type="button" class="blp-promo-dismiss" aria-label="Dismiss this message">&#215;</button>' +
+          '<div class="blp-promo-actions">' +
+            '<a class="blp-promo-cta" href="' + href + '" target="_blank" rel="noopener sponsored">' +
+              escapeHtml(offer.cta) +
+            '</a>' +
+            '<button type="button" class="blp-promo-dismiss" aria-label="Dismiss this message">Dismiss</button>' +
+          '</div>' +
         '</div>' +
       '</aside>'
     );
@@ -194,15 +196,16 @@
     style.id = STYLE_ID;
     style.textContent = [
       '.blp-promo{margin:16px 16px 20px;max-width:720px;margin-left:auto;margin-right:auto}',
-      '.blp-promo-card{position:relative;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:14px 44px 14px 16px;color:#0f172a;box-shadow:0 1px 3px rgba(15,23,42,0.06)}',
-      '.blp-promo-kicker{margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#64748b}',
+      '.blp-promo-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px;color:#0f172a;box-shadow:0 1px 3px rgba(15,23,42,0.06)}',
+      '.blp-promo-kicker{margin:0 0 6px;font-size:12px;font-weight:600;color:#64748b}',
       '.blp-promo-source{margin:0 0 4px;font-size:12px;font-weight:600;color:#475569}',
       '.blp-promo-headline{margin:0 0 4px;font-size:15px;font-weight:700;color:#0f172a;line-height:1.35}',
       '.blp-promo-line{margin:0 0 10px;font-size:13px;color:#334155;line-height:1.45}',
-      '.blp-promo-cta{display:inline-flex;align-items:center;background:#2563eb;color:#fff;font-size:13px;font-weight:700;text-decoration:none;padding:8px 14px;border-radius:8px}',
+      '.blp-promo-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
+      '.blp-promo-cta{display:inline-flex;align-items:center;background:#2563eb;color:#fff;font-size:13px;font-weight:700;text-decoration:none;padding:8px 14px;border-radius:8px;min-height:36px}',
       '.blp-promo-cta:hover{background:#1d4ed8}',
       '.blp-promo-cta:focus-visible,.blp-promo-dismiss:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}',
-      '.blp-promo-dismiss{position:absolute;top:6px;right:6px;width:36px;height:36px;border:0;border-radius:8px;background:transparent;color:#475569;font-size:22px;line-height:1;cursor:pointer}',
+      '.blp-promo-dismiss{border:0;border-radius:8px;background:transparent;color:#475569;font-size:13px;font-weight:600;line-height:1;cursor:pointer;padding:8px 10px;min-height:36px}',
       '.blp-promo-dismiss:hover{background:#e2e8f0;color:#0f172a}',
       '@media (max-width:480px){.blp-promo{margin:12px}.blp-promo-headline{font-size:14px}.blp-promo-line{font-size:12px}}'
     ].join('');
