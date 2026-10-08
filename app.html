@@ -478,6 +478,8 @@
     /* ── Toast ── */
     .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--primary-dark); color: #fff; padding: 12px 22px; border-radius: 24px; font-size: 14px; font-weight: 600; z-index: 10001; opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: normal; max-width: calc(100vw - 32px); text-align: center; }
     .toast.show { opacity: 1; }
+    .verify-email-write-hint { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 10050; display: none; width: calc(100vw - 32px); max-width: 420px; padding: 14px 14px 12px; border-radius: 12px; background: #eff6ff; color: #1e3a8a; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18); font-size: 14px; line-height: 1.45; }
+    .verify-email-write-hint-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
     /* v4.16.9: swap full <-> abbreviated team names by viewport. Both
        spans are rendered in the DOM; CSS picks which one is visible
        so the swap happens live on resize without re-rendering. */
@@ -2495,6 +2497,13 @@
 
 <!-- ── Toast ── -->
 <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+<div id="verify-email-write-hint" class="verify-email-write-hint" role="status">
+  <div id="verify-email-write-hint-text"></div>
+  <div class="verify-email-write-hint-actions">
+    <button type="button" class="btn btn-secondary btn-sm" id="verify-email-write-resend" onclick="resendUnverifiedEmailWriteHint()">Resend verification email</button>
+    <button type="button" class="btn btn-primary btn-sm" id="verify-email-write-refresh" onclick="refreshUnverifiedEmailWriteHint()">I've verified</button>
+  </div>
+</div>
 
 <!-- ══════════════════════════════════════════════════════
      v4.8.0 — SCOPED CLUB MODALS
@@ -5184,6 +5193,115 @@ async function continueSelfServiceClubAfterVerify() {
   return submitSelfServiceClub();
 }
 
+const UNVERIFIED_EMAIL_WRITE_HINT = 'Please verify your email to do this. Check your inbox for the verification link.';
+let unverifiedEmailWriteHintShown = false;
+
+function isPermissionDeniedError(err) {
+  if (!err) return false;
+  const code = String(err.code || '').toUpperCase();
+  const message = String(err.message || '').toUpperCase();
+  return code.indexOf('PERMISSION_DENIED') !== -1
+    || message.indexOf('PERMISSION_DENIED') !== -1
+    || message.indexOf('PERMISSION DENIED') !== -1;
+}
+
+function isCurrentUserEmailUnverified(user) {
+  user = user || currentUser || (typeof auth !== 'undefined' && auth ? auth.currentUser : null);
+  return !!(user && user.uid && user.uid !== 'demo' && user.emailVerified === false);
+}
+
+function showUnverifiedEmailWriteHint() {
+  const box = document.getElementById('verify-email-write-hint');
+  const text = document.getElementById('verify-email-write-hint-text');
+  if (text) text.textContent = UNVERIFIED_EMAIL_WRITE_HINT;
+  if (box) box.style.display = 'block';
+  unverifiedEmailWriteHintShown = true;
+}
+
+function hideUnverifiedEmailWriteHint() {
+  const box = document.getElementById('verify-email-write-hint');
+  if (box) box.style.display = 'none';
+}
+
+function startUnverifiedWriteHintResendCooldown() {
+  const btn = document.getElementById('verify-email-write-resend');
+  if (!btn || !lastVerificationEmailAt) return;
+  const until = lastVerificationEmailAt + VERIFICATION_RESEND_WAIT_MS;
+  function tick() {
+    const remain = Math.ceil((until - Date.now()) / 1000);
+    if (remain <= 0) {
+      btn.disabled = false;
+      btn.textContent = 'Resend verification email';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Resend verification email (' + remain + 's)';
+    setTimeout(tick, 1000);
+  }
+  tick();
+}
+
+async function maybeHandleUnverifiedEmailWriteError(err, options) {
+  options = options || {};
+  if (!isPermissionDeniedError(err)) return false;
+  let user = currentUser || (typeof auth !== 'undefined' && auth ? auth.currentUser : null);
+  if (!user || user.uid === 'demo') return false;
+  try { if (typeof user.reload === 'function') await user.reload(); } catch (e) {}
+  user = currentUser || (typeof auth !== 'undefined' && auth ? auth.currentUser : null);
+  if (!isCurrentUserEmailUnverified(user)) return false;
+  if (!(options.once && unverifiedEmailWriteHintShown)) {
+    showUnverifiedEmailWriteHint();
+  }
+  if (options.errorEl) {
+    options.errorEl.textContent = UNVERIFIED_EMAIL_WRITE_HINT;
+    options.errorEl.style.display = 'block';
+  }
+  return true;
+}
+
+function reportUnverifiedEmailWriteError(err, options, fallback) {
+  return maybeHandleUnverifiedEmailWriteError(err, options || {}).then(function(handled) {
+    if (!handled && typeof fallback === 'function') fallback();
+  }).catch(function() {
+    if (typeof fallback === 'function') fallback();
+  });
+}
+
+function reportProfileSaveError(err, errEl) {
+  reportUnverifiedEmailWriteError(err, { errorEl: errEl }, function() {
+    errEl.textContent = 'Save failed: ' + err.message;
+    errEl.style.display = 'block';
+  });
+}
+
+async function resendUnverifiedEmailWriteHint() {
+  const btn = document.getElementById('verify-email-write-resend');
+  if (btn) btn.disabled = true;
+  const before = lastVerificationEmailAt;
+  await resendSelfServiceVerificationEmail();
+  if (lastVerificationEmailAt && (lastVerificationEmailAt !== before
+      || Date.now() - lastVerificationEmailAt < VERIFICATION_RESEND_WAIT_MS)) {
+    startUnverifiedWriteHintResendCooldown();
+    return;
+  }
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = 'Resend verification email';
+  }
+}
+
+async function refreshUnverifiedEmailWriteHint() {
+  const user = currentUser || (typeof auth !== 'undefined' && auth ? auth.currentUser : null);
+  if (!user) return;
+  try {
+    if (typeof user.reload === 'function') await user.reload();
+    if (typeof user.getIdToken === 'function') await user.getIdToken(true);
+  } catch (e) {
+    console.error('Verification refresh failed:', e);
+  }
+  if (!isCurrentUserEmailUnverified()) hideUnverifiedEmailWriteHint();
+}
+
 function showAuthError(msg) {
   const el = document.getElementById('auth-error');
   el.textContent = msg;
@@ -5461,7 +5579,10 @@ function saveProfile() {
       db.ref('/users/' + currentUser.uid + '/partners').set({
         doubles: window._userProfileCache.doublesPartner || '',
         mixed: window._userProfileCache.mixedPartner || ''
-      }).catch(function(e) { console.warn('[profile] save user-level partners failed', e); });
+      }).catch(function(e) {
+        console.warn('[profile] save user-level partners failed', e);
+        reportUnverifiedEmailWriteError(e, { once: true });
+      });
     }
   } catch (e) { console.warn('[profile] user-level partners cache error', e); }
 
@@ -5474,8 +5595,7 @@ function saveProfile() {
         closeProfile();
         document.getElementById('app-user-first').textContent = newName.split(' ')[0];
       }).catch(err => {
-        errEl.textContent = 'Save failed: ' + err.message;
-        errEl.style.display = 'block';
+        reportProfileSaveError(err, errEl);
       });
     } else {
       closeProfile();
@@ -5545,8 +5665,7 @@ function saveProfile() {
                 toast('Profile updated!');
                 closeProfile();
               }).catch(err => {
-                errEl.textContent = 'Save failed: ' + err.message;
-                errEl.style.display = 'block';
+                reportProfileSaveError(err, errEl);
               });
             });
           });
@@ -5555,8 +5674,7 @@ function saveProfile() {
             toast('Profile updated!');
             closeProfile();
           }).catch(err => {
-            errEl.textContent = 'Save failed: ' + err.message;
-            errEl.style.display = 'block';
+            reportProfileSaveError(err, errEl);
           });
         }
       });
@@ -5566,8 +5684,7 @@ function saveProfile() {
         toast('Profile updated!');
         closeProfile();
       }).catch(err => {
-        errEl.textContent = 'Save failed: ' + err.message;
-        errEl.style.display = 'block';
+        reportProfileSaveError(err, errEl);
       });
     }
   } else {
@@ -5734,6 +5851,7 @@ function onAuthSuccess() {
         if (FIREBASE_READY && currentUser) {
           db.ref('/users/' + currentUser.uid + '/homeClub').set(userHomeClub).catch(function(err){
             console.error('homeClub persist failed:', err);
+            reportUnverifiedEmailWriteError(err, { once: true });
           });
         }
         // v4.16.23: email-based pre-allocation. Scan this club's leagues for
@@ -6064,6 +6182,7 @@ function runEmailPreallocation(clubId, cb) {
         if (cb) cb(claimed.length);
       }).catch(function(err) {
         console.error('Pre-allocation write failed:', err);
+        reportUnverifiedEmailWriteError(err);
         if (cb) cb(0);
       });
     }).catch(function(err) {
@@ -8999,7 +9118,9 @@ function joinAndEnterLeague(leagueId) {
     }).catch(err => {
       console.error('Join league error:', err);
       // v4.13.5: surface actual error — silent generic messages trained users to re-tap endlessly
-      toast('Could not join league: ' + (err && err.message ? err.message : 'please try again or contact support'));
+      reportUnverifiedEmailWriteError(err, null, function() {
+        toast('Could not join league: ' + (err && err.message ? err.message : 'please try again or contact support'));
+      });
     });
   }, err => {
     console.error('League lookup error:', err);
@@ -13132,7 +13253,9 @@ function createOpenMatch() {
       renderOpenMatches();
     }).catch(err => {
       console.error('createOpenMatch error:', err);
-      toast('Could not create game: ' + (err && err.message ? err.message : 'try again'));
+      reportUnverifiedEmailWriteError(err, null, function() {
+        toast('Could not create game: ' + (err && err.message ? err.message : 'try again'));
+      });
     });
     return;
   }
@@ -13170,7 +13293,12 @@ function joinOpenMatch(matchId) {
       current.players = arr;
       return current;
     }, (err, committed) => {
-      if (err) { toast('Error joining — try again'); return; }
+      if (err) {
+        reportUnverifiedEmailWriteError(err, null, function() {
+          toast('Error joining — try again');
+        });
+        return;
+      }
       if (!committed) { toast('Could not join — game may be full'); return; }
       logAction('join_open_match', matchId);
       toast('You joined the game!');
@@ -13197,7 +13325,9 @@ function leaveOpenMatch(matchId) {
       toast('You left the game');
     }).catch(err => {
       console.error('leaveOpenMatch error:', err);
-      toast('Could not leave: ' + (err && err.message ? err.message : 'try again'));
+      reportUnverifiedEmailWriteError(err, null, function() {
+        toast('Could not leave: ' + (err && err.message ? err.message : 'try again'));
+      });
     });
     return;
   }
