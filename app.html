@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <script defer src="/privacy-consent.js"></script>
+  <script defer src="/promos.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BoxLeague Pro</title>
   <meta name="description" content="Free app for organising box league matches. Find times, book matches, share with your club.">
@@ -736,6 +737,7 @@
       <button class="btn btn-primary btn-full" id="self-club-submit" onclick="submitSelfServiceClub()" style="margin-top:16px">Create club and continue</button>
       <div id="self-service-review-note" class="self-service-note" style="display:none">Local review mode: the wizard is complete, but live club creation stays disabled until the authenticated server endpoint is approved and deployed.</div>
     </div>
+    <div class="blp-promo-host" data-blp-promo data-blp-promo-view="club-create"></div>
   </div>
 </div>
 
@@ -752,6 +754,7 @@
   <div class="q-body">
     <div class="q-card" id="q-card"></div>
     <div class="q-skip"><a onclick="skipGuided()">I know what I'm doing — skip to full app</a></div>
+    <div class="blp-promo-host" data-blp-promo data-blp-promo-view="guided"></div>
   </div>
 </div>
 
@@ -860,6 +863,7 @@
     <!-- v4.14.7: "Got a league code? Join with code" link removed — codes are legacy now,
          everyone joins via club links. -->
     <div class="welcome-existing" style="display:none"></div>
+    <div class="blp-promo-host" data-blp-promo data-blp-promo-view="welcome"></div>
   </div>
 </div>
 
@@ -912,6 +916,7 @@
     <div style="text-align:center;margin-top:16px">
       <a onclick="skipOnboarding()" style="color:#6b7280;font-size:13px;cursor:pointer;text-decoration:underline">Skip for now</a>
     </div>
+    <div class="blp-promo-host" data-blp-promo data-blp-promo-view="onboarding"></div>
   </div>
 </div>
 
@@ -1150,6 +1155,7 @@
         <button class="btn btn-primary btn-full" onclick="enterCreatedLeague()" style="font-size:16px;padding:14px">Continue to League &rarr;</button>
       </div>
     </div>
+    <div class="blp-promo-host" data-blp-promo data-blp-promo-view="browse"></div>
   </div>
 </div>
 
@@ -1241,6 +1247,7 @@
       </div>
     </div>
 
+    <div class="blp-promo-host" data-blp-promo data-blp-promo-view="wizard"></div>
   </div>
 </div>
 
@@ -1721,6 +1728,8 @@
     </div>
 
   </div>
+
+  <div class="blp-promo-host" data-blp-promo data-blp-promo-view="availability" data-blp-promo-sync="tab"></div>
 
   <!-- Footer -->
   <div class="aifa-footer">
@@ -2463,6 +2472,7 @@
           — free for clubs.
         </div>
       </div>
+      <div class="blp-promo-host" data-blp-promo data-blp-promo-view="help"></div>
     </div>
   </div>
 </div>
@@ -4495,6 +4505,11 @@ function showScreen(id) {
   }
   // v4.6.9: sync top bar visibility + location + menu contents with screen change
   try { updateTopBarForScreen(id); } catch (e) { console.warn('[top-bar] updateTopBarForScreen error', e); }
+  try {
+    if (window.BoxLeaguePromos && id === 'app') {
+      window.BoxLeaguePromos.setView(typeof currentTab === 'string' ? currentTab : 'app');
+    }
+  } catch (e) {}
 }
 
 /* ══════════════════════════════════════
@@ -10269,6 +10284,7 @@ function showTab(t) {
   if (t === 'results') { renderStandings(); renderResultsList(); }
   if (t === 'open') { renderOpenMatches(); }
   if (t === 'setup') { renderGroups(); renderMembers(); try { renderScoringSystemPicker(); renderSeasonSchedulePlanner(); } catch (e) {} }
+  try { if (window.BoxLeaguePromos) window.BoxLeaguePromos.setView(t); } catch (e) {}
 
   // Trigger in-tab guide (replaces explainer modals for tabs that have guides)
   const guideTabId = (t === 'open' && mixInMode) ? 'open' : t;
