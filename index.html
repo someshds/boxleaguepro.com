@@ -8,7 +8,7 @@
 <meta name="description" content="Organise your box league in minutes. Free forever — schedule matches, coordinate availability, post open games, and find players for tennis, padel, squash, racketball and badminton.">
 <meta property="og:title" content="BoxLeague Pro — Free Box League App">
 <meta property="og:description" content="Stop chasing WhatsApp messages. Start playing. Free box league scheduling for any team sport.">
-<meta property="og:url" content="https://boxleaguepro.com">
+<meta property="og:url" content="https://boxleaguepro.com/">
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://boxleaguepro.com/images/hero-banner-sm.jpg">
 <meta property="og:image:width" content="800">
@@ -17,7 +17,7 @@
 <meta name="twitter:title" content="BoxLeague Pro — Free Box League App">
 <meta name="twitter:description" content="Organise your box league in minutes. Free forever for tennis, padel, squash & more.">
 <meta name="twitter:image" content="https://boxleaguepro.com/images/hero-banner-sm.jpg">
-<link rel="canonical" href="https://boxleaguepro.com">
+<link rel="canonical" href="https://boxleaguepro.com/">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='14' cy='8' r='6'/><path d='M10.5 11.5L3 19'/><path d='M10 4l-1 8'/><path d='M20 4l-8 1'/><path d='M17.4 10.6l-6.8-6.8'/><path d='M5 17l-2 2'/></svg>">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="manifest" href="manifest.json">
@@ -57,6 +57,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica N
 /* HERO */
 .hero{padding:120px 20px 80px;text-align:center;background:#0f172a;color:#fff;position:relative;overflow:hidden;z-index:0}
 .hero-video{position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:1;opacity:0.25}
+.section-still{position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0}
+.yt-facade{position:relative;display:block;width:100%;padding:0;border:0;background:#000;cursor:pointer}
+.yt-facade img{display:block;width:100%;height:auto;object-fit:cover}
+.yt-facade[data-yt-aspect="16/9"] img{aspect-ratio:16/9}
+.yt-facade[data-yt-aspect="9/16"] img{aspect-ratio:9/16}
+.yt-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.yt-play-btn{width:68px;height:48px;background:rgba(33,33,33,0.8);border-radius:12px;display:flex;align-items:center;justify-content:center}
+.yt-play-btn::after{content:'';width:0;height:0;border-style:solid;border-width:10px 0 10px 18px;border-color:transparent transparent transparent #fff;margin-left:4px}
+.yt-facade:hover .yt-play-btn,.yt-facade:focus-visible .yt-play-btn{background:#f00}
+.yt-facade:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.cookie-consent-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.cookie-consent-copy{flex:1 1 240px;min-width:0}
+.cookie-consent-actions{display:flex;gap:8px;flex-wrap:wrap}
+.cookie-consent-actions button{white-space:normal}
+@media(max-width:414px){
+  .cookie-consent-inner{align-items:stretch}
+  .cookie-consent-actions{flex-direction:column;width:100%}
+  .cookie-consent-actions button{width:100%}
+}
 .hero-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(to bottom,rgba(15,23,42,0.3) 0%,rgba(15,23,42,0.5) 100%);z-index:2}
 .hero h1,.hero p,.hero .hero-badge,.hero .hero-ctas,.hero .hero-sports,.hero .phone-showcase{position:relative;z-index:3}
 .hero::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:60px;background:var(--bg);border-radius:50% 50% 0 0 / 100% 100% 0 0;z-index:4}
@@ -340,7 +359,7 @@ footer a:hover{text-decoration:underline}
 
 <!-- HERO -->
 <section class="hero">
-  <video class="hero-video" aria-hidden="true" autoplay muted loop playsinline poster="images/hero-banner-sm.jpg">
+  <video class="hero-video" aria-hidden="true" autoplay muted loop playsinline preload="none" poster="images/hero-poster.webp">
     <source src="images/hero-video.mp4" type="video/mp4">
   </video>
   <div class="hero-overlay"></div>
@@ -538,7 +557,10 @@ footer a:hover{text-decoration:underline}
     <h2 style="font-size:clamp(32px,5vw,52px);font-weight:900;letter-spacing:-1.5px;margin:0 0 16px;line-height:1.1">Run your club's box league in 5 minutes</h2>
     <p style="font-size:clamp(16px,2vw,20px);opacity:0.92;max-width:640px;margin:0 auto 36px;line-height:1.5">A 3-minute walkthrough of what your first 5 minutes look like as a BoxLeague Pro club admin — from sign-in to a live league ready for members to join.</p>
     <div style="max-width:800px;margin:0 auto;border-radius:20px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.5),0 0 60px rgba(94,234,212,0.4)">
-      <iframe width="800" height="450" src="https://www.youtube-nocookie.com/embed/BEGkp-D4JTk" title="BoxLeague Pro — Club Admin Walkthrough" frameborder="0" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen loading="lazy" style="display:block;width:100%;aspect-ratio:16/9;height:auto"></iframe>
+      <button type="button" class="yt-facade" data-yt-id="BEGkp-D4JTk" data-yt-title="BoxLeague Pro — Club Admin Walkthrough" data-yt-aspect="16/9" aria-label="Play BoxLeague Pro — Club Admin Walkthrough">
+        <img src="images/yt-BEGkp-D4JTk.webp" alt="BoxLeague Pro — Club Admin Walkthrough" width="1280" height="720" loading="lazy">
+        <span class="yt-play" aria-hidden="true"><span class="yt-play-btn"></span></span>
+      </button>
     </div>
     <div style="margin-top:32px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
       <a href="/app.html?club=demo-club" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:#0d9488;padding:14px 28px;border-radius:12px;font-size:15px;font-weight:800;text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,0.2)">Try the demo club &rarr;</a>
@@ -557,7 +579,10 @@ footer a:hover{text-decoration:underline}
     <h2 style="font-size:clamp(32px,5vw,56px);font-weight:900;letter-spacing:-1.5px;margin:0 0 14px;line-height:1.05">4 New Features. One 2-Minute Walkthrough.</h2>
     <p style="font-size:clamp(16px,2vw,20px);opacity:0.88;max-width:640px;margin:0 auto 36px;line-height:1.5">AI Availability, Scoring &amp; Tables, Modular System, and a bunch of polish &mdash; everything that shipped in the April release.</p>
     <div style="max-width:820px;margin:0 auto;border-radius:20px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.6),0 0 80px rgba(96,165,250,0.3)">
-      <iframe width="820" height="461" src="https://www.youtube-nocookie.com/embed/BaPuOrlOPa4" title="BoxLeague Pro — April 2026 Release" frameborder="0" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen loading="lazy" style="display:block;width:100%;aspect-ratio:16/9;height:auto"></iframe>
+      <button type="button" class="yt-facade" data-yt-id="BaPuOrlOPa4" data-yt-title="BoxLeague Pro — April 2026 Release" data-yt-aspect="16/9" aria-label="Play BoxLeague Pro — April 2026 Release">
+        <img src="images/yt-BaPuOrlOPa4.webp" alt="BoxLeague Pro — April 2026 Release" width="1280" height="720" loading="lazy">
+        <span class="yt-play" aria-hidden="true"><span class="yt-play-btn"></span></span>
+      </button>
     </div>
     <div style="margin-top:32px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
       <a href="/app.html" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:#0f172a;padding:14px 28px;border-radius:12px;font-size:15px;font-weight:800;text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,0.3)">Try it now &rarr;</a>
@@ -576,7 +601,10 @@ footer a:hover{text-decoration:underline}
     <h2 style="font-size:clamp(32px,5vw,52px);font-weight:900;letter-spacing:-1.5px;margin:0 0 16px;line-height:1.1">Your Box League Just Got a Scoreboard.</h2>
     <p style="font-size:clamp(16px,2vw,20px);opacity:0.92;max-width:640px;margin:0 auto 36px;line-height:1.5">Enter match scores, see live league standings, share to WhatsApp with one tap &mdash; no spreadsheets, no chasing, no manual maths.</p>
     <div style="max-width:800px;margin:0 auto;border-radius:20px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.5),0 0 60px rgba(251,191,36,0.4)">
-      <iframe width="800" height="450" src="https://www.youtube-nocookie.com/embed/hCp4qSjSlbU" title="BoxLeague Pro — Scoring &amp; Tables" frameborder="0" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen loading="lazy" style="display:block;width:100%;aspect-ratio:16/9;height:auto"></iframe>
+      <button type="button" class="yt-facade" data-yt-id="hCp4qSjSlbU" data-yt-title="BoxLeague Pro — Scoring &amp; Tables" data-yt-aspect="16/9" aria-label="Play BoxLeague Pro — Scoring &amp; Tables">
+        <img src="images/yt-hCp4qSjSlbU.webp" alt="BoxLeague Pro — Scoring &amp; Tables" width="1280" height="720" loading="lazy">
+        <span class="yt-play" aria-hidden="true"><span class="yt-play-btn"></span></span>
+      </button>
     </div>
     <div style="margin-top:32px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
       <a href="/app.html" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:#92400e;padding:14px 28px;border-radius:12px;font-size:15px;font-weight:800;text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,0.2)">Try it now &rarr;</a>
@@ -595,7 +623,10 @@ footer a:hover{text-decoration:underline}
     <h2 style="font-size:clamp(32px,5vw,52px);font-weight:900;letter-spacing:-1.5px;margin:0 0 16px;line-height:1.1">Type Your Availability. AI Fills It.</h2>
     <p style="font-size:clamp(16px,2vw,20px);opacity:0.92;max-width:640px;margin:0 auto 36px;line-height:1.5">Just describe your week &mdash; <em>&ldquo;every day except Tuesday&rdquo;</em> or <em>&ldquo;weekday evenings after 6pm&rdquo;</em> &mdash; and watch the grid fill in seconds.</p>
     <div style="max-width:800px;margin:0 auto;border-radius:20px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.5),0 0 60px rgba(167,139,250,0.4)">
-      <iframe width="800" height="450" src="https://www.youtube-nocookie.com/embed/TCuMHJ_wCjw" title="BoxLeague Pro — AI Availability Assistant" frameborder="0" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen loading="lazy" style="display:block;width:100%;aspect-ratio:16/9;height:auto"></iframe>
+      <button type="button" class="yt-facade" data-yt-id="TCuMHJ_wCjw" data-yt-title="BoxLeague Pro — AI Availability Assistant" data-yt-aspect="16/9" aria-label="Play BoxLeague Pro — AI Availability Assistant">
+        <img src="images/yt-TCuMHJ_wCjw.webp" alt="BoxLeague Pro — AI Availability Assistant" width="1280" height="720" loading="lazy">
+        <span class="yt-play" aria-hidden="true"><span class="yt-play-btn"></span></span>
+      </button>
     </div>
     <div style="margin-top:32px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
       <a href="/app.html" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:#5b21b6;padding:14px 28px;border-radius:12px;font-size:15px;font-weight:800;text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,0.2)">Try it now &rarr;</a>
@@ -606,17 +637,23 @@ footer a:hover{text-decoration:underline}
 
 <!-- VIDEO — existing demos -->
 <section class="vbg" style="padding:60px 20px;text-align:center;background:var(--bg);position:relative;overflow:hidden">
-  <video autoplay muted loop playsinline aria-hidden="true" poster="images/hero-banner-sm.jpg" style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.5"><source src="images/bg-video-how.mp4" type="video/mp4"></video>
+  <img class="section-still" src="images/bg-how.webp" alt="Overhead view of a tennis player serving on a hard court" width="1280" height="720" loading="lazy" style="opacity:0.5">
   <div class="section-inner" style="position:relative;z-index:1">
     <div class="section-label">See It In Action</div>
     <div class="section-title">Watch How It Works</div>
     <p class="section-subtitle">60 seconds to see why clubs are switching to BoxLeague Pro.</p>
     <div style="display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-top:32px">
       <div style="max-width:300px;border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.12)">
-        <iframe width="300" height="533" src="https://www.youtube-nocookie.com/embed/HdR4AmG1o5o" title="BoxLeague Pro — Stop Managing. Start Playing." frameborder="0" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen loading="lazy" style="display:block;width:100%;aspect-ratio:9/16;height:auto"></iframe>
+        <button type="button" class="yt-facade" data-yt-id="HdR4AmG1o5o" data-yt-title="BoxLeague Pro — Stop Managing. Start Playing." data-yt-aspect="9/16" aria-label="Play BoxLeague Pro — Stop Managing. Start Playing.">
+          <img src="images/yt-HdR4AmG1o5o.webp" alt="BoxLeague Pro — Stop Managing. Start Playing." width="720" height="1280" loading="lazy">
+          <span class="yt-play" aria-hidden="true"><span class="yt-play-btn"></span></span>
+        </button>
       </div>
       <div style="max-width:300px;border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.12)">
-        <iframe width="300" height="533" src="https://www.youtube-nocookie.com/embed/nKwNfxAa_Lk" title="BoxLeague Pro Demo" frameborder="0" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen loading="lazy" style="display:block;width:100%;aspect-ratio:9/16;height:auto"></iframe>
+        <button type="button" class="yt-facade" data-yt-id="nKwNfxAa_Lk" data-yt-title="BoxLeague Pro Demo" data-yt-aspect="9/16" aria-label="Play BoxLeague Pro Demo">
+          <img src="images/yt-nKwNfxAa_Lk.webp" alt="BoxLeague Pro Demo" width="720" height="1280" loading="lazy">
+          <span class="yt-play" aria-hidden="true"><span class="yt-play-btn"></span></span>
+        </button>
       </div>
     </div>
     <a href="https://www.youtube.com/@BoxLeaguePro" target="_blank" rel="noopener" style="display:inline-block;margin-top:20px;color:var(--blue);font-weight:700;font-size:14px;text-decoration:none">Subscribe on YouTube &rarr;</a>
@@ -625,7 +662,7 @@ footer a:hover{text-decoration:underline}
 
 <!-- TWO MODES -->
 <section id="features" class="vbg" style="position:relative;overflow:hidden">
-  <video autoplay muted loop playsinline aria-hidden="true" poster="images/hero-banner-sm.jpg" style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.5"><source src="images/bg-video-features.mp4" type="video/mp4"></video>
+  <img class="section-still" src="images/bg-features.webp" alt="Tennis player facing an opponent across the net" width="1280" height="720" loading="lazy" style="opacity:0.5">
   <div class="section-inner" style="position:relative;z-index:1">
     <div class="section-label">Two Ways to Play</div>
     <div class="section-title">Competitive Leagues or Friendly Matches</div>
@@ -666,7 +703,7 @@ footer a:hover{text-decoration:underline}
 
 <!-- FEATURES GRID -->
 <section style="background:var(--white);position:relative;overflow:hidden">
-  <video autoplay muted loop playsinline aria-hidden="true" poster="images/hero-banner-sm.jpg" style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.15"><source src="images/bg-video-grid.mp4" type="video/mp4"></video>
+  <img class="section-still" src="images/bg-grid.webp" alt="Tennis player in a pink shirt holding a racket" width="1280" height="720" loading="lazy" style="opacity:0.15">
   <div class="section-inner" style="position:relative;z-index:1">
     <div class="section-label">Packed with Features</div>
     <div class="section-title">Everything You Need to Run Your League</div>
@@ -753,7 +790,7 @@ footer a:hover{text-decoration:underline}
 
 <!-- SPORTS -->
 <section id="sports" class="vbg" style="background:var(--white);position:relative;overflow:hidden">
-  <video autoplay muted loop playsinline aria-hidden="true" poster="images/hero-banner-sm.jpg" style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.5"><source src="images/bg-video-sports.mp4" type="video/mp4"></video>
+  <img class="section-still" src="images/bg-sports.webp" alt="Aerial view of blue tennis courts beside a park path" width="1280" height="720" loading="lazy" style="opacity:0.5">
   <div class="section-inner" style="text-align:center;position:relative;z-index:1">
     <div class="section-label">Multi-Sport</div>
     <div class="section-title">Works for Any Racquet Sport</div>
@@ -812,7 +849,7 @@ footer a:hover{text-decoration:underline}
 
 <!-- CTA -->
 <section class="cta-banner">
-  <video autoplay muted loop playsinline aria-hidden="true" poster="images/hero-banner-sm.jpg" style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.5"><source src="images/bg-video-cta.mp4" type="video/mp4"></video>
+  <img class="section-still" src="images/bg-cta.webp" alt="Overhead view of a tennis court with two players at opposite ends" width="1280" height="720" loading="lazy" style="opacity:0.5">
   <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,rgba(30,64,175,0.6) 0%,rgba(37,99,235,0.5) 100%);z-index:1"></div>
   <h2 style="position:relative;z-index:2">Ready to Organise Your Club's Box League?</h2>
   <p style="position:relative;z-index:2">Apply for your own club sandbox in 30 seconds. Once provisioned, we email the organiser a dedicated link. Free forever.</p>
@@ -827,7 +864,7 @@ footer a:hover{text-decoration:underline}
 
 <!-- FAQ SECTION -->
 <section class="vbg" style="position:relative;overflow:hidden">
-  <video autoplay muted loop playsinline aria-hidden="true" poster="images/hero-banner-sm.jpg" style="position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover;z-index:0;opacity:0.25"><source src="images/bg-video-how.mp4" type="video/mp4"></video>
+  <img class="section-still" src="images/bg-how.webp" alt="Overhead view of a tennis player serving on a hard court" width="1280" height="720" loading="lazy" style="opacity:0.25">
   <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,rgba(15,23,42,0.85) 0%,rgba(30,58,138,0.8) 100%);z-index:1"></div>
   <div class="section-inner" style="position:relative;z-index:2">
     <div class="section-label">FAQ</div>
@@ -1015,9 +1052,9 @@ footer a:hover{text-decoration:underline}
 
 <!-- Cookie Consent Banner -->
 <div id="cookie-consent" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#1e293b;color:#fff;padding:16px 20px;box-shadow:0 -4px 20px rgba(0,0,0,0.3);font-size:14px;line-height:1.5">
-  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-    <div style="flex:1;min-width:240px">Optional cookies let us measure usage and provide support chat. They load only if you accept. The core site and app work without them. Read our <a href="/privacy.html" style="color:#60a5fa;text-decoration:underline">Privacy Policy</a>.</div>
-    <div style="display:flex;gap:8px;flex-shrink:0">
+  <div class="cookie-consent-inner">
+    <div class="cookie-consent-copy">Optional cookies let us measure usage and provide support chat. They load only if you accept. The core site and app work without them. Read our <a href="/privacy.html" style="color:#60a5fa;text-decoration:underline">Privacy Policy</a>.</div>
+    <div class="cookie-consent-actions">
       <button onclick="BoxLeagueConsent.decline()" style="padding:8px 16px;border-radius:8px;border:1px solid #475569;background:transparent;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Decline optional cookies</button>
       <button onclick="BoxLeagueConsent.accept()" style="padding:8px 16px;border-radius:8px;border:none;background:#2563eb;color:#fff;font-size:13px;font-weight:700;cursor:pointer">Accept optional cookies</button>
     </div>
@@ -1028,6 +1065,23 @@ footer a:hover{text-decoration:underline}
 <button id="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Scroll to top" style="display:none;position:fixed;bottom:80px;right:20px;z-index:99998;width:44px;height:44px;border-radius:50%;border:none;background:#2563eb;color:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 16px rgba(37,99,235,0.3);transition:opacity .3s,transform .3s;align-items:center;justify-content:center">&#9650;</button>
 <script>
 (function(){var b=document.getElementById('scroll-top');window.addEventListener('scroll',function(){b.style.display=window.scrollY>600?'flex':'none'},{passive:true})})();
+(function(){
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest && e.target.closest('.yt-facade');
+    if (!btn) return;
+    var id = btn.getAttribute('data-yt-id');
+    if (!id) return;
+    var title = btn.getAttribute('data-yt-title') || '';
+    var aspect = btn.getAttribute('data-yt-aspect') || '16/9';
+    var iframe = document.createElement('iframe');
+    iframe.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id) + '?autoplay=1&rel=0';
+    iframe.title = title;
+    iframe.setAttribute('allow', 'accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture');
+    iframe.setAttribute('allowfullscreen', '');
+    iframe.style.cssText = 'display:block;width:100%;aspect-ratio:' + aspect + ';height:auto;border:0';
+    btn.replaceWith(iframe);
+  });
+})();
 </script>
 
 </body>
