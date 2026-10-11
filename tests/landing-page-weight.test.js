@@ -64,8 +64,8 @@ for (const name of posters) {
 }
 
 assert.match(landing, /\.cookie-consent-actions\{display:flex;gap:8px;flex-wrap:wrap\}/);
-assert.match(landing, /@media\(max-width:414px\)/);
-assert.match(landing, /\.cookie-consent-actions\{flex-direction:column;width:100%\}/);
+assert.match(landing, /@media\(max-width:480px\)/);
+assert.match(landing, /\.cookie-consent-actions\{flex-direction:column;width:100%;align-items:stretch\}/);
 assert.equal(
   /cookie-consent-actions[^>]*>[\s\S]*flex-shrink:0/.test(landing),
   false,
