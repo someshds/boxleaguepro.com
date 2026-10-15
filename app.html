@@ -2680,6 +2680,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js"></script>
 <script src="season-scheduler.js"></script>
 <script src="score-entry.js"></script>
 <script src="player-email.js"></script>
@@ -2719,10 +2720,27 @@ const FIREBASE_RUNTIME_CONFIG = SELF_SERVICE_EMULATOR_MODE
   : FIREBASE_CONFIG;
 
 const FIREBASE_READY = !FIREBASE_CONFIG.apiKey.includes('REPLACE');
+// Empty until a reCAPTCHA Enterprise site key is pasted. App Check stays a no-op.
+const APP_CHECK_SITE_KEY = '';
 let app, auth, db;
 
 if (FIREBASE_READY) {
   app = firebase.initializeApp(FIREBASE_RUNTIME_CONFIG);
+  try {
+    if (APP_CHECK_SITE_KEY) {
+      const host = window.location.hostname;
+      if (host === 'localhost' || host === '127.0.0.1') {
+        self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+      }
+      const isTokenAutoRefreshEnabled = true;
+      firebase.appCheck().activate(
+        new firebase.appCheck.ReCaptchaEnterpriseProvider(APP_CHECK_SITE_KEY),
+        isTokenAutoRefreshEnabled
+      );
+    }
+  } catch (err) {
+    console.warn('Firebase App Check failed to initialise', err);
+  }
   auth = firebase.auth();
   db = firebase.database();
   if (SELF_SERVICE_EMULATOR_MODE) {
