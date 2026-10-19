@@ -91,7 +91,7 @@ assert.match(
 );
 assert.match(
   app,
-  /class="aifa-footer-contact"[\s\S]{0,200}grant@aifusionautomations\.com[\s\S]{0,80}\+44 7782 219066/,
+  /class="aifa-footer-contact"[\s\S]{0,200}grant@boxleaguepro\.net[\s\S]{0,80}\+44 7782 219066/,
   'aifa-footer contact/phone should remain'
 );
 

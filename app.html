@@ -5,8 +5,15 @@
   <script defer src="/privacy-consent.js"></script>
   <script defer src="/promos.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BoxLeague Pro</title>
-  <meta name="description" content="Free app for organising box league matches. Find times, book matches, share with your club.">
+  <title>BoxLeague Pro app | Book box league matches</title>
+  <meta name="description" content="Book box league matches in the BoxLeague Pro app. Find times, coordinate availability, and share with your tennis, padel, squash, racketball or badminton club.">
+  <meta name="robots" content="noindex, follow">
+  <link rel="canonical" href="https://boxleaguepro.com/app.html">
+  <meta property="og:title" content="BoxLeague Pro app | Book box league matches">
+  <meta property="og:description" content="Book box league matches in the BoxLeague Pro app. Find times, coordinate availability, and share with your tennis, padel, squash, racketball or badminton club.">
+  <meta property="og:image" content="https://boxleaguepro.com/images/hero-banner-sm.jpg">
+  <meta property="og:url" content="https://boxleaguepro.com/app.html">
+  <meta property="og:type" content="website">
   <meta name="theme-color" content="#1e3a8a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -65,7 +72,8 @@
     .btn-email:hover { background: rgba(255,255,255,0.25); }
     .btn-email:active { transform: scale(0.98); }
     .auth-toggle { margin-top: 12px; font-size: 15px; color: rgba(255,255,255,0.7); }
-    .auth-toggle a { color: #fff; text-decoration: underline; cursor: pointer; font-weight: 600; }
+    .auth-toggle a, .auth-toggle button.link-action { color: #fff; text-decoration: underline; cursor: pointer; font-weight: 600; }
+    button.link-action { background: none; border: none; padding: 0; margin: 0; font: inherit; color: inherit; text-decoration: underline; cursor: pointer; }
     .auth-error { background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.4); color: #fecaca; padding: 10px 14px; border-radius: 10px; font-size: 14px; margin-bottom: 12px; display: none; text-align: left; }
     .auth-footer { margin-top: 32px; font-size: 14px; color: rgba(255,255,255,0.5); }
     .auth-footer a { color: rgba(255,255,255,0.7); text-decoration: none; }
@@ -322,8 +330,8 @@
     .q-btn-back { display: block; width: 100%; padding: 12px; border-radius: 14px; background: none; color: #6b7280; font-size: 16px; font-weight: 600; border: none; cursor: pointer; margin-top: 8px; }
     .q-btn-back:hover { color: #1a1a1a; }
     .q-skip { text-align: center; margin-top: 16px; }
-    .q-skip a { color: rgba(255,255,255,0.6); font-size: 14px; cursor: pointer; text-decoration: underline; }
-    .q-skip a:hover { color: rgba(255,255,255,0.9); }
+    .q-skip a, .q-skip button.link-action { color: rgba(255,255,255,0.6); font-size: 14px; cursor: pointer; text-decoration: underline; }
+    .q-skip a:hover, .q-skip button.link-action:hover { color: rgba(255,255,255,0.9); }
     .q-search-results { max-height: 200px; overflow-y: auto; margin-top: 8px; }
     .q-search-item { padding: 14px 16px; border-radius: 10px; border: 1px solid #e5e7eb; margin-bottom: 6px; cursor: pointer; font-size: 16px; font-weight: 600; transition: all 0.15s; }
     .q-search-item:hover { background: #eff6ff; border-color: #3884F4; }
@@ -648,7 +656,7 @@
 
   <div class="auth-form">
     <div class="auth-error" id="auth-error"></div>
-    <input class="fi" id="auth-name" type="text" placeholder="Your full name (e.g. Grant de Swardt)" style="display:none">
+    <input class="fi" id="auth-name" type="text" placeholder="Your full name (e.g. Alex Taylor)" style="display:none">
     <input class="fi" id="auth-email" type="email" placeholder="Email address">
     <input class="fi" id="auth-password" type="password" placeholder="Password (min 6 characters)">
     <label id="auth-gdpr" style="display:none;color:rgba(255,255,255,0.85);font-size:13px;line-height:1.5;margin:8px 0 12px;text-align:left;cursor:pointer">
@@ -659,9 +667,9 @@
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 4L12 13 2 4"/></svg>
       <span id="btn-email-text">Sign in with Email</span>
     </button>
-    <div style="margin-top:10px"><a onclick="resetPassword()" style="color:rgba(255,255,255,0.7);font-size:13px;cursor:pointer;text-decoration:underline">Forgot password?</a></div>
+    <div style="margin-top:10px"><button type="button" class="link-action" onclick="resetPassword()" style="color:rgba(255,255,255,0.7);font-size:13px">Forgot password?</button></div>
     <div class="auth-toggle" id="auth-toggle">
-      Don't have an account? <a onclick="toggleAuthMode()">Create one</a>
+      Don't have an account? <button type="button" class="link-action" onclick="toggleAuthMode()">Create one</button>
     </div>
     <button class="btn btn-primary btn-full" id="btn-organiser-signup" onclick="beginOrganiserSignup()" style="margin-top:14px;background:#0f766e">Set up a club</button>
   </div>
@@ -755,7 +763,7 @@
   </div>
   <div class="q-body">
     <div class="q-card" id="q-card"></div>
-    <div class="q-skip"><a onclick="skipGuided()">I know what I'm doing — skip to full app</a></div>
+    <div class="q-skip"><button type="button" class="link-action" onclick="skipGuided()">I know what I'm doing — skip to full app</button></div>
     <div class="blp-promo-host" data-blp-promo data-blp-promo-view="guided"></div>
   </div>
 </div>
@@ -772,7 +780,7 @@
     <div style="font-size:36px;margin-bottom:8px">&#127934;</div>
     <div class="welcome-title">BoxLeague Pro</div>
     <div class="welcome-subtitle" id="welcome-subtitle">What would you like to play?</div>
-    <div id="welcome-home-club" style="display:none;margin-top:8px;font-size:13px;color:rgba(255,255,255,0.8)">&#127968; <span id="welcome-home-club-name"></span> &middot; <a onclick="showScreen('onboarding')" style="color:#93c5fd;cursor:pointer;text-decoration:underline">change</a></div>
+    <div id="welcome-home-club" style="display:none;margin-top:8px;font-size:13px;color:rgba(255,255,255,0.8)">&#127968; <span id="welcome-home-club-name"></span> &middot; <button type="button" class="link-action" onclick="showScreen('onboarding')" style="color:#93c5fd">change</button></div>
   </div>
   <div class="welcome-body">
     <!-- v4.8.0: Scoped-club content — shown when ?club=<slug> is in the URL.
@@ -916,7 +924,7 @@
     </div>
 
     <div style="text-align:center;margin-top:16px">
-      <a onclick="skipOnboarding()" style="color:#6b7280;font-size:13px;cursor:pointer;text-decoration:underline">Skip for now</a>
+      <button type="button" class="link-action" onclick="skipOnboarding()" style="color:#6b7280;font-size:13px">Skip for now</button>
     </div>
     <div class="blp-promo-host" data-blp-promo data-blp-promo-view="onboarding"></div>
   </div>
@@ -1186,7 +1194,7 @@
       <div class="wizard-step-title">What's your full name?</div>
       <div class="wizard-step-desc">Use your first and last name — this is how other players will see you in the league.</div>
       <div class="fg">
-        <input class="fi" id="wiz-name" placeholder="e.g. Grant de Swardt" style="font-size:20px;text-align:center;font-weight:700">
+        <input class="fi" id="wiz-name" placeholder="e.g. Alex Taylor" style="font-size:20px;text-align:center;font-weight:700">
       </div>
       <div class="wizard-nav">
         <button class="btn btn-primary btn-full" onclick="wizNext(0)" style="font-size:17px;padding:14px">Next &rarr;</button>
@@ -1400,7 +1408,7 @@
           <div class="card-title" id="setup-new-group-title" style="margin-bottom:12px">New Team</div>
           <div class="fg">
             <label class="fl">Player 1 <span style="font-weight:400;text-transform:none">(full name)</span></label>
-            <input class="fi" id="inp-gplayer1" placeholder="e.g. Grant de Swardt">
+            <input class="fi" id="inp-gplayer1" placeholder="e.g. Alex Taylor">
           </div>
           <div class="fg" id="fg-gplayer2">
             <label class="fl">Player 2 <span style="font-weight:400;text-transform:none">(full name)</span></label>
@@ -1746,7 +1754,7 @@
       <button type="button" onclick="BoxLeagueConsent.show()" style="background:none;border:none;color:inherit;font:inherit;cursor:pointer;padding:0">Cookie choices</button>
     </div>
     <div class="aifa-footer-contact">
-      <a href="mailto:grant@aifusionautomations.com">grant@aifusionautomations.com</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
+      <a href="mailto:grant@boxleaguepro.net">grant@boxleaguepro.net</a> &nbsp;&middot;&nbsp; <a href="tel:+447782219066">+44 7782 219066</a>
     </div>
     <div class="aifa-footer-version">BoxLeague Pro v4.17.0 · Build 20260905c</div>
   </div>
@@ -1960,7 +1968,7 @@
         </div>
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
           <li><strong>Auto-generate team names</strong> &mdash; when adding a doubles team, just enter Player 1 and Player 2. The team name is created automatically as &ldquo;Player 1 &amp; Player 2&rdquo;</li>
-          <li><strong>Full name placeholders</strong> &mdash; forms now suggest full names (e.g. &ldquo;Grant de Swardt&rdquo;) so teams are consistent across the league</li>
+          <li><strong>Full name placeholders</strong> &mdash; forms now suggest full names (e.g. &ldquo;Alex Taylor&rdquo;) so teams are consistent across the league</li>
           <li><strong>Smarter singles leagues</strong> &mdash; Player 2 field hides automatically for singles leagues</li>
           <li><strong>Customer services number added</strong> &mdash; <a href="tel:+447782219066">+44 7782 219066</a> visible in the footer, new Contact Us menu item with phone, email, and website</li>
           <li><strong>Admin console redesigned</strong> &mdash; user cards now show player name, partners (doubles and mixed separately), and club. League cards have a Manage button that expands to show all teams and members</li>
@@ -1996,7 +2004,7 @@
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
           <li><strong>Fix: super admins are no longer auto-joined to leagues they seed</strong> &mdash; when the super admin created leagues on behalf of a club they don&rsquo;t play at, the creation code was writing them into <code>/leagues/{id}/members</code> AND <code>/userLeagues/{uid}</code>, so every seeded league ended up in their personal &ldquo;Your Leagues&rdquo; list and they appeared as a member of the roster. Both <code>createLeagueInClub()</code> and the scoped mirror <code>scopedSubmitCreateLeague()</code> now detect super-admin-only creators (<code>isAdmin() &amp;&amp; !_clubAdminFor.includes(clubId)</code>) and skip those writes entirely</li>
           <li><strong>Local club organisers are unaffected</strong> &mdash; they&rsquo;re still auto-joined to their own club&rsquo;s leagues, because they typically play in them. Only the super-admin-seeding path is silenced</li>
-          <li><strong>Ghost cleanup</strong> &mdash; 9 pre-existing ghost memberships (Grant at East Grinstead Tennis, Squash &amp; Racketball Club) swept from <code>/leagues/{lid}/members</code> and <code>/userLeagues/{uid}</code> via the Firebase Admin SDK. League info, organiserUid, and all legitimate members are untouched</li>
+          <li><strong>Ghost cleanup</strong> &mdash; 9 pre-existing ghost memberships at East Grinstead Tennis, Squash &amp; Racketball Club swept from <code>/leagues/{lid}/members</code> and <code>/userLeagues/{uid}</code> via the Firebase Admin SDK. League info, organiserUid, and all legitimate members are untouched</li>
           <li><strong>Activity log marker:</strong> super-admin-seeded creates now log as <code>create_league_super_seed</code> / <code>create_league_scoped_super_seed</code> so future audits can distinguish them from normal creates</li>
         </ul>
       </div>
@@ -2031,8 +2039,8 @@
         </div>
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
           <li><strong>Fix: Ladies Singles Premier now shows the SINGLES badge</strong> &mdash; the scoped club welcome had its own local badge helper that only looked at the explicit <code>format</code> field, so legacy leagues (created before v4.7.3) fell through to DOUBLES even when the name said "Singles". Scoped badges now use the same full detection the rest of the app uses (format &rarr; sport &rarr; name heuristic)</li>
-          <li><strong>Fix: email keys are now always lowercased</strong> &mdash; <code>sanitizeEmail</code> previously only replaced dots, so signing in as <code>Grant@x.com</code> vs <code>grant@x.com</code> would write to two different Firebase keys, orphaning the second membership. Now trimmed + lowercased + null-safe. One legacy inline duplicate in <code>adminDeleteUser</code> was also routed through the helper</li>
-          <li><strong>Fix: super admin check is now case-insensitive</strong> &mdash; <code>isAdmin()</code> used a literal <code>.includes(currentUser.email)</code>, so Grant would lose super-admin if his email came back mixed case from a future auth provider. Normalised to lowercase before comparing</li>
+          <li><strong>Fix: email keys are now always lowercased</strong> &mdash; <code>sanitizeEmail</code> previously only replaced dots, so signing in as <code>Alex@x.com</code> vs <code>alex@x.com</code> would write to two different Firebase keys, orphaning the second membership. Now trimmed + lowercased + null-safe. One legacy inline duplicate in <code>adminDeleteUser</code> was also routed through the helper</li>
+          <li><strong>Fix: super admin check is now case-insensitive</strong> &mdash; <code>isAdmin()</code> used a literal <code>.includes(currentUser.email)</code>, so the super admin would lose access if the email came back mixed case from a future auth provider. Normalised to lowercase before comparing</li>
           <li><strong>Defense-in-depth permission gates</strong> on <code>removeMember</code>, <code>resetLeagueData</code>, <code>unbookMatch</code>, and <code>clearAllComments</code>. These were previously only protected by the UI, meaning a player on the browser console could still trigger them. They now all check <code>isAdmin()</code> or league organiser role before touching Firebase. Players can still cancel their own bookings via <code>unbookMatch</code></li>
           <li><strong>No data migration needed</strong> &mdash; existing keys were already lowercase in practice (Google auth normalises), so this release is safe to hot-deploy. Bill's league, the scoped sandbox, and all existing memberships work exactly as before</li>
         </ul>
@@ -2043,7 +2051,7 @@
           <span style="background:#fee2e2;color:#b91c1c;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">ADMIN ROLES</span>
         </div>
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
-          <li><strong>Single super admin</strong> &mdash; <code>grantdeswardt@gmail.com</code> is now the only global admin with override rights on every club. All other organisers are local club admins only &mdash; they can manage their own club but have no access to other clubs, global settings, or the admin console</li>
+          <li><strong>Single super admin</strong> &mdash; the BoxLeague Pro team is now the only global admin with override rights on every club. All other organisers are local club admins only &mdash; they can manage their own club but have no access to other clubs, global settings, or the admin console</li>
           <li><strong>Firebase security rules tightened</strong> &mdash; <code>/clubs</code>, <code>/clubAdmins</code>, <code>/clubApplications</code>, <code>/userLeagues</code> and <code>/activityLog</code> all now check against the single super admin email. Local club admins are unaffected &mdash; they continue to manage their own club through the Club Organiser Tools panel</li>
         </ul>
       </div>
@@ -2065,7 +2073,7 @@
           <li><strong>Player onboarding on scoped club links</strong> &mdash; when you land on a <code>?club=</code> link for the first time, your league list is split into <em>Your Leagues</em> (with a green &#10003; JOINED tag) and <em>Join a League</em>. Brand-new players see a &#128075; welcome card prompting them to tap and join. No more hunting for the right league or not knowing whether your organiser has added you already</li>
           <li><strong>Club admins can now delete leagues in their club</strong> &mdash; every league card in the scoped welcome has a small &#128465; button when you're a club organiser. Delete still asks for two confirmations and cascades through <code>/leagues</code>, <code>/clubLeagues</code>, <code>/userLeagues</code>, <code>/leagueIndex</code> and <code>/codes</code> properly</li>
           <li><strong>Manage Organisers modal</strong> &mdash; new button in the Club Organiser Tools panel. Lists every current club admin for your club, lets you add new ones by email, and remove any organiser (except yourself). Promotes or demotes are live &mdash; the next time that person signs in they get the Club Organiser Tools panel automatically. All changes are logged to the activity feed</li>
-          <li><strong>Super admin badge</strong> &mdash; the scoped welcome now shows a purple <em>SUPER ADMIN</em> pill when you're signed in as the global admin (grantdeswardt@gmail.com). Makes it obvious when you're viewing someone's club with full override rights vs. just as a club organiser</li>
+          <li><strong>Super admin badge</strong> &mdash; the scoped welcome now shows a purple <em>SUPER ADMIN</em> pill when you're signed in as the BoxLeague Pro team. Makes it obvious when you're viewing someone's club with full override rights vs. just as a club organiser</li>
         </ul>
       </div>
       <div style="margin-bottom:20px">
@@ -2075,7 +2083,7 @@
         </div>
         <ul style="font-size:14px;color:#374151;line-height:1.8;padding-left:20px;margin:0">
           <li><strong>Club sandbox links</strong> — every club now gets its own short link like <code>?club=east-grinstead-tennis</code>. Players who click it land straight in their club's welcome screen with their box leagues and mix-ins listed and nothing from other clubs in the way. No more hunting through the clubs list</li>
-          <li><strong>Apply to add your club</strong> — a new public form at <a href="/apply.html">/apply.html</a> lets organisers request a club sandbox in 30 seconds. We review the application and send a dedicated link back by email</li>
+          <li><strong>Apply to add your club</strong> — a new public form at <a href="/apply.html">/apply.html</a> lets organisers request a club sandbox in about 2 minutes. We review the application and send a dedicated link back by email</li>
           <li><strong>Club organiser tools</strong> — if you're a designated clubAdmin, the scoped welcome shows a <em>Club Organiser Tools</em> panel with one-tap <em>New League</em>, <em>Bulk Add Players</em> and <em>Share Club Link</em> buttons. No need to understand the admin console</li>
           <li><strong>Bulk add players</strong> — paste a list of players (or doubles teams with <code>&amp;</code>) into a league in one go. Supports name-only, name+email, and team pairings like <code>Jane, jane@x.com &amp; Bob, bob@x.com</code></li>
           <li><strong>Admin: club provisioning panel</strong> — create new slug-keyed club sandboxes, assign clubAdmins by email, and attach slugs to existing push-key clubs (so Bill's existing league keeps working with a friendlier share link)</li>
@@ -2223,9 +2231,9 @@
         <span style="font-size:22px">&#128222;</span>
         <span>+44 7782 219066</span>
       </a>
-      <a href="mailto:grant@aifusionautomations.com" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;text-decoration:none;color:#1d4ed8;font-weight:600;font-size:15px;margin-bottom:12px">
+      <a href="mailto:grant@boxleaguepro.net" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;text-decoration:none;color:#1d4ed8;font-weight:600;font-size:15px;margin-bottom:12px">
         <span style="font-size:22px">&#9993;</span>
-        <span>grant@aifusionautomations.com</span>
+        <span>grant@boxleaguepro.net</span>
       </a>
       <a href="https://aifusionautomations.com" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:#faf5ff;border:1px solid #e9d5ff;border-radius:12px;text-decoration:none;color:#7e22ce;font-weight:600;font-size:15px">
         <span style="font-size:22px">&#127760;</span>
@@ -2321,7 +2329,7 @@
       </div>
       <div id="profile-email" style="font-size:12px;color:#9ca3af;text-align:center;margin-bottom:12px"></div>
       <div style="font-size:13px;font-weight:600;color:#6b7280;margin-bottom:4px">Player Name</div>
-      <input class="fi" id="profile-name" placeholder="Your full name (e.g. Grant de Swardt)" style="margin-bottom:12px">
+      <input class="fi" id="profile-name" placeholder="Your full name (e.g. Alex Taylor)" style="margin-bottom:12px">
       <div id="profile-partner-wrap">
         <!-- v4.7.0: two partner fields — doubles vs mixed doubles -->
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
@@ -2413,7 +2421,7 @@
       <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:10px">Feedback &amp; Support</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
         <button type="button" onclick="closeHelp();openFeedback()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#f1f5f9;border-radius:8px;font-size:13px;font-weight:600;color:#1e293b;border:1px solid #e2e8f0;cursor:pointer">&#128172; Feedback</button>
-        <a href="mailto:grant@aifusionautomations.com" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#f1f5f9;border-radius:8px;font-size:13px;font-weight:600;color:#1e293b;text-decoration:none;border:1px solid #e2e8f0">&#9993; Email Us</a>
+        <a href="mailto:grant@boxleaguepro.net" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#f1f5f9;border-radius:8px;font-size:13px;font-weight:600;color:#1e293b;text-decoration:none;border:1px solid #e2e8f0">&#9993; Email Us</a>
         <a href="tel:+447782219066" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#f1f5f9;border-radius:8px;font-size:13px;font-weight:600;color:#1e293b;text-decoration:none;border:1px solid #e2e8f0">&#128222; Call</a>
       </div>
 
@@ -2431,9 +2439,9 @@
           ["What is BoxLeague Pro?", "A free web app for organising box league matches and friendly mix-in games for any racquet sport \u2014 tennis, padel, squash, racketball, and badminton."],
           ["Is it really free?", "Yes, 100% free forever. No premium tiers, no player limits, no hidden fees. Every feature is available to everyone."],
           ["Do I need to download an app?", "No. BoxLeague Pro runs in your browser on any device \u2014 phone, tablet, or desktop. Just visit boxleaguepro.com and sign in."],
-          ["What sports does it support?", "Tennis, padel, squash, racketball, badminton, and any other racquet sport. Padel is doubles only; other sports can use singles, doubles, or mixed doubles where appropriate."],
+          ["What sports does it support?", "Tennis, padel, squash, racketball and badminton. Padel is doubles only; other sports can use singles, doubles, or mixed doubles where appropriate."],
           ["What is a \u201cclub sandbox\u201d or \u201cclub link\u201d?", "Every club on BoxLeague Pro gets its own short link like boxleaguepro.com/app.html?club=east-grinstead-tennis. When players click it they land straight on their club's own welcome screen with their leagues and mix-in games \u2014 nothing from other clubs in the way. Your club organiser can share this one link in a WhatsApp group and everyone lands in the right place."],
-          ["How do I get my club added to BoxLeague Pro?", "Fill in the 30-second form at boxleaguepro.com/apply.html. We review the application, create a club sandbox for you, and email you back a dedicated club link. Once you're set up as the club organiser you can create leagues, bulk add players, and invite other organisers yourself \u2014 no technical help needed."],
+          ["How do I get my club added to BoxLeague Pro?", "Fill in the form at boxleaguepro.com/apply.html \u2014 it takes about 2 minutes. We review the application, create a club sandbox for you, and email you back a dedicated club link. Once you're set up as the club organiser you can create leagues, bulk add players, and invite other organisers yourself \u2014 no technical help needed."],
           ["How do I create a box league at my club?", "If you're a club organiser, open your club link (see above), tap the \u201cClub Organiser Tools\u201d panel at the top of your welcome screen, then \u201cNew League\u201d. Pick a format (Singles, Doubles, or Mixed Doubles), name it, and you're done. Bulk add your players in one paste, or share the invite link so they join themselves."],
           ["How do players join my league?", "Three ways: (1) share your club link \u2014 players land on your club sandbox and tap \u201cJOIN\u201d on any open league; (2) share the league-specific invite link; or (3) bulk add them from the Club Organiser Tools panel. Players who already have a BoxLeague Pro account get added instantly; new players sign in once and they're in."],
           ["Can I run multiple leagues at my club?", "Yes. Each club can have unlimited leagues \u2014 e.g. Men\u2019s Singles Box 1, Mixed Doubles Box 2, Ladies\u2019 Box 3, etc. Every league your club runs shows up on the same club welcome screen so players don't have to hunt."],
@@ -2447,10 +2455,10 @@
           ["Can I add other club organisers?", "Yes. In your Club Organiser Tools panel, tap \u201cManage Organisers\u201d. You can add other organisers by email (they need to have signed into BoxLeague Pro at least once), and remove them too. Promotes and demotes are live \u2014 the next time that person signs in they see the Club Organiser Tools panel automatically."],
           ["Can I remove a player?", "Yes. Club organisers can remove players from a league via the Members section on the Setup tab. This also cleans up their team, availability, and any booked matches."],
           ["Can I delete a league?", "Club organisers can delete any league in their own club \u2014 tap the small bin icon next to the league name on your club welcome screen. Delete asks for two confirmations and cascades through all of /leagues, /clubLeagues, /userLeagues, /leagueIndex and /codes properly, so there's no orphaned data."],
-          ["What roles exist? Who can do what?", "Three tiers. (1) <strong>Player</strong> \u2014 joins leagues, marks availability, plays matches. (2) <strong>Club Organiser</strong> \u2014 everything a player can do, plus creates leagues, bulk adds players, deletes leagues in their own club, and manages other club organisers for their own club. (3) <strong>Super Admin</strong> (just one, grantdeswardt@gmail.com) \u2014 global override for support and troubleshooting across all clubs. Club organisers have no access to any club other than their own."],
+          ["What roles exist? Who can do what?", "Three tiers. (1) <strong>Player</strong> \u2014 joins leagues, marks availability, plays matches. (2) <strong>Club Organiser</strong> \u2014 everything a player can do, plus creates leagues, bulk adds players, deletes leagues in their own club, and manages other club organisers for their own club. (3) <strong>Super Admin</strong> (the BoxLeague Pro team) \u2014 global override for support and troubleshooting across all clubs. Club organisers have no access to any club other than their own."],
           ["Who can see my availability?", "Only members of the same league can see your availability. Your data is never shared publicly and never shared with players in other leagues or clubs."],
           ["Is my data secure?", "Yes. BoxLeague Pro runs on Firebase with Google-backed authentication. Every read and write is checked against per-club permission rules so players can only see their own club's data."],
-          ["Can I delete my account?", "Yes. Contact us at grant@aifusionautomations.com and we\u2019ll remove your data. You can also use the Feedback &amp; Support button in the menu to request data deletion."],
+          ["Can I delete my account?", "Yes. Contact us at grant@boxleaguepro.net and we\u2019ll remove your data. You can also use the Feedback &amp; Support button in the menu to request data deletion."],
           ["Who built BoxLeague Pro?", "BoxLeague Pro is built by AI Fusion Automations, a UK-based software company. We build custom apps, AI automations, and business software."],
           ["How do I book a court?", "If your club organiser has added a court booking URL to the league Settings, a \u201cBook a Court\u201d button appears on match and open-game screens linking directly to your club\u2019s booking system."]
         ];
@@ -2539,10 +2547,10 @@
   </div>
   <div id="scoped-create-league-club-hint" style="font-size:12px;color:#6b7280;margin-bottom:14px;padding:8px 12px;background:#f0f9ff;border-radius:8px"></div>
 
-  <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px">League name <span style="color:#b91c1c">*</span></label>
+  <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px">League name <span style="color:#b91c1c">(required)</span></label>
   <input type="text" id="scoped-cl-name" placeholder="e.g. Men's Doubles Box 3" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;margin-bottom:10px" oninput="scopedAutoDetectFormat()">
 
-  <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px">Format <span style="color:#b91c1c">*</span></label>
+  <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px">Format <span style="color:#b91c1c">(required)</span></label>
   <select id="scoped-cl-format" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;margin-bottom:10px" onchange="this.dataset.userTouched='1';syncScopedSportFormat()">
     <option value="singles">Singles (1 vs 1)</option>
     <option value="doubles" selected>Doubles (2 vs 2)</option>
@@ -2577,7 +2585,7 @@
   </div>
   <div style="font-size:12px;color:#6b7280;margin-bottom:14px">Paste players one per line. Each line is a <strong>full name</strong> (first + last), or <code>full name, email</code>. For doubles, write teams as <code>Jane Doe &amp; John Smith</code> or <code>Jane Doe, jane@x.com &amp; John Smith, john@y.com</code>. Full names matter — they keep "Mike A" separate from "Mike B" once your club grows past one box.</div>
 
-  <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px">Default league <span style="color:#b91c1c">*</span></label>
+  <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px">Default league <span style="color:#b91c1c">(required)</span></label>
   <select id="scoped-ba-league" onchange="syncScopedBulkAddFormat()" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;margin-bottom:12px"></select>
   <div style="font-size:11px;color:#6b7280;margin-bottom:12px">Used for any line that isn't under a <code>[Box Name]</code> header. To split a roster across multiple boxes, see below.</div>
 
@@ -2591,7 +2599,7 @@
   <details style="margin-bottom:12px">
     <summary style="cursor:pointer;font-size:12px;font-weight:800;color:#334155">Advanced: paste list instead</summary>
     <div style="font-size:11px;color:#64748b;margin:8px 0">Use this for large rosters or to split players across boxes with <code>[Box Name]</code> headers.</div>
-  <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px">Players <span style="color:#b91c1c">*</span></label>
+  <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px">Players <span style="color:#b91c1c">(required)</span></label>
   <textarea id="scoped-ba-text" placeholder="[Box 1]&#10;Jane Doe &amp; John Smith&#10;Sarah Lee, sarah@x.com &amp; Tom Brown, tom@y.com&#10;&#10;[Box 2]&#10;Alex Chen &amp; Maria Patel&#10;Mike Hawkins &amp; Olly Reid" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:monospace;min-height:200px;margin-bottom:10px"></textarea>
   <div style="font-size:11px;color:#6b7280;margin-bottom:14px"><strong>Tip:</strong> add <code>[Box Name]</code> headers in your paste to split players across multiple boxes in one go. Box names must match leagues that already exist at this club.</div>
   </details>
@@ -4899,12 +4907,12 @@ function toggleAuthMode() {
     nameField.style.display = 'block';
     gdprLabel.style.display = 'block';
     btnText.textContent = 'Create Account';
-    toggle.innerHTML = 'Already have an account? <a onclick="toggleAuthMode()">Sign in</a>';
+    toggle.innerHTML = 'Already have an account? <button type="button" class="link-action" onclick="toggleAuthMode()">Sign in</button>';
   } else {
     nameField.style.display = 'none';
     gdprLabel.style.display = 'none';
     btnText.textContent = 'Sign in with Email';
-    toggle.innerHTML = 'Don\'t have an account? <a onclick="toggleAuthMode()">Create one</a>';
+    toggle.innerHTML = 'Don\'t have an account? <button type="button" class="link-action" onclick="toggleAuthMode()">Create one</button>';
   }
 }
 
@@ -7145,7 +7153,7 @@ function renderScopedLeagueList(clubId) {
     if (ids.length === 0) {
       box.innerHTML = '<div style="color:#6b7280;font-size:13px;padding:18px;text-align:center;background:#f9fafb;border:1px dashed #d1d5db;border-radius:10px">' +
         (isAdminHere
-          ? '<div style="margin-bottom:8px">No leagues yet.</div><a onclick="scopedCreateLeague()" style="color:#1d4ed8;cursor:pointer;font-weight:700;font-size:14px">+ Create the first league &rarr;</a>'
+          ? '<div style="margin-bottom:8px">No leagues yet.</div><button type="button" class="link-action" onclick="scopedCreateLeague()" style="color:#1d4ed8;font-weight:700;font-size:14px">+ Create the first league &rarr;</button>'
           : 'No leagues in this club yet. Ask your club organiser to set one up.') +
         '</div>';
       return;
@@ -7280,7 +7288,7 @@ function renderScopedMixInList(clubId) {
     var ids = Object.keys(games);
     if (ids.length === 0) {
       box.innerHTML = '<div style="color:#6b7280;font-size:13px;padding:14px;text-align:center;background:#f9fafb;border-radius:10px">No mix-in games scheduled. ' +
-        (isClubAdminFor(clubId) ? '<a onclick="enterMixInAsScopedClub()" style="color:#1d4ed8;cursor:pointer;font-weight:600">Schedule one &rarr;</a>' : 'Check back soon.') +
+        (isClubAdminFor(clubId) ? '<button type="button" class="link-action" onclick="enterMixInAsScopedClub()" style="color:#1d4ed8;font-weight:600">Schedule one &rarr;</button>' : 'Check back soon.') +
         '</div>';
       return;
     }
@@ -11330,11 +11338,11 @@ function loadTemplate(type) {
   const singlesTemplate = type === 'singles';
   title.textContent = singlesTemplate ? 'Quick Add \u2014 All Players' : 'Quick Add \u2014 All Teams';
   info.innerHTML = singlesTemplate
-    ? 'One player per line.<br><strong>Example:</strong><br>Grant de Swardt<br>Mark Wilson<br>Sean Taylor'
-    : 'One team per line. Two players per team, comma-separated.<br><strong>Example:</strong><br>Grant de Swardt, James Smith<br>Mark Wilson, Dave Brown<br>Sean Taylor, Pete Adams';
+    ? 'One player per line.<br><strong>Example:</strong><br>Alex Taylor<br>Mark Wilson<br>Sean Taylor'
+    : 'One team per line. Two players per team, comma-separated.<br><strong>Example:</strong><br>Alex Taylor, James Smith<br>Mark Wilson, Dave Brown<br>Sean Taylor, Pete Adams';
   ta.placeholder = singlesTemplate
-    ? 'Grant de Swardt\nMark Wilson\nSean Taylor'
-    : 'Grant de Swardt, James Smith\nMark Wilson, Dave Brown\nSean Taylor, Pete Adams';
+    ? 'Alex Taylor\nMark Wilson\nSean Taylor'
+    : 'Alex Taylor, James Smith\nMark Wilson, Dave Brown\nSean Taylor, Pete Adams';
   ta.value = ''; ta.focus();
 }
 
@@ -14702,7 +14710,7 @@ const Q_STEPS = [
     return qData.goal === 'create';
   }},
   { id: 'leagueName', question: 'What would you like to call your league?', hint: 'Give it a name your players will recognise.', type: 'input', placeholder: 'e.g. Mens Doubles 1, Tuesday Night Tennis', show: () => qData.goal === 'create' },
-  { id: 'playerName', question: 'What is your full name?', hint: 'Use your first and last name — this is how other players will see you in the league.', type: 'input', placeholder: 'e.g. Grant de Swardt' },
+  { id: 'playerName', question: 'What is your full name?', hint: 'Use your first and last name — this is how other players will see you in the league.', type: 'input', placeholder: 'e.g. Alex Taylor' },
   { id: 'partner', question: 'Who is your doubles partner?', hint: 'Enter their full name, or pick from the list if they\'ve already joined.', type: 'input', placeholder: 'e.g. James Smith', show: () => qData.goal === 'create' && qData.format === 'doubles' },
 ];
 
@@ -15051,7 +15059,7 @@ const TAB_GUIDES = {
           { label: 'Show me the full setup process', icon: '&#128161;', desc: 'Step-by-step guide to getting your league running', action: 'goto', goto: 1 },
         ]},
       { q: 'Step 1: Add Your Players', hint: 'First, add the players or teams who will be in your league.',
-        visual: '&#128101;', detail: 'Tap <strong>"+ Add Team"</strong> below. For doubles, enter the team name (e.g. "Grant & James") and both player names. For singles, just enter each player\'s name. You can also use <strong>Quick Add</strong> to paste multiple teams at once.',
+        visual: '&#128101;', detail: 'Tap <strong>"+ Add Team"</strong> below. For doubles, enter the team name (e.g. "Alex & James") and both player names. For singles, just enter each player\'s name. You can also use <strong>Quick Add</strong> to paste multiple teams at once.',
         options: [
           { label: 'What\'s next?', icon: '&#10145;&#65039;', desc: '', action: 'next' },
         ]},
