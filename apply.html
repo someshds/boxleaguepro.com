@@ -6,6 +6,7 @@
 <title>Set up your club &mdash; BoxLeague Pro</title>
 <meta name="description" content="Organising a tennis, padel, squash, racketball or badminton box league? Set up your club in about 2 minutes. BoxLeague Pro sets it up automatically, usually within minutes, and we email you the link.">
 <link rel="icon" href="/icon-180.png">
+<script src="/instant-signup.js"></script>
 <style>
   :root { --brand:#1d4ed8; --brand-dark:#1e40af; --ok:#059669; --danger:#b91c1c; --bg:#f5f7fb; --text:#0f172a; --muted:#64748b; --border:#e2e8f0; }
   * { box-sizing: border-box; }
@@ -16,6 +17,8 @@
   .hero h1 { font-size:28px; margin:0 0 6px; font-weight:800; letter-spacing:-0.02em; }
   .hero p { margin:0; color:var(--muted); font-size:15px; }
   .card { background:#fff; border:1px solid var(--border); border-radius:16px; padding:22px 22px 18px; box-shadow:0 1px 3px rgba(15,23,42,0.04); margin-bottom:16px; }
+  .card h2 { font-size:17px; margin:0 0 4px; font-weight:700; }
+  .card .lede { color:var(--muted); font-size:13px; margin:0 0 12px; }
   .explainer { background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px; padding:14px 16px; font-size:13px; color:#075985; margin:14px 0; }
   .explainer strong { color:#0c4a6e; }
   .steps ol { margin:6px 0 0 18px; padding:0; font-size:13px; color:#334155; }
@@ -36,6 +39,29 @@
   .prefer-call { text-align:center; margin:14px 0 0; font-size:14px; color:var(--muted); }
   .prefer-call a { color:var(--brand); text-decoration:none; font-weight:600; }
   .prefer-call a:hover { text-decoration:underline; }
+  .instant-hidden { display:none !important; }
+  .fg { margin:0 0 12px; }
+  .fl { display:block; font-size:13px; font-weight:700; color:#334155; margin:0 0 6px; }
+  .fi { width:100%; padding:13px 12px; border:1px solid var(--border); border-radius:10px; font-size:16px; background:#fff; color:var(--text); }
+  .fi:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(29,78,216,0.12); }
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:14px 16px; border:none; border-radius:12px; font-size:16px; font-weight:700; cursor:pointer; }
+  .btn:disabled { opacity:0.6; cursor:not-allowed; }
+  .btn-primary { background:var(--brand); color:#fff; }
+  .btn-google { background:#fff; color:#0f172a; border:1px solid var(--border); }
+  .btn-secondary { background:#f1f5f9; color:#0f172a; }
+  .btn-sm { width:auto; padding:10px 12px; font-size:14px; }
+  .auth-divider { display:flex; align-items:center; gap:10px; margin:14px 0; color:var(--muted); font-size:12px; }
+  .auth-divider::before, .auth-divider::after { content:''; flex:1; height:1px; background:var(--border); }
+  .auth-error, .form-error { display:none; margin:0 0 12px; padding:10px 12px; border-radius:10px; background:#fef2f2; color:var(--danger); font-size:14px; }
+  .form-note { display:none; margin:12px 0; padding:12px; border-radius:10px; background:#eff6ff; color:#1e3a8a; font-size:14px; }
+  .form-held { display:none; margin:12px 0; padding:14px; border-radius:10px; background:#ecfdf5; color:#065f46; font-size:15px; font-weight:600; }
+  .signed-in { display:none; margin:0 0 14px; padding:10px 12px; border-radius:10px; background:#f8fafc; font-size:14px; color:#334155; }
+  .signed-in button { background:none; border:none; color:var(--brand); font-weight:700; cursor:pointer; padding:0; }
+  .consent { display:flex; gap:10px; align-items:flex-start; font-size:13px; line-height:1.45; color:#475569; margin:10px 0 14px; }
+  .consent input { margin-top:3px; width:18px; height:18px; flex-shrink:0; }
+  .slug-preview { font-size:12px; color:var(--muted); margin-top:6px; word-break:break-all; }
+  .verify-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .quiet { color:var(--muted); font-size:13px; margin:0 0 12px; }
 </style>
 </head>
 <body>
@@ -43,10 +69,10 @@
     <div class="hero">
       <div class="emoji">&#127934;</div>
       <h1>Set up your club</h1>
-      <p>Running a tennis, padel, squash, racketball or badminton box league? About 2 minutes. Your club is set up automatically, usually within minutes, and we email you the link.</p>
+      <p id="apply-hero-lede">Running a tennis, padel, squash, racketball or badminton box league? About 2 minutes. Your club is set up automatically, usually within minutes, and we email you the link.</p>
     </div>
 
-    <div class="card">
+    <div class="card" id="ghl-card">
       <!-- GHL survey iframe (BoxLeague Pro — Club Application, survey id NZUQTviINhMuoejOVGQB) -->
       <div class="ghl-frame-wrap" id="ghl-wrap">
         <div class="ghl-loader" id="ghl-loader">Loading form&hellip;</div>
@@ -91,6 +117,93 @@
       </div>
     </div>
 
+    <div class="card instant-hidden" id="instant-card" hidden>
+      <h2 id="instant-card-title">Create your club</h2>
+      <p class="lede" id="instant-card-lede">Takes about 2 minutes. Create your BoxLeague Pro account, verify your email, and your club is ready.</p>
+
+      <div class="explainer" id="instant-explainer">
+        <strong>What happens next:</strong>
+        <div class="steps">
+          <ol>
+            <li>Create an account or sign in</li>
+            <li>Verify your email</li>
+            <li>Enter your club name and sport</li>
+            <li>We open your club so you can create a league and add players</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="signed-in" id="instant-signed-in">
+        Signed in as <strong id="instant-signed-email"></strong>
+        &middot; <button type="button" id="instant-signout">Sign out</button>
+      </div>
+
+      <div id="instant-auth">
+        <div class="auth-error" id="instant-auth-error" role="alert"></div>
+        <button type="button" class="btn btn-google" id="instant-google">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          Continue with Google
+        </button>
+        <div class="auth-divider"><span>or use email</span></div>
+        <div class="fg" id="instant-name-wrap">
+          <label class="fl" for="instant-name">Your name</label>
+          <input class="fi" id="instant-name" type="text" autocomplete="name" placeholder="e.g. Alex Taylor">
+        </div>
+        <div class="fg">
+          <label class="fl" for="instant-email">Email</label>
+          <input class="fi" id="instant-email" type="email" autocomplete="email" placeholder="you@club.com">
+        </div>
+        <div class="fg">
+          <label class="fl" for="instant-password">Password</label>
+          <input class="fi" id="instant-password" type="password" autocomplete="new-password" placeholder="At least 6 characters">
+        </div>
+        <label class="consent" id="instant-gdpr">
+          <input type="checkbox" id="instant-consent">
+          <span>I agree to receive match updates and league communications. We store your name and email to manage your league. You can unsubscribe or ask us to delete your data at any time. <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a></span>
+        </label>
+        <button type="button" class="btn btn-primary" id="instant-email-btn">Create account</button>
+        <p class="quiet" id="instant-auth-toggle">Already have an account? <button type="button" class="btn-sm" id="instant-toggle-auth" style="width:auto;display:inline;background:none;border:none;color:var(--brand);font-weight:700;cursor:pointer;padding:0">Sign in</button></p>
+      </div>
+
+      <div id="instant-club" hidden>
+        <div class="form-note" id="instant-verify" role="status">
+          <div id="instant-verify-text"></div>
+          <div class="verify-actions">
+            <button type="button" class="btn btn-secondary btn-sm" id="instant-resend">Resend email</button>
+            <button type="button" class="btn btn-primary btn-sm" id="instant-retry-verify">I've verified, continue</button>
+          </div>
+        </div>
+        <div class="fg">
+          <label class="fl" for="instant-club-name">Club name</label>
+          <input class="fi" id="instant-club-name" maxlength="80" autocomplete="organization" placeholder="e.g. Riverside Tennis Club">
+          <div class="slug-preview" id="instant-slug-preview"></div>
+        </div>
+        <div class="fg">
+          <label class="fl" for="instant-sport">Sport</label>
+          <select class="fi" id="instant-sport">
+            <option value="tennis">Tennis</option>
+            <option value="padel">Padel</option>
+            <option value="squash">Squash</option>
+            <option value="racketball">Racketball</option>
+            <option value="badminton">Badminton</option>
+          </select>
+        </div>
+        <label class="consent">
+          <input type="checkbox" id="instant-club-confirm">
+          <span>I am authorised to organise leagues for this club and agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span>
+        </label>
+        <p class="quiet" id="instant-one-club"></p>
+        <p class="quiet" id="instant-crm-note"></p>
+        <div class="form-error" id="instant-club-error" role="alert"></div>
+        <div class="form-held" id="instant-held" role="status"></div>
+        <button type="button" class="btn btn-primary" id="instant-submit">Create club and continue</button>
+      </div>
+      <p class="prefer-call">Prefer a call? <a href="https://api.leadconnectorhq.com/widget/bookings/boxleague-onboarding" target="_blank" rel="noopener">Book 15 minutes.</a></p>
+      <div class="fallback">
+        Form not loading? Email <a href="mailto:grant@boxleaguepro.net?subject=BoxLeague%20Pro%20%E2%80%94%20Club%20setup">grant@boxleaguepro.net</a> with your club details.
+      </div>
+    </div>
+
     <div class="blp-promo-host" data-blp-promo data-blp-promo-view="apply"></div>
     <div class="footer-links">
       Already have a club link? <a href="/app.html">Open BoxLeague Pro &rarr;</a><br>
@@ -98,5 +211,312 @@
     </div>
   </div>
   <script defer src="/promos.js"></script>
+  <script>
+(function () {
+  var api = window.BoxLeagueInstantSignup;
+  if (!api) return;
+
+  var fallbackForced = false;
+  var authMode = 'signup';
+  var auth = null;
+  var appCheck = null;
+  var lastVerifyAt = 0;
+  var VERIFY_WAIT_MS = 60000;
+
+  function $(id) { return document.getElementById(id); }
+
+  function showFallback() {
+    fallbackForced = true;
+    syncPanels();
+  }
+
+  function syncPanels() {
+    var instantOn = api.isInstantSignupUiEnabled() && !api.isFallbackRequested() && !fallbackForced;
+    var instantCard = $('instant-card');
+    var ghlCard = $('ghl-card');
+    if (instantCard) {
+      instantCard.hidden = !instantOn;
+      instantCard.classList.toggle('instant-hidden', !instantOn);
+    }
+    if (ghlCard) ghlCard.hidden = !!instantOn;
+    if (instantOn) {
+      var lede = $('apply-hero-lede');
+      if (lede) lede.textContent = 'Create your BoxLeague Pro account and your club is ready — about 2 minutes. Free.';
+      $('instant-one-club').textContent = api.ONE_CLUB_NOTE;
+      $('instant-crm-note').textContent = api.CRM_PRIVACY_NOTE;
+      loadFirebase();
+    }
+  }
+
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  var firebaseLoading = null;
+  function loadFirebase() {
+    if (firebaseLoading) return firebaseLoading;
+    firebaseLoading = Promise.all([
+      loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js'),
+      loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js'),
+      loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js')
+    ]).then(function () {
+      var app = firebase.initializeApp(api.FIREBASE_CONFIG);
+      auth = firebase.auth();
+      appCheck = api.initialiseAppCheck(firebase, app);
+      auth.onAuthStateChanged(onAuth);
+      bindInstantUi();
+    }).catch(function () {
+      showFallback();
+    });
+    return firebaseLoading;
+  }
+
+  function showAuthError(message) {
+    var el = $('instant-auth-error');
+    if (!el) return;
+    el.textContent = message || '';
+    el.style.display = message ? 'block' : 'none';
+  }
+
+  function showClubError(message) {
+    var el = $('instant-club-error');
+    if (!el) return;
+    el.textContent = message || '';
+    el.style.display = message ? 'block' : 'none';
+  }
+
+  function setVerifyVisible(user, showContinue) {
+    var box = $('instant-verify');
+    var text = $('instant-verify-text');
+    var retry = $('instant-retry-verify');
+    if (!box) return;
+    if (!user || !api.needsEmailVerification(user)) {
+      box.style.display = 'none';
+      return;
+    }
+    text.textContent = "We've sent a verification link to " + (user.email || 'your email') + '. Please click it, then come back and continue.';
+    if (retry) retry.style.display = showContinue === false ? 'none' : '';
+    box.style.display = 'block';
+  }
+
+  function onAuth(user) {
+    var signed = $('instant-signed-in');
+    var authBox = $('instant-auth');
+    var clubBox = $('instant-club');
+    if (user) {
+      if (signed) signed.style.display = 'block';
+      $('instant-signed-email').textContent = user.email || '';
+      if (authBox) authBox.hidden = true;
+      if (clubBox) clubBox.hidden = false;
+      setVerifyVisible(user, false);
+    } else {
+      if (signed) signed.style.display = 'none';
+      if (authBox) authBox.hidden = false;
+      if (clubBox) clubBox.hidden = true;
+    }
+  }
+
+  function toggleAuthMode() {
+    authMode = authMode === 'signup' ? 'signin' : 'signup';
+    var signup = authMode === 'signup';
+    $('instant-name-wrap').style.display = signup ? '' : 'none';
+    $('instant-gdpr').style.display = signup ? '' : 'none';
+    $('instant-email-btn').textContent = signup ? 'Create account' : 'Sign in';
+    $('instant-auth-toggle').innerHTML = signup
+      ? 'Already have an account? <button type="button" class="btn-sm" id="instant-toggle-auth" style="width:auto;display:inline;background:none;border:none;color:var(--brand);font-weight:700;cursor:pointer;padding:0">Sign in</button>'
+      : 'Need an account? <button type="button" class="btn-sm" id="instant-toggle-auth" style="width:auto;display:inline;background:none;border:none;color:var(--brand);font-weight:700;cursor:pointer;padding:0">Create one</button>';
+    $('instant-toggle-auth').onclick = toggleAuthMode;
+    showAuthError('');
+  }
+
+  function googleSignIn() {
+    showAuthError('');
+    var provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).catch(function (err) {
+      showAuthError((err && err.message) || 'Google sign-in did not complete.');
+    });
+  }
+
+  function emailAuth() {
+    showAuthError('');
+    var email = ($('instant-email').value || '').trim();
+    var password = $('instant-password').value || '';
+    var name = ($('instant-name').value || '').trim();
+    if (!email || !password) {
+      showAuthError('Enter your email and password.');
+      return;
+    }
+    if (authMode === 'signup') {
+      if (!name) { showAuthError('Enter your name.'); return; }
+      if (!$('instant-consent').checked) {
+        showAuthError('Please agree to the communications notice to create an account.');
+        return;
+      }
+      auth.createUserWithEmailAndPassword(email, password).then(function (cred) {
+        var user = cred.user;
+        return user.updateProfile({ displayName: name }).then(function () {
+          return user.sendEmailVerification({ url: 'https://boxleaguepro.com/apply.html' });
+        }).then(function () {
+          lastVerifyAt = Date.now();
+          setVerifyVisible(user, false);
+        });
+      }).catch(function (err) {
+        showAuthError((err && err.message) || 'Could not create the account.');
+      });
+      return;
+    }
+    auth.signInWithEmailAndPassword(email, password).catch(function (err) {
+      showAuthError((err && err.message) || 'Could not sign in.');
+    });
+  }
+
+  function updateSlugPreview() {
+    var name = $('instant-club-name').value;
+    var slug = api.selfServiceSlugify(name);
+    $('instant-slug-preview').textContent = slug
+      ? 'Your club link will be boxleaguepro.com/app.html?club=' + slug
+      : '';
+  }
+
+  function handleOutcome(outcome) {
+    if (outcome.action === 'redirect') {
+      window.location.assign(api.clubRedirectUrl(outcome.slug));
+      return;
+    }
+    if (outcome.action === 'held') {
+      $('instant-held').textContent = outcome.message || api.HELD_MESSAGE;
+      $('instant-held').style.display = 'block';
+      $('instant-submit').style.display = 'none';
+      return;
+    }
+    if (outcome.action === 'slug_taken') {
+      showClubError(outcome.message || api.SLUG_TAKEN_MESSAGE);
+      $('instant-club-name').focus();
+      return;
+    }
+    if (outcome.action === 'verify_email') {
+      var user = auth && auth.currentUser;
+      setVerifyVisible(user, true);
+      return;
+    }
+    if (outcome.action === 'fallback') {
+      showFallback();
+      return;
+    }
+    showClubError(outcome.message || 'Club creation failed. Please try again.');
+  }
+
+  function submitClub() {
+    var user = auth && auth.currentUser;
+    showClubError('');
+    $('instant-held').style.display = 'none';
+    if (!user) { showAuthError('Sign in before creating a club.'); return; }
+    if (api.needsEmailVerification(user)) {
+      user.reload().then(function () {
+        if (api.needsEmailVerification(auth.currentUser)) {
+          setVerifyVisible(auth.currentUser, true);
+          return;
+        }
+        return sendCreate(auth.currentUser);
+      }).catch(function () {
+        setVerifyVisible(user, true);
+      });
+      return;
+    }
+    sendCreate(user);
+  }
+
+  function sendCreate(user) {
+    var payload;
+    try {
+      payload = api.buildInstantClubRequest({
+        name: $('instant-club-name').value,
+        sport: $('instant-sport').value,
+        confirmed: $('instant-club-confirm').checked,
+        displayName: user.displayName
+      }, user);
+    } catch (err) {
+      showClubError(err.message);
+      return;
+    }
+    var button = $('instant-submit');
+    if (button) { button.disabled = true; button.textContent = 'Creating club...'; }
+    user.getIdToken(true).then(function (token) {
+      return api.getAppCheckHeaders(appCheck).then(function (extra) {
+        var headers = Object.assign({
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json'
+        }, extra);
+        return fetch(api.getInstantCreateEndpoint(), {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify(payload)
+        });
+      });
+    }).then(function (response) {
+      return response.json().catch(function () { return {}; }).then(function (body) {
+        handleOutcome(api.interpretInstantSignupResponse({
+          ok: response.ok,
+          httpStatus: response.status,
+          body: body
+        }));
+      });
+    }).catch(function () {
+      handleOutcome(api.interpretInstantSignupResponse({ networkError: true }));
+    }).finally(function () {
+      if (button) { button.disabled = false; button.textContent = 'Create club and continue'; }
+    });
+  }
+
+  function resendVerification() {
+    var user = auth && auth.currentUser;
+    if (!user || typeof user.sendEmailVerification !== 'function') return;
+    var now = Date.now();
+    if (lastVerifyAt && now - lastVerifyAt < VERIFY_WAIT_MS) return;
+    user.sendEmailVerification({ url: 'https://boxleaguepro.com/apply.html' }).then(function () {
+      lastVerifyAt = Date.now();
+      setVerifyVisible(user, true);
+    }).catch(function () {
+      setVerifyVisible(user, true);
+    });
+  }
+
+  function continueAfterVerify() {
+    var user = auth && auth.currentUser;
+    if (!user) return;
+    user.reload().then(function () {
+      if (user.getIdToken) return user.getIdToken(true);
+    }).then(function () {
+      if (api.needsEmailVerification(auth.currentUser)) {
+        setVerifyVisible(auth.currentUser, true);
+        return;
+      }
+      $('instant-verify').style.display = 'none';
+      submitClub();
+    }).catch(function () {
+      setVerifyVisible(user, true);
+    });
+  }
+
+  function bindInstantUi() {
+    $('instant-google').onclick = googleSignIn;
+    $('instant-email-btn').onclick = emailAuth;
+    $('instant-toggle-auth').onclick = toggleAuthMode;
+    $('instant-signout').onclick = function () { auth.signOut(); };
+    $('instant-club-name').addEventListener('input', updateSlugPreview);
+    $('instant-submit').onclick = submitClub;
+    $('instant-resend').onclick = resendVerification;
+    $('instant-retry-verify').onclick = continueAfterVerify;
+  }
+
+  syncPanels();
+})();
+  </script>
 </body>
 </html>
