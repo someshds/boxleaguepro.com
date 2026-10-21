@@ -18,6 +18,10 @@ assert.match(html, /FIREBASE_RUNTIME_CONFIG = SELF_SERVICE_EMULATOR_MODE[\s\S]+d
   'emulator mode must use an isolated demo namespace while production keeps its normal config');
 assert.match(html, /SELF_SERVICE_CREATE_ENDPOINT = SELF_SERVICE_EMULATOR_MODE[\s\S]+127\.0\.0\.1:5002[\s\S]+https:\/\/europe-west2-boxleague-pro\.cloudfunctions\.net\/createSelfServiceClub/,
   'production endpoint must use the reviewed regional Firebase Function URL');
+assert.match(html, /INSTANT_SIGNUP_CREATE_ENDPOINT = SELF_SERVICE_EMULATOR_MODE[\s\S]+createInstantClub/,
+  'instant endpoint must stay available as a flagged alternative');
+assert.match(html, /activeClubCreateEndpoint\(\)/,
+  'submit must choose the create endpoint from the front-end flag');
 
 function sliceBetween(startText, endText) {
   const start = html.indexOf(startText);

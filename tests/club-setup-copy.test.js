@@ -77,6 +77,8 @@ assert.match(apply.toLowerCase(), /usually within minutes/);
 assert.match(apply.toLowerCase(), /we email you the link/);
 assert.match(apply.toLowerCase(), /on-screen guide/);
 assert.match(apply, /<h1>Set up your club<\/h1>/);
+assert.match(apply, /NZUQTviINhMuoejOVGQB/, 'GHL club application embed must remain as the default / fallback');
+assert.match(readPage('instant-signup.js'), /var INSTANT_SIGNUP_UI = false;/);
 
 for (const sport of FIVE_SPORTS) {
   assert.match(
