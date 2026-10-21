@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Apply to add your club &mdash; BoxLeague Pro</title>
-<meta name="description" content="Organising a tennis, padel, squash, racketball or badminton box league? Apply to add your club to BoxLeague Pro and we'll set it up for you.">
+<title>Set up your club &mdash; BoxLeague Pro</title>
+<meta name="description" content="Organising a tennis, padel, squash, racketball or badminton box league? Set up your club in about 2 minutes. BoxLeague Pro sets it up automatically, usually within minutes, and we email you the link.">
 <link rel="icon" href="/icon-180.png">
 <style>
   :root { --brand:#1d4ed8; --brand-dark:#1e40af; --ok:#059669; --danger:#b91c1c; --bg:#f5f7fb; --text:#0f172a; --muted:#64748b; --border:#e2e8f0; }
@@ -16,13 +16,11 @@
   .hero h1 { font-size:28px; margin:0 0 6px; font-weight:800; letter-spacing:-0.02em; }
   .hero p { margin:0; color:var(--muted); font-size:15px; }
   .card { background:#fff; border:1px solid var(--border); border-radius:16px; padding:22px 22px 18px; box-shadow:0 1px 3px rgba(15,23,42,0.04); margin-bottom:16px; }
-  .card h2 { font-size:17px; margin:0 0 4px; font-weight:700; }
-  .card .lede { color:var(--muted); font-size:13px; margin:0 0 12px; }
-  .explainer { background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px; padding:14px 16px; font-size:13px; color:#075985; margin-bottom:14px; }
+  .explainer { background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px; padding:14px 16px; font-size:13px; color:#075985; margin:14px 0; }
   .explainer strong { color:#0c4a6e; }
   .steps ol { margin:6px 0 0 18px; padding:0; font-size:13px; color:#334155; }
   .steps li { margin:4px 0; }
-  .ghl-frame-wrap { border-radius:12px; overflow:hidden; border:1px solid var(--border); background:#fff; min-height:420px; position:relative; }
+  .ghl-frame-wrap { border-radius:12px; overflow:hidden; border:1px solid var(--border); background:#fff; min-height:420px; position:relative; margin-bottom:4px; }
   .ghl-frame-wrap iframe { display:block; width:100% !important; min-height:420px; border:0; background:transparent; }
   .ghl-loader { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:14px; background:#fff; pointer-events:none; transition:opacity .3s; }
   .ghl-frame-wrap.loaded .ghl-loader { opacity:0; }
@@ -44,20 +42,31 @@
   <div class="wrap">
     <div class="hero">
       <div class="emoji">&#127934;</div>
-      <h1>Add your tennis, padel, squash, racketball or badminton club to BoxLeague Pro</h1>
-      <p>Running a tennis, padel, squash, racketball or badminton box league? We'll set it up for you &mdash; free.</p>
+      <h1>Set up your club</h1>
+      <p>Running a tennis, padel, squash, racketball or badminton box league? About 2 minutes. Your club is set up automatically, usually within minutes, and we email you the link.</p>
     </div>
 
     <div class="card">
-      <h2>Club application</h2>
-      <p class="lede">Takes about 2 minutes. Once your club is provisioned, we'll email the organiser a dedicated link and the app will guide you through setup.</p>
+      <!-- GHL survey iframe (BoxLeague Pro — Club Application, survey id NZUQTviINhMuoejOVGQB) -->
+      <div class="ghl-frame-wrap" id="ghl-wrap">
+        <div class="ghl-loader" id="ghl-loader">Loading form&hellip;</div>
+        <iframe
+          src="https://link.aifusionautomations.com/widget/survey/NZUQTviINhMuoejOVGQB"
+          style="border:none;width:100%;min-height:600px;background:transparent"
+          scrolling="no"
+          id="NZUQTviINhMuoejOVGQB"
+          title="BoxLeague Pro Club Application"
+          onload="document.getElementById('ghl-wrap').classList.add('loaded')">
+        </iframe>
+      </div>
+      <script src="https://link.aifusionautomations.com/js/form_embed.js"></script>
 
       <div class="explainer">
         <strong>What happens next:</strong>
         <div class="steps">
           <ol>
-            <li>We create your club sandbox in BoxLeague Pro</li>
-            <li>We email the organiser a dedicated link (e.g. <code>?club=your-club</code>) once the club is ready</li>
+            <li>BoxLeague Pro sets your club up automatically &mdash; usually within minutes. Some requests are held for a quick review.</li>
+            <li>We email you a dedicated link (e.g. <code>?club=your-club</code>)</li>
             <li>Sign in and follow the on-screen guide to create a league, choose scoring and add players</li>
             <li>Share the club link through your preferred channel so players can sign in and add availability</li>
           </ol>
@@ -75,24 +84,10 @@
         </ul>
       </div>
 
-      <!-- GHL survey iframe (BoxLeague Pro — Club Application, survey id NZUQTviINhMuoejOVGQB) -->
-      <div class="ghl-frame-wrap" id="ghl-wrap">
-        <div class="ghl-loader" id="ghl-loader">Loading application survey&hellip;</div>
-        <iframe
-          src="https://link.aifusionautomations.com/widget/survey/NZUQTviINhMuoejOVGQB"
-          style="border:none;width:100%;min-height:600px;background:transparent"
-          scrolling="no"
-          id="NZUQTviINhMuoejOVGQB"
-          title="BoxLeague Pro Club Application"
-          onload="document.getElementById('ghl-wrap').classList.add('loaded')">
-        </iframe>
-      </div>
-      <script src="https://link.aifusionautomations.com/js/form_embed.js"></script>
-
       <p class="prefer-call">Prefer a call? <a href="https://api.leadconnectorhq.com/widget/bookings/boxleague-onboarding" target="_blank" rel="noopener">Book 15 minutes.</a></p>
 
       <div class="fallback">
-        Form not loading? Email <a href="mailto:grant@boxleaguepro.net?subject=BoxLeague%20Pro%20%E2%80%94%20Club%20application">grant@boxleaguepro.net</a> with your club details.
+        Form not loading? Email <a href="mailto:grant@boxleaguepro.net?subject=BoxLeague%20Pro%20%E2%80%94%20Club%20setup">grant@boxleaguepro.net</a> with your club details.
       </div>
     </div>
 
