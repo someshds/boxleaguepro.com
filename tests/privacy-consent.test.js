@@ -49,9 +49,10 @@ undecided.api.decline();
 assert.equal(undecided.store.get('blp_cookies'), 'declined');
 assert.equal(undecided.scripts.length, 0);
 
-for (const page of ['index.html', 'app.html']) {
+for (const page of ['index.html', 'app.html', 'apply.html', 'privacy.html', 'terms.html']) {
   const html = fs.readFileSync(require.resolve(`../${page}`), 'utf8');
   assert(html.includes('/privacy-consent.js'), `${page} should load the consent controller`);
+  assert(html.includes('id="cookie-consent"'), `${page} should include the consent banner`);
   assert(!html.includes('src="https://www.googletagmanager.com/gtag/js'), `${page} must not load GA4 directly`);
   assert(!html.includes('src="https://widgets.leadconnectorhq.com/loader.js'), `${page} must not load chat directly`);
   assert(html.includes('/privacy.html'), `${page} should link to the BoxLeague privacy page`);

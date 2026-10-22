@@ -6,6 +6,7 @@
 <title>Set up your club &mdash; BoxLeague Pro</title>
 <meta name="description" content="Organising a tennis, padel, squash, racketball or badminton box league? Set up your club in about 2 minutes. BoxLeague Pro sets it up automatically, usually within minutes, and we email you the link.">
 <link rel="icon" href="/icon-180.png">
+<script defer src="/privacy-consent.js"></script>
 <script src="/instant-signup.js"></script>
 <style>
   :root { --brand:#1d4ed8; --brand-dark:#1e40af; --ok:#059669; --danger:#b91c1c; --bg:#f5f7fb; --text:#0f172a; --muted:#64748b; --border:#e2e8f0; }
@@ -62,6 +63,15 @@
   .slug-preview { font-size:12px; color:var(--muted); margin-top:6px; word-break:break-all; }
   .verify-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
   .quiet { color:var(--muted); font-size:13px; margin:0 0 12px; }
+  .cookie-consent-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .cookie-consent-copy{flex:1 1 240px;min-width:0}
+  .cookie-consent-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .cookie-consent-actions button{white-space:normal}
+  @media(max-width:480px){
+    .cookie-consent-inner{align-items:stretch}
+    .cookie-consent-actions{flex-direction:column;width:100%;align-items:stretch}
+    .cookie-consent-actions button{width:100%}
+  }
 </style>
 </head>
 <body>
@@ -207,7 +217,7 @@
     <div class="blp-promo-host" data-blp-promo data-blp-promo-view="apply"></div>
     <div class="footer-links">
       Already have a club link? <a href="/app.html">Open BoxLeague Pro &rarr;</a><br>
-      <a href="/privacy.html">Privacy</a> &middot; <a href="/terms.html">Terms</a>
+      <a href="/privacy.html">Privacy</a> &middot; <a href="/terms.html">Terms</a> &middot; <button type="button" onclick="BoxLeagueConsent.show()" style="background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer">Cookie choices</button>
     </div>
   </div>
   <script defer src="/promos.js"></script>
@@ -518,5 +528,14 @@
   syncPanels();
 })();
   </script>
+<div id="cookie-consent" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#1e293b;color:#fff;padding:16px 20px;box-shadow:0 -4px 20px rgba(0,0,0,0.3);font-size:14px;line-height:1.5">
+  <div class="cookie-consent-inner">
+    <div class="cookie-consent-copy">Optional cookies let us measure usage and provide support chat. They load only if you accept. The core site and app work without them. Read our <a href="/privacy.html" style="color:#60a5fa;text-decoration:underline">Privacy Policy</a>.</div>
+    <div class="cookie-consent-actions">
+      <button onclick="BoxLeagueConsent.decline()" style="padding:8px 16px;border-radius:8px;border:1px solid #475569;background:transparent;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Decline optional cookies</button>
+      <button onclick="BoxLeagueConsent.accept()" style="padding:8px 16px;border-radius:8px;border:none;background:#2563eb;color:#fff;font-size:13px;font-weight:700;cursor:pointer">Accept optional cookies</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
