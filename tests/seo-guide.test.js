@@ -24,3 +24,21 @@ test('homepage and sitemap link to the guide', () => {
   assert.match(homepage, new RegExp(guideUrl.replaceAll('/', '\\/')));
   assert.match(sitemap, /https:\/\/boxleaguepro\.com\/blog\/how-to-run-a-tennis-box-league\.html/);
 });
+
+test('padel box league guide has core SEO, privacy and internal-link elements', () => {
+  const guideUrl = '/blog/how-to-run-a-padel-box-league.html';
+  const html = fs.readFileSync(path.join(root, 'blog', 'how-to-run-a-padel-box-league.html'), 'utf8');
+  const homepage = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const sitemap = fs.readFileSync(path.join(root, 'sitemap.xml'), 'utf8');
+  assert.match(html, /<title>How to Run a Padel Box League/);
+  assert.match(html, /rel="canonical" href="https:\/\/boxleaguepro\.com\/blog\/how-to-run-a-padel-box-league\.html"/);
+  assert.match(html, /"@type": "Article"/);
+  assert.match(html, /Padel is a doubles sport/);
+  assert.match(html, /src="\/privacy-consent\.js"/);
+  assert.match(html, /id="cookie-consent"/);
+  assert.match(html, /href="\/apply\.html"/);
+  assert.match(html, /href="\/app\.html\?club=demo-club"/);
+  assert.doesNotMatch(html, /AI Fusion|RippleKeep|promos\.js/i);
+  assert.match(homepage, new RegExp(guideUrl.replaceAll('/', '\\/')));
+  assert.match(sitemap, /https:\/\/boxleaguepro\.com\/blog\/how-to-run-a-padel-box-league\.html/);
+});
