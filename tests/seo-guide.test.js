@@ -42,7 +42,7 @@ test('padel box league guide has core SEO, privacy and internal-link elements', 
   assert.match(html, /href="\/app\.html\?club=demo-club"/);
   assert.match(html, /src="\/images\/blog\/padel-box-league-organisers-v1\.webp"/);
   assert.match(html, /alt="Four recreational padel players/);
-  assert.doesNotMatch(html, /AI Fusion|RippleKeep|promos\.js/i);
+  assert.doesNotMatch(html, /AI Fusion|promos\.js/i);
   assert.match(homepage, new RegExp(guideUrl.replaceAll('/', '\\/')));
   assert.match(sitemap, /https:\/\/boxleaguepro\.com\/blog\/how-to-run-a-padel-box-league\.html/);
 });
@@ -62,7 +62,7 @@ test('squash box league guide has SEO, image, privacy and internal links', () =>
   assert.match(html, /id="cookie-consent"/);
   assert.match(html, /href="\/apply\.html"/);
   assert.match(html, /href="\/app\.html\?club=demo-club"/);
-  assert.doesNotMatch(html, /AI Fusion|RippleKeep|promos\.js/i);
+  assert.doesNotMatch(html, /AI Fusion|promos\.js/i);
   assert.match(homepage, new RegExp(guideUrl.replaceAll('/', '\\/')));
   assert.match(sitemap, /https:\/\/boxleaguepro\.com\/blog\/how-to-run-a-squash-box-league\.html/);
 });

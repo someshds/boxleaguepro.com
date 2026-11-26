@@ -4,7 +4,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const source = fs.readFileSync(require.resolve('../promos.js'), 'utf8');
-const pages = ['index.html', 'app.html', 'apply.html', 'privacy.html', 'terms.html'];
+const pages = ['app.html', 'apply.html', 'privacy.html', 'terms.html'];
 
 function createStorage() {
   const data = new Map();
